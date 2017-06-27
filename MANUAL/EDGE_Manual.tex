@@ -1,0 +1,377 @@
+\documentclass{emulateapj}
+\usepackage[utf8]{inputenc}
+
+\newcommand{\edge}{\texttt{EDGE }}
+
+\begin{document}
+
+\title{MANUAL FOR UTILIZING EDGE AND COLLATE}
+
+
+\author{C.Robinson\altaffilmark{1}, D. Feldman}
+
+\email{connorr@bu.edu}
+
+\altaffiltext{1}{Department of Astronomy, Boston University, 725 Commonwealth Avenue, Boston, MA 02215, USA}
+
+
+\begin{abstract}
+The D'Alessio Iradiated Disk (\texttt{DIAD}) models can be ungainly to work with effectively. To remedy this, we have constructed Python based analysis tools `\texttt{EDGE}' and \texttt{collate}.
+The objective of \edge  is to standardize and help ease analysis and organization of the \texttt{DIAD} models used by researchers across the collaboration.
+For ease of reading, the manual is broken up into sections, so you can skip ahead to those relevant if you need quick reference, or read through for a full overview of the code. This document does not contain a description of each individual function or argument in \edge -- this can be found by examining the `docstring' of the function in question.
+\end{abstract}
+
+\section{Introduction}
+ 
+\subsection{Basic python usage}
+Whenever illustrating code that you type into the command line, the code will be preceded by `\texttt{>>>}', however, if it’s a block of code inside of a file and not at the command line, it will not have the `\texttt{>>>}' preceding it. Code entered into a terminal outside of python is preceded by `\texttt{[UNIX]}'. Most of the code that is shown here is written for use at the command line, but for reproduciability it is often better write code within scripts with \texttt{.py} file extensions. Scripts in Python can be run at the terminal using:
+
+\vspace{2mm}
+\texttt{[UNIX] python name\_of\_script.py}
+\vspace{2mm}
+
+or during a Python session with:
+
+\vspace{2mm}
+\texttt{>>> run name\_of\_script}
+\vspace{2mm}
+
+Below you will find some Python jargon, followed by descriptions of some of the more complicated functions and classes written in the code, and then finally a step by step guide of how to use the code to load in data and a model for a T-Tauri star, and then how to plot it and calculate a reduced chi-square value.
+
+In most of the code that follows, unless otherwise noted, it is assumed that you have imported (i.e., loaded in) \edge into your session of Python for use. This is done by typing:
+
+\vspace{2mm}
+\texttt{>>> import EDGE as edge}
+\vspace{2mm}
+
+\noindent into Python. This will let you use all functions and classes in the code by typing the name of the function or class preceded by “\texttt{edge}”, for example: 
+
+\vspace{2mm} 
+\texttt{>>> x = edge.numCheck(2)}
+\vspace{2mm}
+
+\noindent will store the output of the numCheck function into the variable \texttt{x}. Once you have imported the module, you will not have to do it again for that session, so it will be assumed it has already been done. 
+
+\subsubsection{Adding \edge to your Python path}
+
+Note that in order for Python to find \edge, the directory must be placed on your Python path. This can be done by changing your \texttt{.bashrc} (or equivalent) file generally located as a hidden file in your home directory. Typing the following command into a terminal (outside of Python),
+
+\vspace{2mm}
+\texttt{[UNIX] ls -a \textasciitilde/.bashrc}
+\vspace{2mm}
+
+should show you this file. Adding the following line with the path to where you have saved \edge to that file with the text editor of your choice will allow Python to find \edge.
+
+\vspace{2mm}
+\texttt{export PYTHONPATH=\${PYTHONPATH}:/path/to/EDGE/}
+\vspace{2mm}
+
+Take care to change the directory to where ever you have placed texttt{EDGE}.
+
+\subsubsection{Reloading a function}
+
+If you make changes to a function and do need to reload that function, that is handled using the built-in Python function '\texttt{imp}'. To reload \texttt{EDGE}, (or any other module) do the following:
+
+\vspace{2mm}
+\texttt{>>> import imp}
+
+\texttt{>>> imp.reload(edge)}
+\vspace{2mm}
+
+\subsection{Jargon}  
+ 
+Before we continue, there are some Python specific and non-Python specific pieces of jargon that are important moving forward.
+ 
+\vspace{2mm}
+
+\noindent \textbf{object} - A data structure that has associated attributes and methods. Attributes are variables associated with objects that can either describe the object or store data associated to it. Methods are built-in functions that utilize or operate on the object.
+
+\noindent \textbf{class} - The numerical recipe for creating objects, along with their attributes and associated methods. So for example, if you think of classes as recipes (how to make a cake), then the cake is the object, which has a bunch of attributes (flavor, taste, cost) and perhaps a intrinsic method that can change the object (the seller changes its price).
+
+\noindent \textbf{pickle} - A pickle is a serialized file containing information from a Python object or data structure. These are similar to \texttt{IDL .sav} files, and can be used to save information that you want to re-load later into a new Python session. 
+ 
+\noindent \textbf{module} - A Python file which contains functions and/or classes and can be imported so you can use the functions and classes contained within them. Some modules come with your Python installation (\texttt{numpy}, \texttt{matplotlib}, etc.) and some can be ones you’ve written yourself (\texttt{EDGE}). This is similar to a \texttt{.pro} file in \texttt{IDL}. 
+ 
+\section{Paths}
+In the beginning of the \texttt{EDGE.py} file, a few paths are defined (e.g., \texttt{figurepath}, \texttt{datapath}, etc.) which define where certain files exist or will exist. You do not have to define these if you don’t want to — all relevant functions and classes will have a keyword that lets you supply the proper path. The paths hardcoded at the top of EDGE are very useful when you are consistently using the same directory for your data files, as you can then avoid typing in the path for each function call, but you don’t need to use them. \textbf{IMPORTANT:} If you obtain a new version of \edge from GitHub, you \textbf{will} need to change the paths again. 
+
+If you are using scripts (recommended), it is often better to simply include the path as a part of the call to each function, as it increases portability of the script. This also negates the need to change the paths if you re-download the code from GitHub.
+ 
+\section{Important Functions and Classes}
+
+This section will contain the important functions and classes contained within \edge and \texttt{collate} that are necessary for everyday use. This will not cover many of the smaller, independent functions contained in \texttt{EDGE}. For information on those functions, please refer to their docstrings. 
+ 
+\subsection{Collate}
+ 
+The Python module \texttt{collate} takes the output files of a given model run and stores all the information and data into one \texttt{.fits} file for later reference. In order for collate to work properly, your \texttt{labelend} for your models (optically thin dust models or otherwise) must follow the proper naming convention, which will be outlined later. The inputs and keyword arguments can be found in the \texttt{collate} docstring. Note that \texttt{collate} is not included with \edge and must be imported separately. 
+Generally, \texttt{collate} is used on the \textbf{SCC}, after the models have finished running. 
+
+In order to use Python on the \textbf{SCC} (and therefore to use \texttt{collate} on the cluster), you must load in the Anaconda package. Once you have logged in to the cluster, you can load in Anaconda by typing in: 
+
+\vspace{2mm}
+\texttt{[UNIX] module load anaconda3}
+\vspace{2mm}
+
+\noindent Once this is done, you have access to Python, as well as all the necessary modules for Python. When you are ready to use collate, enter 
+
+\vspace{2mm}
+\texttt{[UNIX] python} 
+\vspace{2mm}
+
+\noindent into your terminal.
+
+Models can be collated individually by entering all the required inputs (see the docstring), but the easiest way to collate models is by using \texttt{masscollate}. An example for a star named `fancyStar' is show below:
+
+\vspace{2mm}
+\texttt{>>> import collate}
+
+\texttt{>>> collate.masscollate('fancyStar')}
+\vspace{2mm}
+
+\noindent This should collate all of your model runs into \texttt{.fits} files that you can later use for data analysis and plotting. 
+
+\textit{For more advanced users:} \texttt{collate} by default also stores information about the structure of the disk in a separate fits extension (extension 1). The data in this extension is stored as a 2D array with the labels for the columns located in the header. 
+
+\texttt{collate} is also used to gather information about the \texttt{DIAD} optically thin dust models and the \citep{calvet98} shock models. Modes for collating these types of models can be toggled using the \texttt{optthin = True} or the \texttt{shock = True} keywords respectively.
+
+ 
+\subsection {\texttt{TTS\_Model}}
+
+The \texttt{TTS\_Model} class creates objects that contain the data from an individual model run. Note: This is only utilized for full or transitional disk models, not for pre-transitional disk models. In order for this class to work, all of the data and meta-data related to the model must be in a fits file created from \texttt{collate.py} code. \texttt{TTS\_Model} essentially loads everything from that fits file and saves it into a Python object, as well as creating a method that can compute the total of all the model components. A list of all of the meta-data and data loaded into the module from the fits file can be found in the docstring. 
+ 
+\texttt{TTS\_Model} currently has three methods. The first is the one necessary to all classes, which is the \texttt{\_\_init\_\_} function, sometimes called the “constructor.” This creates “instances” of the class, i.e., creates individual objects. If the class is the recipe, and the object is the cake, then the \texttt{\_\_init\_\_} function is the cook. Here it loads all of the meta- data into an object, comprised primarily of the model parameters. For example, if you want to load the third model for `fancyStar' into an object, you would type: 
+ 
+\vspace{2mm}
+\texttt{>>> fancyStar\_3 = edge.TTS\_Model(‘fancyStar’,3)}
+\vspace{2mm}
+
+\noindent There are some optional keyword arguments you can supply to \texttt{TTS\_Model} that may change what it does. For example, the \texttt{dpath} keyword is used to tell the class the path where the fits file is located. If you are working a lot in the same directory, you are encouraged to define the data path at the top of the code in the “\texttt{datapath}” variable, and then you will not have to manually supply a path to the \texttt{dpath} keyword. Otherwise, this is a necessity. For a list of all keywords, please see the docstring. 
+ 
+You may notice that the the \texttt{\_\_init\_\_} function is not explicitly called. That is because in Python, when a class is called, it knows to call on the \texttt{\_\_init\_\_} function to create the object. 
+ 
+The second method is the \texttt{dataInit} method. This method loads the actual data into the object. When you call this method for \texttt{TTS\_Model}, you need not supply any keywords. So an example call for the above object looks like this: 
+ 
+\vspace{2mm}
+\texttt{>>> fancyStar\_3.dataInit()}
+\vspace{2mm}
+
+The third method is the \texttt{calc\_total} method. This takes all of the components of the model and adds them together to create a “total” flux array. The method has a bunch of keywords that describe each component you may want to add to the total, and some of them are turned on by default, and others are turned off by default. Basic usage of this function is as follows:
+
+\vspace{2mm}
+\texttt{>>> fancyStar\_3.calc\_total}
+\vspace{2mm}
+
+\noindent The ones turned on are phot (photosphere), wall (inner wall), and disk. The one turned off is dust (optically thin dust). To turn these on and off, you just specify them when you call the method and set them to 0 or 1. For example: 
+
+\vspace{2mm}
+\texttt{>>> fancyStar\_3.calc\_total(iwall=0)}
+\vspace{2mm}
+ 
+This will keep all of the defaults except for inner wall, which I turned off. 
+ 
+Note: The dust keyword is an exception to this. Since there can be any number of optically thin dust files, you have to instead specify which one you want, by supplying the associated dust model number. This will also follow the convention created by collate. So if you want to utilize, for example, the fourth dust file, then you type: 
+
+\vspace{2mm}
+\texttt{>>> fancyStar\_3.calc\_total(dust=4)}
+\vspace{2mm}
+ 
+\
+texttt{TTS\_Model} utilizes a nested dictionary structure to hold all the data for the model. A dictionary is a data structure in Python that hold key-value pairs. An example dictionary is as such: 
+ 
+\vspace{2mm}
+\texttt{>>> dict = \{‘Key1’:1,‘Key2’:2,‘Key3’:3\}}
+
+\texttt{>>> print dict[‘Key2’]}
+
+\texttt{output: 2 }
+
+\texttt{>>> print dict.keys() }
+
+\texttt{output: [‘Key1’, ‘Key2’, ‘Key3’] }
+\vspace{2mm}
+ 
+In TTS\_Model, there are two layers, where the initial set of keys are the components of the model, e.g., `\texttt{phot}', `\texttt{iwall}', `\texttt{disk}', `\texttt{total}', etc. and the second set of keys are `\texttt{wl}' and `\texttt{lFl}’, which hold the arrays of wavelength (in microns) and $\lambda F\lambda $ (in $\mbox{ergs}\, \mbox{s}^{-1} \mbox{cm}^{-2}$) respectively. This nested dictionary is held in the ‘\texttt{data}’ attribute. So to print the flux values of the disk component, you’d type: 
+ 
+\vspace{2mm}
+\texttt{>>> print cvso109\_3.data[‘disk’][‘lFl’]}
+\vspace{2mm}
+
+There are a few extra keywords you can utilize in the \texttt{calc\_total} method. Some of these include changing the \texttt{altinh} used for the inner wall, saving the components into a \texttt{.dat} file, etc. For a full list of keywords, see the docstring. If you have scattered light component in your model, the code will always automatically include it in the total. 
+ 
+\subsection{\texttt{PTD\_Model}}
+ 
+\texttt{PTD\_Model} is a class almost identical to \texttt{TTS\_Model}, except is used for pre-transitional disk models. In technical terms, \texttt{PTD\_Model} is a class that “inherits” from the parent class of \texttt{TTS\_Model}; all of the code for \texttt{PTD\_Model} is identical to \texttt{TTS\_Model} except where changed in the code. The major differences are seen only in the second two methods, \texttt{dataInit} and \texttt{calc\_total}.
+ 
+Unlike \texttt{TTS\_Model}, \texttt{PTD\_Model} requires keywords when calling \texttt{dataInit}. The reason for this is that \texttt{PTD\_Model} needs to match up your disk model with an inner wall model. There are two ways got do this. You can either utilize the “\texttt{jobw}” keyword and supply the number of the job matching the inner wall file. This is the easiest method. However, if you do not know which inner wall file is the correct one, you can supply it with keywords matching the header file with the relevant parameters matching the wall (e.g., amaxs, eps, alpha, temp, etc.). In this case, \texttt{dataInit} will find which model matches the wall and will then load it in. 
+
+ 
+In \texttt{calc\_total}, the procedure is the same, but there is an added keyword to turn on and off the outer wall (‘\texttt{owall}’) component of your model, as well as to change either the \texttt{altinh} of your inner wall and/or your outer wall (‘\texttt{altInner}’ and ‘\texttt{altOuter}’ keywords). 
+ 
+ An example of this with our imaginary 'fancyStar' is shown below:
+
+\vspace{2mm}
+\texttt{>>> fancyStar\_PTD = edge.PTD\_Model('fancyStar',1)}
+
+\texttt{>>> fancyStar\_PTD.dataInit(jobw = 30)}
+
+\texttt{>>> fancyStar\_PTD.calcTotal(altinner = 1.5)}
+\vspace{2mm}
+ 
+In this case, we have loaded in our disk model of 'fancyStar', initialized it using the inner wall file associated with the $30^{th}$ model in our grid, and then calculated the total emission assuming an inner wall height of 1.5 scale heights. 
+ 
+ 
+\subsection{TTS\_Obs}
+ 
+The \texttt{TTS\_Obs} class creates objects that hold the observations for a given T-Tauri star. This includes all spectra and photometry. Unlike with \texttt{TTS\_Model}, \texttt{TTS\_Obs}’s \texttt{\_\_init\_\_} method initializes a mostly-empty object, and then requires you to utilize its methods to fill in the object with data. As such, once you have loaded in the observations to an object, you need to save it as a pickle so you can just load it in later, rather than having to build it every time. 
+The \texttt{TTS\_Obs} class also utilizes a nested dictionary structure to hold the observations. Here however, there are multiple attributes which hold data, namely `\texttt{spectra}' and `\texttt{photometry}'. The first level of the keys holds the names of the instrument or telescope (e.g., ‘\texttt{DCT}’, ‘\texttt{IRS}’, ‘\texttt{PACS}’, etc.) and the second level of keys are ‘\texttt{wl},’ ‘\texttt{lFl},’ and ‘\texttt{err},’ which holds the wavelength, $\lambda F\lambda$, and error arrays respectively.  
+When you first initialize the \texttt{TTS\_Obs} object, you only supply it the name of your target. So if you are working with `fancyStar', you would type: 
+
+\vspace{2mm}
+\texttt{>>> fancyStar\_obs = edge.TTS\_Obs(‘fancyStar’)}
+\vspace{2mm}
+
+This would initialize an object with the name attribute to hold `fancyStar', and it would have empty spectra and photometry dictionaries. It would also initialize an empty list with the attribute name ‘\texttt{ulim}’ which will potentially hold the names of data containing upper limits. 
+To fill in the observations, you have to make use of the \texttt{add\_spectra} and \texttt{add\_photometry} methods. This will take the supplied data and meta-data and fill in the nested dictionary structure for you. If you are overwriting the data, it will also ask you to make sure you wish to overwrite the data before proceeding. Later in this manual, I will show an example of how to create this type of object, so you can see later how this is done in more detail. 
+ 
+\subsection{\texttt{SPPickle}}
+ 
+This function will save your observations as a pickle file so you can load it back into Python later. Note: If you reload the \edge module before you save your object into a pickle, the \texttt{SPPickle} function will NOT work. So be careful of this issue when creating a new observations object. You can save pickles using the following:
+
+\vspace{2mm}
+\texttt{>>> fancyStar\_obs.SPPickle(clob = True)}
+\vspace{2mm}
+
+The \texttt{clob = True} flag means that the function will `clobber', or overwrite, any existing Pickles with the same name. This is extremely useful for scripts where you would want to create a new Pickle from scratch each time you run the script. If you are feeling more cautious, you can set the \texttt{clob = False} to make it so SPPickle will not overwrite the existing pickle file and instead create a new pickle with a number associated with it.
+
+\subsection{\texttt{Red\_Obs}}
+
+In general, most of the actual loading data into an \edge observation object \textbf{will not be done using \texttt{TTS\_Obs}}, and instead will be done using \texttt{Red\_Obs} (unless your data has already been de-reddened outside of the \edge architecture). \texttt{Red\_Obs} is nearly identical in function to \texttt{TTS\_Obs} but contains an additional function that will de-redden all the data in the \texttt{Red\_Obs} object and create a new pickle file containing a \texttt{TTS\_Obs} object.
+The process for dereddening for our object 'fancyStar' is shown below.
+
+\vspace{2mm}
+\texttt{>>> red =  edge.Red\_Obs('fancyStar')}
+\vspace{2mm}
+
+Once the `\texttt{red}' object is created you must then load data into it using \texttt{add\_photometry}and \texttt{add\_spectra} functions as before. When this is finished, the data can be de-reddened.
+
+\vspace{2mm}
+\texttt{>>> Av = 0.8}
+
+\texttt{>>> Av\_unc = 0.2}
+
+\texttt{>>> law = `mathis90\_rv3.1'}
+
+\texttt{>>> picklepath = /path/to/fancyStar/pickles/'}
+
+\texttt{>>> red.dered(Av, Av\_unc, law, picklepath)}
+\vspace{2mm}
+
+\noindent This code segment defines the extinction at Johnson V band, the uncertainity in the extinction, the destination where the newly de-reddened pickle will be stored, and finally de-reddens the data and creates the \texttt{TTS\_Obs} pickle. 
+ 
+\subsection{\texttt{look}}
+ 
+The \texttt{look} function is our plotting routine for TTS observations and models. Provide it with an observation object and optionally a model object created by the \texttt{TTS\_Obs} and \texttt{TTS\_Model}\texttt{/PTD\_Model} classes (see section 2.2) to create plots. The other keywords are important for various customizations, such as colors, whether or not to combine the disk and outer wall components, etc. See the docstring for full details on keywords. Example code for the look function is as follows:
+
+\vspace{2mm}
+\texttt{>>> edge.look(fancyStar\_obs, model = fancyStar\_3)}
+\vspace{2mm}
+
+\subsection{\texttt{loadPickle}}
+
+The \texttt{loadPickle} function takes a pickle created by the \texttt{TTS\_Obs} class and reloads it into your current Python session. This function is smart enough to be able to handle if you have multiple pickles for the same object, so long as you know which of them is the correct one (it will also warn you if you have multiple pickles and didn’t realize it). A pickle can be loaded with:
+
+\vspace{2mm}
+\texttt{>>> fancyStar\_obs = edge.loadPickle('fancyStar')}
+\vspace{2mm}
+
+\subsection{\texttt{job\_file\_create}}
+
+The \texttt{job\_file\_create} function will take a sample job file (to be used to run a model on the cluster) and make the desired changes to it. In the docstring you can see all of the different changes the function can handle making to the file. The best way to run this command is through the \texttt{jobmaker.py} script, which has all the parameters in an easily editable form, and has the ability to makes large grids of models at once. More about \texttt{jobmaker.py} will be discussed later on in the section on scripts.
+
+
+\subsection{\texttt{job\_optthin\_create}}
+The \texttt{job\_optthin\_create} function is similar to the \texttt{job\_file\_create} function above, except it creates job files for the optically thin dust models. The function call is identical to \texttt{job\_file\_create}, except it has different keyword arguments that you can change in the file. For a full list of these parameters, see the docstring. A similar script to \texttt{jobmaker.py} has been written for these optically thin dust models as well: \texttt{ojobmaker.py}
+
+
+\subsection{\texttt{model\_rchi2}}
+ 
+The \texttt{model\_rchi2} function takes the observation and model objects for a given T-Tauri star and calculates the reduced $\chi^2$ value. This is useful as a quantitative representation of how well the model fits the data. It has the ability to weight spectra and photometry differently, and calculate a non-reduced $\chi^2$ value as well. 
+
+\section{Using the code via scripts}
+
+The previous sections discussed some of the more important functions + modules for running an analyzing models individually. In this section, scripts that use \edge commands in parallel with other python code are presented. Although all of what has been covered earlier can be done at the command line, scripts allow for vastly increased repeatability, transportability and easier bug solving. To get an idea of how to utilize the tools in this code to analyze data, several scripts have been included that model an object from start to finish.
+
+Inside the DEMO folder in your \edge distribution are the following scripts:
+
+\vspace{2mm}
+\texttt{DEMO\_make\_imlup.py}
+
+\texttt{DEMO\_jobmaker.py}
+
+\texttt{DEMO\_analysis\_imlup.py}
+\vspace{2mm}
+
+\noindent along with two directories:
+
+\vspace{2mm}
+\texttt{data/}
+
+\texttt{models/}
+\vspace{2mm}
+
+which contain (unsurprisingly) data and models. Inside the \texttt{data} directory is a list of photometry from Vizier in the form of a \texttt{.vot} file,  an IRS spectra in the form of a \texttt{.fits} file, and a de-reddened pickle file of the observations. The \texttt{model} directory contains job files (e.g., `\texttt{job005}') and \texttt{DIAD} results in the form of collated \texttt{.fits} files (e.g., `\texttt{imlup\_005.fits}')
+
+\subsection{Making the observation pickle}
+
+\texttt{DEMO\_jobmaker\_imlup.py} will take in photometry and spectra from the \texttt{DATA} directory in order to make the \texttt{Red\_TTS} observation object which will then be de-reddened and saved to a \texttt{.pkl} file containing the de-reddened \texttt{TTS\_Obs} object. This object can be looked at the command line using the \texttt{look} function. Uncertainties associated with flux measurements can also be stored in this object/pickle.
+
+\textit{Note: While creating this file for other objects, one must be mindful of the units that the observations are entered in. \edge is constructed to work with units of $ergs\,s^{-1}\,cm^{-2}$ ($\lambda F \lambda$). If your observations have other units, you will need to convert them. \edge does have several useful functions for doing so, e.g., \texttt{convertMag}, \texttt{convertJy}. Units of wavelength must be in microns.}
+
+\subsection{Making the job files}
+
+The next step is to make the job files for \texttt{DIAD}. This is done using the \texttt{DEMO\_jobmaker\_imlup.py}. This file will create a small grid of models with different values of \texttt{amaxs}, the maximum grain size, and \texttt{alpha}, the viscosity in the disk. For the purposes of this tutorial, the jobs for this grid of models have already been run and collated for you, with the fits files placed in the demo folder. 
+
+\subsection{Running and collating models}
+
+In practice, these job files would be moved to the \texttt{SCC} using the \texttt{UNIX} command \texttt{scp}. For large grids, it is recommended that jobs are submitted using a \texttt{run\_all.csh} script (also found in the \texttt{DEMO} directory). Once the jobs have all finished running, the results must be collated. This is most easily done using \texttt{masscollate}. To do this, load Python on the \texttt{SCC} and type the following:
+
+\vspace{2mm}
+\texttt{>>> import collate as c}
+
+\texttt{>>> c.masscollate('fancyStar')}
+\vspace{2mm}
+
+This will combine the results from each model into a single  \texttt{.fits} file which can then transferred back to your local machine using \texttt{scp} again. 
+
+Since the jobs have already been run, collated and copied over, you can skip this section if you are following along with this demonstration.
+
+\subsection{Analysis of the models}
+
+\textit{Note: Unlike the previous two steps involving the models, it is likely that you will need to write your own analysis code depending on your needs. The steps taken to find the best fitting model for the real star IM Lup are described below, and should be taken as an example, but not necessarily as a rule.}
+\vspace{2mm}
+
+The data that was organized and de-reddened by the \texttt{DEMO\_make\_imlup.py} can be compared against the DIAD models. This will be done using the \texttt{DEMO\_analysis\_imlup.py} script. 
+The height of the inner wall (\texttt{altinh}) can be adjusted after models have finished running. This is useful because we can allows fit the height of the wall without running additional models. 
+In this example, we will be searching for the best fitting model using the grid of models that we ran and adjusting the inner wall height. The script will loop over both job number and wall heights.
+
+For each job number, the script loads in the model and it checks to see if the job failed using Python's built in error handling and the `\texttt{failed}' tag from \texttt{collate}. 
+Next it initializes the model object using the \texttt{dataInit} function. 
+
+We then enter the for loop over inner wall height and calculate the total emission from all of the model components using the \texttt{calc\_total} function. The $\chi^2$ value for this total emission is calculated and stored. Next the script searches for the lowest $\chi^2$ value for all the different wall heights and selects the lowest value. Using this wall height, a plot is made and saved by the \texttt{look} function, and the value of $\chi^2$ is stored along with the job number and the wall height. This repeats for each job number. After running the script, the best models can be found by doing the following at the command line:
+
+\vspace{2mm}
+\texttt{>>> print(chi2[order])}
+\vspace{2mm}
+
+where \texttt{order} is an array of indices found by using \texttt{numpy.argsort} on \texttt{chi2[:,1]}, which contains all the $\chi^2$ values. The best model will also be plotted as a result of running the script.
+
+
+\section{Conclusion}
+ 
+This code is a living entity, and so this manual will potentially change as the code changes. If there are any questions/comments on \edge, this manual, or \texttt{collate} please email me at connorr@bu.edu. You can also raise issues about bug fixes or additional desired functionality on GitHub (https://github.com/ danfeldman90/EDGE). 
+
+
+\section{Acknowledgements}
+\edge and \texttt{collate} were primarily written and developed by D. Feldman and C. Robinson, but have since grown from contributions from many people including Catherine Espaillat, Enrique Macias, Alice P\'erez, and others. The authors are grateful for alerts to issues with the code from users like \textbf{you}.
+
+\end{document}
