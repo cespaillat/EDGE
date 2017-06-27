@@ -1,0 +1,86 @@
+#!/bin/csh
+
+#05June2017 CCE
+
+set labelend='test_001'	#label for output files
+
+#stellar parameters--------------------------
+set TSTAR='4350'          #stellar effective temperature
+set RSTAR='2.5'           #stellar radius in solar units
+set DISTANCIA='160'       #distance in pc
+
+#disk parameters---------------------
+set MUI='0.5'             #cosine of inclination to line of sight
+set ROUT='1'  			  #outer radius 
+set RIN='.1'			  #inner radius
+
+set TAUMIN='0.028'  
+set POWER='0'
+set FUDGEORG='1'
+set FUDGETROI='0.00000001'
+set FRACSIL='1'  
+set FRACENT='0.00000001'
+set FRACFORST='0.00000001'
+set FRACAMC='0.00000001'
+set FRACICE='0.00000001'
+
+#maxiumum grain size
+#set lamax='amax0p05'
+#set lamax='amax0p1'
+set lamax='amax0p25'
+#set lamax='amax1p0'
+#set lamax='amax2p0'
+#set lamax='amax3p0'
+#set lamax='amax4p0'
+#set lamax='amax5p0'
+#set lamax='amax10'
+#set lamax='amax100'
+#set lamax='amax1mm'
+
+#directories----------------------
+set dirOPTTHIN=/project/bu-disks/shared/OPTTHIN
+set dirTODO=/project/bu-disks/shared/TODOf77_081109
+
+set WLFILE=$dirTODO/CODEf77_081109/COMUN/longitudes_4testruns_shorter.ent
+set PROPIO=$dirOPTTHIN/code_041312/optthin_041312
+
+set FILEOUT=rin$RIN.rout$ROUT.tmin$TAUMIN.$lamax.$labelend
+
+#following ISM (set FRACAMC and FRACTROI very small), can add ice
+set FILESIL=$dirTODO/POLVO/SIL/mgfe/sil.p3p5.$lamax.g.ab0p004.extinc
+set FILEAMC=$dirTODO/POLVO/AMORC/amorc.p3p5.$lamax.g.ab0p001.extinc
+set FILEORG=$dirTODO/POLVO/GRAF/graf.p3p5.$lamax.g.ab0p0025.extinc
+set FILETROI=$dirTODO/POLVO/TROI/troi.p3p5.$lamax.g.ab0p000768.extinc
+set FILEICE=$dirTODO/POLVO/H2OICE/h2oice.p3p5.$lamax.g.ab0p00056.extinc.wb08
+
+set FILEDUST1=$dirTODO/POLVO/NOPT/id40_cde.q
+set FILEDUST2=$dirTODO/POLVO/NOPT/WC_ord_cde.q
+set FILEDUST3=$dirTODO/POLVO/NOPT/WC_extraord_cde.q
+set FILEDUST4=$dirTODO/POLVO/NOPT/extinc.silica.extra.ordinary.lnk.0.05.0.1.3.5
+set FILEDUST5=$dirTODO/POLVO/NOPT/Koike1999_o_enst.q_a
+set FILEDUST6=$dirTODO/POLVO/NOPT/Koike1999_forsterite.q_a
+
+rm -f $FILEOUT
+$PROPIO << EOD
+$WLFILE
+$TSTAR $RSTAR $DISTANCIA
+$TAUMIN $RIN $POWER
+$ROUT
+$FILESIL
+$FRACSIL $FRACENT $FRACFORST
+$FILEORG
+$FILETROI
+$FILEICE
+$FUDGEORG $FUDGETROI $FRACICE
+$FILEAMC
+$FRACAMC
+$FILEOUT
+$FILEDUST1
+$FILEDUST2
+$FILEDUST3
+$FILEDUST4
+$FILEDUST5
+$FILEDUST6
+EOD
+echo $FILEOUT
+exit
