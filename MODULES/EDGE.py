@@ -1275,7 +1275,14 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
         if verbose:
             print("MODEL_RCHI2: Model "+model.jobn+" does not have 'total' values, returning...")
         return -1
-
+    
+    #If a single set of data is given as a string for obsNeglect, turn it into a list
+    if type(obsNeglect) == 'str':
+        obsNeglect = [obsNeglect]
+    
+    #Get number of spectra keys in the neglected objects
+    specneglect = np.sum([key in obj.spectra.keys() for key in obsNeglect])
+    
     # We compute the chi2 for the photometry and the spectra separately.
     # Start with photometry:
     chiSF = []
@@ -1343,9 +1350,10 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
 
     # For the instruments that do not have synthetic fluxes
     if len(wavelength) > 0:
-        wavelength = np.concatenate(wavelength)
-        flux = np.concatenate(flux)
-        errs = np.concatenate(errs)
+        #Convert any elements that are not arrays into arrays for=
+        wavelength = np.hstack(wavelength)
+        flux = np.hstack(flux)
+        errs = np.hstack(errs)
     
         # Check and remove NaNs from the data, if any:
         if np.isnan(np.sum(flux)):
@@ -1383,7 +1391,7 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
         obj.phot_dens = (len(chiP) + len(chiSF)) / (np.log10(max_lambda) - np.log10(min_lambda))
 
     # Now, do the same thing but for the spectra:
-    if len(obj.spectra.keys()) != 0: # If there is any spectrum
+    if len(obj.spectra.keys())-specneglect > 0: # If there are any spectra
         # Initialize empty lists
         wavelengthS= []
         fluxS      = []
