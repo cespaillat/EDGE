@@ -424,15 +424,22 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
                 miss = 1
             
             if miss != 1 and size != 0:
-                angle = ascii.read(anglefile[0], data_start = 1)
-                axis['ANGAXIS'] = axis_count
+                try:
+                    angle = ascii.read(anglefile[0], data_start = 1)
+                    axis['ANGAXIS'] = axis_count
+                    
                     #If the photosphere was not run, and the wall was not run then grab wavelength information from angle file
-                if nophot != 0 and nowall != 0:
-                    dataarr = np.concatenate((dataarr, angle['col1']))
+                    if nophot != 0 and nowall != 0:
+                        dataarr = np.concatenate((dataarr, angle['col1']))
                 
-                dataarr = np.concatenate((dataarr, angle['col4']))
-                axis_count += 1
-               
+                    dataarr = np.concatenate((dataarr, angle['col4']))
+                    axis_count += 1
+                    
+                except KeyError:
+                    print("COLLATE: WARNING IN JOB "+jobnum+": ANGLE FILE VALUES EMPTY, ADDED 'FAILED' TAG TO HEADER. NOANGLE SET TO 1")
+                    failed = True
+                    noangle = 1
+                    
             elif miss != 1 and size == 0:
                 print("COLLATE: WARNING IN JOB "+jobnum+": ANGLE (DISK) FILE EMPTY, ADDED 'FAILED' TAG TO HEADER. NOANGLE SET TO 1")
                 failed = True
