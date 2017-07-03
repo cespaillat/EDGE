@@ -7,7 +7,7 @@ import os
 from glob import glob
 from scipy import interpolate
 
-def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinct = 0, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, notemp = 0, shock = 0):
+def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinct = 1, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, notemp = 0, shock = 0):
     """
      collate.py                                                                          
                                                                                            
@@ -44,8 +44,8 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
                      NOTE: You cannot perform the self extinction correction without the angle file. If this is set to 1, then
                      the noextin keyword will also be set to 1 automatically. 
             nophot: Set this value to 1 (or True) if you do NOT want to include a photosphere file
-            noextin: Set this value to 1 (or True) if you do NOT want to apply extinction 
-                     to the inner wall and photosphere.
+            noextinct: Set this value to 1 (or True) if you do NOT want to apply extinction 
+                     to the inner wall and photosphere. Generally do not need to since observations are typically de-reddened.
             noscatt: !!!!! NOTE: THIS IS SET TO 1 BY DEFAULT !!!!!
                      Set this value to 1 (or True) if you do NOT want to include the scattered light file.
                      Set this value to 0 (or False) if you DO want to include the scattered light file
