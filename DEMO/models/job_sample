@@ -1,20 +1,17 @@
 #!/bin/csh
 # HISTORY:
-# Jun17 Quique: New parameter AMAXW, the amax of the dust grains in the wall. By default
+# Jun17 Quique: New parameter D2G=dust-to-gas mass ratio. It is used in 
+# opa.f(v3) and sed_angle.f(v3p1), but WALL (v2) also needed changes. 
+# Now the opacity files should be calculated for an abunance of 1 
+# for each component. Each component will be then scaled by its abundance.
+# New parameter AMAXW, the amax of the dust grains in the wall. By default
 # it will be the same as in the disk, but it can now be changed independently from the disk.
+#
+# Jun17 CE: New version of Photosphere (v3). It can now use KH95 or PM13 
+# (Pecaut & Mamajek 2013) tables, chosen with the parameter TABLE.
 #
 # Mar17 NC: New version of Photosphere (v2). It now includes a better treatment for
 # Herbig Ae/Be stars.
-#
-# Mar17 Quique: New version of WALL called WALL_v2: The opacity files for each component
-# are now calculated for an abundance of 1. The abundance of each component
-# enters as another free parameter. Even though the dust-to-gas mass ratio
-# does not affect the result of the wall, the relative abundance of each
-# component must remain consistent with the disk.
-#
-# Dec16 Quique: New parameter D2G=dust-to-gas mass ratio. It is used in opa.f(v3) and sed_angle.f(v3p1).
-# Now the opacity files should be calculated for an abunance of 1 for each component.
-# Each component will be then scaled by its abundance.
 #
 # Nov15 Quique: Two different mass accretion rates are used:
 # MDOT: Mass accretion rate in the disk, as usual. Used to calculate the surface 
@@ -54,6 +51,7 @@ set TSHOCK=8000.  #in K
 #outer disk parameters ------------------------------------
 set ALPHA='0.01' 
 set MUI='0.5'  #cosine of inclination angle
+set RDISK='30'  #outer radius of disk in AU
 
 #dust-to-gas mass ratio -------------------------------
 set D2G=0.0065
@@ -94,19 +92,19 @@ set lamaxs='amax0p25'
 
 #note: uncomment EPS and corresponding epsilonbig
 #------------------------
-set EPS='.0001'
+set EPS='0.0001'
 set epsilonbig='12.5'
 #-----------------------
-#set EPS='.001'
+#set EPS='0.001'
 #set epsilonbig='12.5'
 #------------------------
-#set EPS='.01'
+#set EPS='0.01'
 #set epsilonbig='12.4'
 #------------------------
-#set EPS='.1'
+#set EPS='0.1'
 #set epsilonbig='11.4'
 #------------------------
-#set EPS='.2'
+#set EPS='0.2'
 #set epsilonbig='10.2'
 #------------------------
 #set EPS='0.5'
@@ -120,7 +118,6 @@ set epsilonbig='12.5'
 #wall parameters ------------------------------------
 set TEMP=1400. #temperature at inner edge (i.e., wall) of disk
 set ALTINH=3   #scale height of all
-set RDISK='30'  #outer radius of disk in AU
 #dust grain sizes in the wall----------------
 #note: uncomment AMAXW and corresponding lamaxw
 #------------------------
@@ -305,7 +302,7 @@ set labeps=e$EPS
 set labepb=e$epsilonbig
 
 #programs ----------------------------------------------------------------
-set PHOTOS=$DIRPRO/photosphere_v2
+set PHOTOS=$DIRPRO/photosphere_v3
 set COMBINA=$DIRPRO/combina
 set OPA_PROG=$DIROPA/opa_sgi_tsub1400_nogas_ssh_v3
 set VIS_PROG=$DIRPRO/viscoso
@@ -349,14 +346,18 @@ echo $FILEENSTATITE FA $ENSTATITE_FRAC  >> $LOGFILE
 
 #begin PHOT calculation -----------------------
 set TABLEKH=$DIRPRO/tabla_a5_kh95
+set TABLEPM=$DIRPRO/tabla_no5_pm13
 set FILEPHOT=Phot$TSTAR.$labcom
+set TABLE='pm13'  #can be 'kh95' or 'pm13'
 if  ($IPHOT == 1) then
 $PHOTOS << EOD
 $TSTAR
 $RSTAR
 $DISTANCIA
+$TABLE
 $WLFILE
 $TABLEKH
+$TABLEPM
 $FILEPHOT
 EOD
 endif

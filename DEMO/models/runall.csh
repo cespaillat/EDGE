@@ -16,7 +16,7 @@ set my_job = `printf "job%03d" $SGE_TASK_ID`
 csh $my_job
 
 #run with
-#qsub -t 1-19 runall.csh
+#qsub -t 1-3 runall.csh
 
 wait
 

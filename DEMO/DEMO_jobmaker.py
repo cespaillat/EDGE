@@ -72,8 +72,7 @@ mdot    = [9e-9] #Mass accretion rate in the disk in solar masses per year
 
 amaxs   = [3.0] #Maximum grain size in the upper layers of the disk NOTE: Only acceptss certain values, see the docstring above
 epsilon = [0.001] #Settling parameter NOTE: Only accepts certain values, see the docstring above
-alpha   = [0.001, 0.0015, 0.002, 0.0025, 0.003, 0.0035, 0.004, 0.0045, 0.005, \
-           0.0055, 0.006, 0.0065, 0.007, 0.0075, 0.008, 0.0085, 0.009, 0.0095, 0.01] # Viscosity in the disk 
+alpha   = [0.001, 0.0015, 0.002] # Viscosity in the disk 
 rdisk   = [300] #Outer radius of the disk
 
 temp    = [500] #Sublimation temperature of the grains

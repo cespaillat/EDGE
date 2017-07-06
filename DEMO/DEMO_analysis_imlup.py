@@ -46,7 +46,7 @@ save = False
 #-------------------------------------------------
 
 #Define the jobs
-jobs = np.arange(19)+1
+jobs = np.arange(3)+1
 
 #Define list of wall heights to try
 altinh = [1,2,3,4,5]

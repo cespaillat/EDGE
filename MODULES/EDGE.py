@@ -980,7 +980,7 @@ def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
         start = text[start:].find('\nset epsilonbig') + start
         text = text[:start+1]+'#'+text[start+1:]
         
-        #Now remove the # for the selected grain size
+        #Now remove the # for the selected epsilon value
         start = text.find("#set EPS='"+epsStr)
         text = text[:start] + text[start+1:]
         
