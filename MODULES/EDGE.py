@@ -2857,7 +2857,7 @@ class TTS_Obs(object):
             else:
                 raise IOError('You did not enter the correct Y/N response. Returning without replacing.')   # If you enter bad response too many times, raise error.
         else:
-            if errors == None:
+            if np.all(errors == None):
                 self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr}     # If not an overwrite, writes data to the object's photometry attribute dictionary.
             else:
                 self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr, 'err': errors}
@@ -2865,6 +2865,7 @@ class TTS_Obs(object):
                 self.ulim.append(scope)                                     # If upper limit, append metadata to ulim attribute list.
         # We reset the attribute phot_dens, since with new photometry it should be recalculated
         self.phot_dens = 0.0
+        
         return
 
     def SPPickle(self, picklepath, clob = False, fill = 3):
