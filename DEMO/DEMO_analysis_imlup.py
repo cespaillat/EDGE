@@ -110,7 +110,7 @@ model = edge.TTS_Model(obj, int(chi2[order[0]][0]), dpath = modelpath)
 model.dataInit()
 model.calc_total(altinh = chi2[order[0]][2], verbose = 0)
 
-edge.look(targ, model, jobn = int(chi2[order[0]][0]), ylim = [4e-13, 7e-9], save = save)
+edge.look(targ, model, jobn = int(chi2[order[0]][0]), ylim = [4e-13, 7e-9], save = save, savepath = figpath)
 
 
 

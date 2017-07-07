@@ -1971,7 +1971,7 @@ class TTS_Model(object):
         componentNumber = 1
         scatt           = 0     # For tracking if scattered light component exists
         
-        if self.extcorr != None:
+        if np.all(self.extcorr) != None:
             componentNumber += 1
         if phot:
             if verbose:
