@@ -8,6 +8,11 @@ from astropy.io import fits
 '''
 DEMO_analysis_imlup.py
 
+HOW TO USE THIS SCRIPT:
+    Open a terminal and go to the location of this script
+    Launch the interactive mode for python by entering 'ipython' into a terminal
+    Then write 'run DEMO_analysis_imlup' and press enter.
+
 PURPOSE:
     Script that loads in data and models for IM Lup, and then finds the model/wall combination with the lowest chi^2
     
@@ -36,9 +41,6 @@ obj = 'imlup'
 picklepath = '/Users/Connor/Desktop/Research/diad/EDGE/DEMO/data/'
 modelpath  = '/Users/Connor/Desktop/Research/diad/EDGE/DEMO/models/'
 figpath    = '/Users/Connor/Desktop/Research/diad/EDGE/DEMO/'
-
-#Set to True if you want to save the plot as a pdf
-save = False
 
 #-------------------------------------------------
 #For the purposes of this example, you are not required to change anything below this line
@@ -96,21 +98,28 @@ for job in jobs:
         #Find the best fitting wall based on its chi^2
         bestwall = chiwall[np.argmin(chiwall[:,1])]
         
-        #Now that the best wall has been found, use 
+        #Now that the best wall has been found, use it
         model.dataInit()
         model.calc_total(altinh = bestwall[0],verbose = 0)
         
         chi2.append([float(job), edge.model_rchi2(targ, model), bestwall[0]])
+        
+        #Save a pdf of each model
+        edge.look(targ, model, jobn = job, save = 1, ylim = [4e-13, 7e-9], savepath = figpath)
+        
         print(job)
 
+#Sort the model
 chi2 = np.array(chi2)
 order = np.argsort(chi2[:,1])
 
+#Prep the best model for plotting
 model = edge.TTS_Model(obj, int(chi2[order[0]][0]), dpath = modelpath)
 model.dataInit()
 model.calc_total(altinh = chi2[order[0]][2], verbose = 0)
 
-edge.look(targ, model, jobn = int(chi2[order[0]][0]), ylim = [4e-13, 7e-9], save = save, savepath = figpath)
+#Bring up a plot of the best model
+edge.look(targ, model, jobn = int(chi2[order[0]][0]), ylim = [4e-13, 7e-9], save = False, savepath = figpath)
 
 
 
