@@ -240,7 +240,7 @@ Before we continue, there are some Python specific and non-Python specific piece
  
 \section{Important Functions and Classes} \label{functions}
 
-This section will contain the important functions and classes contained within \edge and \texttt{collate} that are necessary for everyday use. This will not cover many of the smaller, independent functions contained in \texttt{EDGE}. For information on those functions, please refer to their docstrings. 
+This section will contain the important functions and classes contained within MODULES. This will not cover many of the smaller, independent functions contained in \texttt{EDGE}. For information on those functions, please refer to their docstrings. 
  
 \subsection{Collate}
  
@@ -436,6 +436,14 @@ The \texttt{job\_optthin\_create} function is similar to the \texttt{job\_file\_
 \subsection{\texttt{model\_rchi2}}
  
 The \texttt{model\_rchi2} function takes the observation and model objects for a given T-Tauri star and calculates the reduced $\chi^2$ value. This is useful as a quantitative representation of how well the model fits the data. It has the ability to weight spectra and photometry differently, and calculate a non-reduced $\chi^2$ value as well. 
+
+\subsection{\texttt{starparam}}
+
+The \texttt{starparam} module can be used to calculate various stellar parameters for a given spectral type, visual extinction, and J-band (or V-band for high mass stars) magnitude.  It calculates the stellar luminosity, mass, radius, and age of the star as well the accretion luminosity and mass accretion rate.
+
+It also calculates Av(V-R), Av(V-I), Av(R-I), and Av(I-J), dereddened magnitudes for the input Av, and a template photosphere. This is useful if you are iteratively fitting for the extinction. 
+
+\texttt{starparam} can be run using \texttt{jobstarparam.py} which is in the \texttt{SCRIPTS} directory.
 
 \section{Example: using the code via scripts} \label{scripts}
 

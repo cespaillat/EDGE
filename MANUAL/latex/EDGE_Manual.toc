@@ -21,15 +21,16 @@
 \contentsline {subsection}{\numberline {3.9}\texttt {job\_file\_create}}{11}
 \contentsline {subsection}{\numberline {3.10}\texttt {job\_optthin\_create}}{11}
 \contentsline {subsection}{\numberline {3.11}\texttt {model\_rchi2}}{12}
+\contentsline {subsection}{\numberline {3.12}\texttt {starparam}}{12}
 \contentsline {section}{\numberline {4}Example: using the code via scripts}{12}
-\contentsline {subsection}{\numberline {4.1}Making the observation pickle}{12}
+\contentsline {subsection}{\numberline {4.1}Making the observation pickle}{13}
 \contentsline {subsection}{\numberline {4.2}Making the job files}{13}
 \contentsline {subsection}{\numberline {4.3}Running and collating models}{13}
 \contentsline {subsection}{\numberline {4.4}Analysis of the models}{14}
 \contentsline {section}{\numberline {5}Example: using the code via the command line}{15}
 \contentsline {subsection}{\numberline {5.1}Reading in data}{15}
 \contentsline {subsection}{\numberline {5.2}Dereddening data}{16}
-\contentsline {subsection}{\numberline {5.3}Create job files and put on the SCC}{17}
-\contentsline {subsection}{\numberline {5.4}Submitting jobs to the SCC}{18}
+\contentsline {subsection}{\numberline {5.3}Create job files and put on the SCC}{18}
+\contentsline {subsection}{\numberline {5.4}Submitting jobs to the SCC}{19}
 \contentsline {subsection}{\numberline {5.5}Collating output files}{19}
-\contentsline {section}{\numberline {6}Conclusion}{19}
+\contentsline {section}{\numberline {6}Conclusion}{20}
