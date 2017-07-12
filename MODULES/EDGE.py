@@ -16,6 +16,7 @@ import math
 import _pickle as cPickle
 import pdb
 import copy
+from glob import glob
 #----------------------------------------------PLOTTING PARAMETERS-----------------------------------------------
 # Regularizes the plotting parameters like tick sizes, legends, etc.
 plt.rc('xtick', labelsize='medium')
@@ -50,26 +51,6 @@ def keyErrHandle(func):
         else:
             return 1
     return handler
-
-def filelist(path):
-    """
-    Returns a list of files in a directory. Pops out hidden values.
-
-    INPUTS
-    path: The directory path from which we wish to grab a file list.
-
-    OUTPUT
-    flist: The file list. It should be devoid of hidden files.
-    """
-
-    flist       = os.listdir(path)                              # Full list of files
-    hid         = []
-    for f in flist:
-        if f.startswith('.'):                                   # If hidden file, tag it
-            hid.append(flist.index(f))
-    for index, val in enumerate(hid):                           # Pop out tagged entries
-        flist.pop(val - index)
-    return flist
 
 def deci_to_time(ra=None, dec=None):
     """
@@ -729,8 +710,9 @@ def searchJobs(target, dpath=datapath, **kwargs):
     print('THIS MIGHT BE DEFUNCT!')
 
     job_matches         = np.array([], dtype='str')
-    targList            = filelist(dpath)
-
+    targList = glob(picklepath+'*')
+    targList = [x[len(picklepath):] for x in targList]
+    
     # Pop out all files that do not correspond to jobs:
     not_data            = []
     for f in targList:
@@ -780,7 +762,8 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
         if red:
             if num == None:
                 # Check if there is more than one
-                flist           = filelist(picklepath)
+                flist = glob(picklepath+'*')
+                flist = [x[len(picklepath):] for x in flist]
                 if (name + '_red_1.pkl') in flist:
                     print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
                 f               = open(picklepath+name+'_red.pkl', 'rb')
@@ -794,7 +777,8 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
         else:
             if num == None:
                 # Check if there is more than one
-                flist           = filelist(picklepath)
+                flist = glob(picklepath+'*')
+                flist = [x[len(picklepath):] for x in flist]
                 if (name + '_obs_1.pkl') in flist:
                     print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
                 f               = open(picklepath+name+'_obs.pkl', 'rb')
@@ -809,7 +793,8 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
         if red:
             if num == None:
                 # Check if there is more than one
-                flist           = filelist(picklepath)
+                flist = glob(picklepath+'*')
+                flist = [x[len(picklepath):] for x in flist]
                 if (name + '_red_1.pkl') in flist:
                     print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
                 f               = open(picklepath+name+'_red.pkl', 'rb')
@@ -823,7 +808,9 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
         else:
             if num == None:
                 # Check if there is more than one
-                flist           = filelist(picklepath)
+                flist = glob(picklepath+'*')
+                flist = [x[len(picklepath):] for x in flist]
+                
                 if (name + '_obs_1.pkl') in flist:
                     print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
                 f               = open(picklepath+name+'_obs.pkl', 'rb')
@@ -2885,7 +2872,8 @@ class TTS_Obs(object):
         """
 
         # Check whether or not the pickle already exists:
-        pathlist        = filelist(picklepath)
+        pathlist = glob(picklepath+'*')
+        pathlist = [x[len(picklepath):] for x in pathlist]
         outname         = self.name + '_obs.pkl'
         count           = 1
         while 1:
@@ -3191,7 +3179,9 @@ class Red_Obs(TTS_Obs):
         """
 
         # Check whether or not the pickle already exists:
-        pathlist        = filelist(picklepath)
+        pathlist = glob(picklepath+'*')
+        pathlist = [x[len(picklepath):] for x in pathlist]
+
         outname         = self.name + '_red.pkl'
         count           = 1
         while 1:
