@@ -1,4 +1,5 @@
 import numpy as np
+import util
 import EDGE as edge
 from astropy.io import fits
 from astropy.io import ascii
@@ -48,9 +49,9 @@ irs = fits.open(specpath+'cassis_yaaar_opt_27064320_1.fits')
 irswl = irs[0].data[:,0]
 
 #Convert fluxes in ergs/s/cm^2
-irs_flux = edge.convertJy(irs[0].data[:,1], irs[0].data[:,0])
-irs_ferr = edge.convertJy(irs[0].data[:,3], irs[0].data[:,0])
-irs_nod  = edge.convertJy(irs[0].data[:,4], irs[0].data[:,0])
+irs_flux = util.convertJy(irs[0].data[:,1], irs[0].data[:,0])
+irs_ferr = util.convertJy(irs[0].data[:,3], irs[0].data[:,0])
+irs_nod  = util.convertJy(irs[0].data[:,4], irs[0].data[:,0])
 
 #Add the errors in quadrature (only for IRS)
 irs_err = np.sqrt(irs_ferr**2 + irs_nod**2)
@@ -80,13 +81,13 @@ vizwl   = c/(data['sed_freq']*1e9)
 vizphoterrjy = data['sed_eflux']
 
 #Convert photometryfluxes  to ergs/s/cm^2
-vizphot = edge.convertJy(vizphotjy, vizwl)
-vizphoterr = edge.convertJy(vizphoterrjy, vizwl)
+vizphot = util.convertJy(vizphotjy, vizwl)
+vizphoterr = util.convertJy(vizphoterrjy, vizwl)
 
 #Add some data from ALMA manually, and convert into the correct units
 almawl = np.array([890, (3e8/258e9)*1e6]) #um
-almaflux = edge.convertJy(np.array([600.0 * 1e-3, 276*1e-3]), almawl)
-almaerr = edge.convertJy(np.array([90.0 *1e-3, 2*1e-3]), almawl)
+almaflux = util.convertJy(np.array([600.0 * 1e-3, 276*1e-3]), almawl)
+almaerr = util.convertJy(np.array([90.0 *1e-3, 2*1e-3]), almawl)
 
 #Stack all of the data together.
 #NOTE: This is not using the full power of EDGE, which allows you to divide up your observations by instrument
