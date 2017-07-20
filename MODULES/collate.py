@@ -508,7 +508,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
         
         #Put data array into the standard form for EDGE
         dataarr = tempdata
-        dataarr = np.reshape(dataarr, (axis_count, len(dataarr)//axis_count))
+        dataarr = np.reshape(dataarr, (axis_count, int(len(dataarr)/axis_count)))
         
         #Self extinct the photosphere and wall
         if noextinct == 0:
