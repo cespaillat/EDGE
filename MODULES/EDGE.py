@@ -570,7 +570,7 @@ def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
             
         #Fix the special case of lamaxb
         if param == 'lamaxb':
-            amaxdict={'1mm':'1000','1cm':'10000'}
+            amaxdict={'500':'500', '1mm':'1000', '2mm':'2000', '5mm':'5000', '1cm':'10000','2cm':'20000'}
             paramstr = amaxdict[dummykwargs[param]]
             
             start = text.find('set '+param+"='") + len('set '+param+"='")

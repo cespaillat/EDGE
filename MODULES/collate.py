@@ -822,7 +822,7 @@ def head(name, jobnum, path='', optthin = 0, fill = 3):
 
     print(repr(HDU[0].header))
 
-def masscollate(name, destination = '',path = '', jobnum = None, optthin=0, clob=0, fill=3, noextinct = 1, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, shock= 0):
+def masscollate(name, destination = '',path = '', jobnum = None, optthin=0, clob=0, fill=3, noextinct = 1, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, notemp = 0, shock= 0):
     '''
     collate.masscollate
     
@@ -863,5 +863,5 @@ def masscollate(name, destination = '',path = '', jobnum = None, optthin=0, clob
     
     #Collate the files 
     for job in jobnum:
-        collate(path, job, name, destination, optthin=optthin, clob=clob, fill=fill, noextinct = noextinct, noangle = noangle, nowall = nowall, nophot = nophot, noscatt = noscatt, shock = shock)
+        collate(path, job, name, destination, optthin=optthin, clob=clob, fill=fill, noextinct = noextinct, noangle = noangle, nowall = nowall, nophot = nophot, noscatt = noscatt, notemp = notemp, shock = shock)
     

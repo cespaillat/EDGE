@@ -33,10 +33,11 @@ OPTIONAL PARAMETERS:
            Note: This is not looped over (i.e., all the models with this set to 'True' will only be walls).
 
 NOTES:
-    'amaxs', 'amaxw' and 'epsilon' only accept certain values. 'amaxw' accepts the same values as 'amaxs'
+    'amaxs', 'amaxw', 'epsilon' and lamaxb only accept certain values. 'amaxw' accepts the same values as 'amaxs'
     Here are the possible values:
-        amaxs: [0.1, 0.25, 1.0, 2.0, 3.0, 4.0, 5.0, 10, 100]
+        amaxs/amaxw: [0.1, 0.25, 1.0, 2.0, 3.0, 4.0, 5.0, 10, 100]
         epsilon: [0.0001, 0.001, 0.01, 0.1, 0.2, 0.5, 1.0]
+        lamaxb: ['500', '1mm', '2mm', '5mm', '1cm', '2cm']    
 
 MODIFICATION HISTORY
     Jun 16th, 2017 - Updated for mdotstar + amaxw by Connor Robinson
@@ -58,7 +59,7 @@ paramfiletag = 'testgrid'
 labelend = 'test'
 
 #What number to start counting from, must be an integer 
-jobnumstart = 3
+jobnumstart = 1
 
 #Define parameters to feed into file, must be filled with at least 1 value
 #Want to check that the values for amaxs and epsilon are possible in the sample job file
@@ -69,7 +70,7 @@ rstar   = [1.6] #Radius of the star in solar radii
 dist    = [140] #Distance to the star in pc
 mdot    = [3.3e-9] #Mass accretion rate in the disk in solar masses per year
 
-amaxs   = [0.25, 10] #Maximum grain size in the upper layers of the disk NOTE: Only acceptss certain values, see the docstring above
+amaxs   = [0.25] #Maximum grain size in the upper layers of the disk NOTE: Only acceptss certain values, see the docstring above
 epsilon = [0.1] #Settling parameter NOTE: Only accepts certain values, see the docstring above
 alpha   = [1e-2] # Viscosity in the disk
 rdisk   = [30] #Outer radius of the disk
@@ -77,7 +78,7 @@ rdisk   = [30] #Outer radius of the disk
 temp    = [1400] #Sublimation temperature of the grains
 altinh  = [1] #Height of the disk in scale heights. Often better to leave as 1 and scale it later
 
-lamaxb  = ['1mm'] #Maximum grain size in the midplane
+lamaxb  = ['500'] #Maximum grain size in the midplane NOTE: Only accepts certain values
 mui     = [0.5] #Cosine of the inclination of the disk. 
 tshock  = [8000] #Temperature of the shock. Usually left at 8000K
 
@@ -92,7 +93,7 @@ d2g = [0.0065] #Dust to gas mass ratio.
 #If you want them to be the same as their associated parameters (amaxs, mdot) then set them to [None]
 #Don't forget the brackets.
 mdotstar = [None] #Mass accretion rate at the star
-amaxw   = [1.0, 2.0] #Maximum grain size at the wall
+amaxw   = [1.0] #Maximum grain size at the wall
 
 fill = 3 #Zero padding for the job numbers. Unless you are running many models (>1000) 3 is standard.
 
