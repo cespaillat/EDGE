@@ -178,7 +178,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
                 print('COLLATE: WARNING IN JOB '+jobnum+': FILES CONTAIN FLOAT OVERFLOW/UNDERFLOW ERRORS, THESE VALUES HAVE BEEN SET TO NAN')
             
             axis_count = 2; #One axis for flux, one for wavelength
-            dataarr = np.reshape(tempdata, (axis_count, len(tempdata)/axis_count))
+            dataarr = np.reshape(tempdata, (axis_count, int(len(tempdata)/axis_count)))
         
         #Make an HDU object to contain header/data
         hdu = fits.PrimaryHDU(dataarr)
