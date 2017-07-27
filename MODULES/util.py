@@ -616,8 +616,8 @@ def parameters_siess(tstar,lui,commonpath=commonpath):
 	# if out of isochrone range, reject		
 	if lstar > lu_track_temp[0] or lstar < lu_track_temp[5]:
 		print('Luminosity out of isochrone bounds')
-		mass=99
-		age=99e6
+		mass=99.0
+		age=99.0e6
 		return mass,age
 		
 	# to avoid issues due to extrapolation of tracks to high L
@@ -721,8 +721,8 @@ def parameters_baraffe(tstar,lui,commonpath=commonpath):
 	# if out of isochrone range, reject		
 	if lstar > lu_track_temp[0] or lstar < lu_track_temp[5]:
 		print('Luminosity out of isochrone bounds')
-		mass=99
-		age=99e6
+		mass=99.0
+		age=99.0e6
 		return mass,age
 
 	# to avoid issues due to extrapolation of tracks to high L

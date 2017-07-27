@@ -936,7 +936,7 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
         errs           = errs[waveindex]
     
         # Interpolate the model so the observations and model are on the same grid:
-        modelFlux      = np.interp(wavelength, model.data['wl'], model.data['total'])
+        modelFlux      = np.power(10,np.interp(np.log10(wavelength), np.log10(model.data['wl']), np.log10(model.data['total'])))
     
         # Calculate the chi for the instruments without synthetic fluxes
         chiP = (flux - modelFlux) / errs
@@ -1008,7 +1008,7 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
             errsS      = np.delete(errsS, badValsS)
 
         # Interpolate the model so the observations and model are on the same grid:
-        modelFluxS     = np.interp(wavelengthS, model.data['wl'], model.data['total'])
+        modelFluxS     = np.power(10,np.interp(np.log10(wavelengthS), np.log10(model.data['wl']), np.log10(model.data['total'])))
 
         # chi2 of spectra:
         chiS = (fluxS - modelFluxS) / (errsS*fluxS)
