@@ -844,7 +844,7 @@ def masscollate(name, destination = '',path = '', jobnum = None, optthin=0, clob
     '''
     
     #Get the list of job numbers if there are no specific models
-    if jobnum == None:
+    if np.all(jobnum) == None:
         if optthin == 1:
             files = glob(path+'job_optthin'+'?'*fill)
         else:
