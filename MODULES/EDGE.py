@@ -831,7 +831,11 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
     New instruments can be added with time. If any instrument is added,
     the instrKeylist should be updated in calc_filters and in add_photometry.
     """
-
+    
+    #Make observation files backwards compatible
+    if 'phot_dens' not in dir(obj):
+        obj.phot_dens = 0.0
+    
     #First check to see if there is a total component
     if 'total' not in model.data:
         if verbose:
