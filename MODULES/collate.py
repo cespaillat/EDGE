@@ -539,7 +539,11 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
                 diskmassrad = massfile[:,0]
                 diskmassvals = massfile[:,10]
                 massfit = interpolate.interp1d(diskmassrad, diskmassvals)
-                hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK'])))
+                if nowall != 1:
+                    hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK']))-float(massfit(hdu.header['RIN'])))
+                else:
+                    print("COLLATE:WARNING IN JOB "+jobnum+": nowall = 1, SO THE DISK MASS WILL ALSO HAVE THE MASS INSIDE THE CAVITY.")
+                    hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK'])))
             
             except ValueError:
                 print("COLLATE:WARNING IN JOB "+jobnum+": DISK MASS CALCULTION FAILED. POSSIBLY DUE TO NEGATIVE NUMBERS IN FORT15 FILE. ADDED 'FAILED' TAG TO HEADER")
