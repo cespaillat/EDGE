@@ -172,22 +172,22 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
         if model != None:
             if model.components['phot']:
                 plt.plot(model.data['wl'], model.data['phot'], ls='--', c='b', linewidth=2.0, label='Photosphere')
-                
+
             if model.components['dust']:
                 plt.plot(model.data['wl'], model.data['dust'], ls='--', c='#F80303', linewidth=2.0, label='Opt. Thin Dust')
-                
+
             if model.components['iwall']:
                 plt.plot(model.data['wl'], model.data['iwall']*model.wallH, ls='--', c='#53EB3B', linewidth=2.0, label='Inner Wall')
-                
+
             if model.components['wall']:
                 plt.plot(model.data['wl'], model.data['iwall']*model.wallH, ls='--', c='#53EB3B', linewidth=2.0, label='Wall')
-            
+
             if model.components['idisk']:
                 plt.plot(model.data['wl'], model.data['idisk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Inner Disk')
-            
+
             if model.components['disk']:
                 plt.plot(model.data['wl'], model.data['disk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Disk')
-            
+
             if model.components['odisk']:
                 if diskcomb:
                     try:
@@ -198,22 +198,22 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
                         plt.plot(model.data['wl'], diskflux, ls='--', c='#8B0A1E', linewidth=2.0, label='Outer Disk')
                 else:
                     plt.plot(model.data['wl'], model.data['odisk'], ls ='--', c = '#024747', linewidth = 2.0, label = 'Outer Disk')
-                
+
             if model.components['owall'] and diskcomb == 0:
                 plt.plot(model.data['wl'], model.data['owall']*model.owallH, ls='--', c='#E9B021', linewidth=2.0, label='Outer Wall')
-            
+
             if model.components['scatt']:
                 plt.plot(model.data['wl'], model.data['scatt'], ls='--', c='#7A6F6F', linewidth=2.0, label='Scattered Light')
-            
+
             if model.components['shock']:
                 plt.plot(model.data['WTTS']['wl'], model.data['WTTS']['lFl'], c='b', linewidth=2.0, zorder=1, label='WTTS Photosphere')
                 plt.plot(model.data['shock']['wl'], model.data['shock']['lFl'], c=colors['j'], linewidth=2.0, zorder=2, label='MagE')
                 plt.plot(model.data['shockLong']['wl'], model.data['shockLong']['lFl'], c=colors['s'], linewidth=2.0, zorder=2, label='Shock Model')
-            
+
             if model.components['total']:
                 plt.plot(model.data['wl'], model.data['total'], c='k', linewidth=2.0, label='Combined Model')
-            
-            
+
+
     # Now, the relevant meta-data:
     if model != None:
         if params:
@@ -225,6 +225,7 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
                 plt.figtext(0.80,0.85,'Rout = '+ str(model.rdisk), color='#010000', size='9')
                 plt.figtext(0.60,0.79,'Altinh = '+ str(model.wallH), color='#010000', size='9')
                 plt.figtext(0.80,0.82,'Mdot = '+ str(model.mdot), color='#010000', size='9')
+                plt.figtext(0.80,0.79,r'M$_{disk}$ = '+ str(model.diskmass), color='#010000', size='9')
                 # If we have an outer wall height:
                 try:
                     plt.figtext(0.80,0.79,'AltinhOuter = '+ str(model.owallH), color='#010000', size='9')
@@ -236,7 +237,7 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
                 if model.components['idisk']:
                     plt.figtext(0.60, 0.73, 'IDisk Rout = '+str(model.irdisk), color = '#010000', size = '9')
                     plt.figtext(0.80, 0.73, 'IDisk Jobn = '+str(model.ijobn), color = '#010000', size = '9')
-             
+
     # Lastly, the remaining parameters to plotting (mostly aesthetics):
     plt.xscale('log')
     plt.yscale('log')
@@ -289,7 +290,7 @@ def searchJobs(target, dpath=datapath, **kwargs):
     job_matches         = np.array([], dtype='str')
     targList = glob(picklepath+'*')
     targList = [x[len(picklepath):] for x in targList]
-    
+
     # Pop out all files that do not correspond to jobs:
     not_data            = []
     for f in targList:
@@ -322,7 +323,7 @@ def searchJobs(target, dpath=datapath, **kwargs):
 def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False):
     """
     Loads in a pickle saved from the TTS_Obs class.
-    
+
     INPUTS
     name: The name of the object whose observations are stored in the pickle.
     picklepath: The directory location of pickle. Default path is datapath, defined at top of this module.
@@ -330,11 +331,11 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
     red: If loading in a red object use this
     fill: Zero padding on job numbers
     py2: If using pickles created with python2 set this flag to True
-    
+
     OUTPUT
     pickle: The object containing the data loaded in from the pickle.
     """
-    
+
     if py2:
         if red:
             if num == None:
@@ -365,7 +366,7 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
                 f               = open(picklepath+name+'_obs_'+str(num).zfill(fill)+'.pkl', 'rb')
                 pickle          = cPickle.load(f, encoding = 'latin1')
                 f.close()
-        
+
     else:
         if red:
             if num == None:
@@ -387,7 +388,7 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
                 # Check if there is more than one
                 flist = glob(picklepath+'*')
                 flist = [x[len(picklepath):] for x in flist]
-                
+
                 if (name + '_obs_1.pkl') in flist:
                     print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
                 f               = open(picklepath+name+'_obs.pkl', 'rb')
@@ -397,13 +398,13 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
                 f               = open(picklepath+name+'_obs_'+str(num).zfill(fill)+'.pkl', 'rb')
                 pickle          = cPickle.load(f)
                 f.close()
-        
+
     return pickle
 
 def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
     """
     Creates a new job file that is used by the D'Alessio Model.
-    
+
     INPUTS
     jobnum: The job number used to name the output job file.
     path: The path containing the sample job file, and ultimately, the output.
@@ -433,29 +434,29 @@ def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
         lamaxb - string for maximum grain size in the disk midplane (currently accepts '1mm' and '1cm')
         amaxw - maximum grain size in the wall. If not supplied, code will assume that it is the same as the the grain size in the disk
         d2g - Dust to gas mass ratio
-        
+
         Some can still be included, such as dust grain compositions. They just aren't
         currently supported. If any supplied kwargs are unused, it will print at the end.
-    
+
     OUTPUT
     A job file with the name jobXXX, where XXX is the three-string number from 001 - 999. If
     No formal outputs are returned by this function; the file is created in the path directory.
     """
-    
+
     # First we have to make sure that the job_sample file has been "fixed" for the \r issue:
     os.system("cat " + path + "job_sample | tr -d '\r' > " + path + "job_sample2")
     os.system("mv " + path + "job_sample2 " + path + "job_sample")
-    
+
     # Next, let's read in the sample job file so we have a template:
     job_file = open(path+'job_sample', 'r')
     fullText = job_file.readlines()     # All text in a list of strings
     job_file.close()
-    
+
     text = ''.join(fullText)
-    
+
     if len(fullText) == 0:
         raise ValueError('JOB_FILE_CREATE: job_sample file missing/empty!')
-    
+
     #First change alpha is present in kwargs
     if 'amaxs' in kwargs:
         #Break grain size into something parsable
@@ -466,121 +467,121 @@ def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
             amaxStr = '10'
         elif amaxVal == 100:
             amaxStr = '100'
-        
+
         #Add a # to the one that was missing one
         start = text.find('\nset AMAXS=')
         text = text[:start+1]+'#'+text[start+1:]
-        
+
         start = text[start:].find('\nset lamaxs') + start
         text = text[:start+1]+'#'+text[start+1:]
-        
+
         #Now remove the # for the selected grain size
         start = text.find("#set AMAXS='"+amaxStr)
         text = text[:start] + text[start+1:]
-        
+
         start = text[start:].find('#set lamaxs=') + start
         text = text[:start] + text[start+1:]
-        
+
         del kwargs['amaxs']
-    
-    
+
+
     #Now handle the case of the wall having different grain sizes.
     if 'amaxw' in kwargs:
         #Break grain size into something parsable
         amaxwVal = kwargs['amaxw']
-        
-        
+
+
         if amaxwVal != 10 and amaxwVal != 100:
             amaxwStr = str(amaxwVal)
         elif int(amaxwVal) == 10:
             amaxwStr = '10'
         elif amaxwVal == 100:
             amaxwStr = '100'
-        
+
         #Add a # to the one that was missing one
         start = text.find('\nset AMAXW=')
         text = text[:start+1]+'#'+text[start+1:]
-        
+
         start = text[start:].find('\nset lamaxw') + start
         text = text[:start+1]+'#'+text[start+1:]
-        
+
         #Now remove the # for the selected grain size
         start = text.find("#set AMAXW='"+amaxwStr)
         text = text[:start] + text[start+1:]
-        
+
         start = text[start:].find('#set lamaxw=') + start
         text = text[:start] + text[start+1:]
-        
+
         del kwargs['amaxw']
-        
-    
+
+
     #Handles the case where amaxw is not supplied by assuming making it the same as amax
     else:
         #Add a # to the one that was missing one
         start = text.find('\nset AMAXW=')
         text = text[:start+1]+'#'+text[start+1:]
-        
+
         start = text[start:].find('\nset lamaxw') + start
         text = text[:start+1]+'#'+text[start+1:]
-        
+
         #Now remove the # for the selected grain size
         start = text.find("#set AMAXW=$AMAXS")
         text = text[:start] + text[start+1:]
-        
+
         start = text[start:].find('#set lamaxw=') + start
         text = text[:start] + text[start+1:]
-        
-        
-    
+
+
+
     # Now, we examine the epsilon parameter if a value provided:
     if 'epsilon' in kwargs:
         epsVal = kwargs['epsilon']
         epsStr = str(epsVal)
-        
+
         #Add # to the one that was missing one
         start = text.find('\nset EPS=')
         text = text[:start+1]+'#'+text[start+1:]
-        
+
         start = text[start:].find('\nset epsilonbig') + start
         text = text[:start+1]+'#'+text[start+1:]
-        
+
         #Now remove the # for the selected epsilon value
         start = text.find("#set EPS='"+epsStr)
         text = text[:start] + text[start+1:]
-        
+
         start = text[start:].find('#set epsilonbig=') + start
         text = text[:start] + text[start+1:]
-        
+
         del kwargs['epsilon']
-        
-    
+
+
     #Now go through the rest of the parameters
     dummykwargs = copy.deepcopy(kwargs)
     for param in dummykwargs:
-        
+
         #Remove the used kwarg
         del kwargs[param]
-        
+
         #Set up the parameter
         paramstr = str(dummykwargs[param])
         if param != 'labelend' and param != 'lamaxb':
             param  = param.upper()
         if param == 'DIST':
             param = 'DISTANCIA'
-            
+
         #Fix the special case of lamaxb
         if param == 'lamaxb':
             amaxdict={'500':'500', '1mm':'1000', '2mm':'2000', '5mm':'5000', '1cm':'10000','2cm':'20000'}
             paramstr = amaxdict[dummykwargs[param]]
-            
+
             start = text.find('set '+param+"='") + len('set '+param+"='")
             end = start + len(text[start:].split("'")[0])
             text = text[:start]+'amax'+dummykwargs[param]+text[end:]
-            
+
             start = text.find("set AMAXB='") + len("set AMAXB='")
             end = start + len(text[start:].split("'")[0])
             text = text[:start]+paramstr +text[end:]
-        
+
         #Fix the special case of temp + Tshock
         elif param == 'TEMP' or param == 'TSHOCK':
             start = text.find('set '+param+"=") + len('set '+param+"=")
@@ -600,7 +601,7 @@ def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
             start = text.find('set '+param+'=') + len('set '+param+'=')
             end = start + len(text[start:].split("\n")[0])
             text = text[:start]+paramstr+text[end:]
-        
+
         #Change the rest
         else:
             #Fix some names
@@ -612,37 +613,37 @@ def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
                 param = 'FORSTERITE_FRAC'
             elif param == 'FRACENT':
                 param = 'ENSTATITE_FRAC'
-            
+
             start = text.find('set '+param+"='") + len('set '+param+"='")
             end = start + len(text[start:].split("'")[0])
-            
+
             #Replace the parameter
             text = text[:start]+paramstr+text[end:]
-    
+
     if iwall:
-        
+
         turnoff = ['IPHOT', 'IOPA', 'IVIS', 'IIRR', 'IPROP', 'ISEDT']
-        
+
         for switch in turnoff:
             start = text.find('set '+switch+"='") + len('set '+switch+"='")
             end = start + len(text[start:].split("'")[0])
             text = text[:start] + '0' + text[end:]
-    
+
     outtext = [s + '\n' for s in text.split('\n')]
-    
+
     # Once all changes have been made, we just create a new job file:
     string_num  = str(jobnum).zfill(fill)
     newJob      = open(path+'job'+string_num, 'w')
     newJob.writelines(outtext)
     newJob.close()
-    
+
     # Lastly, check for unused kwargs that may have been misspelled:
     if len(kwargs) != 0:
         print('JOB_FILE_CREATE: Unused kwargs, could be mistakes:')
         print(kwargs.keys())
-    
+
     return
-    
+
 def job_optthin_create(jobn, path, fill=3, **kwargs):
     """
     Creates a new optically thin dust job file.
@@ -754,11 +755,11 @@ def job_optthin_create(jobn, path, fill=3, **kwargs):
 def create_runall(jobstart, jobend, clusterpath, optthin = False, outpath = '', commonpath = commonpath, fill = 3):
     '''
     create_runall()
-    
+
     INPUTS:
         jobstart: [int] First job file in grid
         jobsend: [int] Last job file in grid
-    
+
     OPTIONAL INPUTS:
         optthin: [Boolean] Set to True for optically thin dust models.
         outpath: [String] Location of where the runall script should be sent. Default is current directory.
@@ -768,44 +769,44 @@ def create_runall(jobstart, jobend, clusterpath, optthin = False, outpath = '', 
     runallfile = open(commonpath+'runall_template', 'r')
     fulltext = runallfile.readlines()     # All text in a list of strings
     runallfile.close()
-    
+
     #Turn it into one large string
     text = ''.join(fulltext)
-    
+
     #Replace the path
     start = text.find('cd ')+len('cd ')
     end = start +len(text[start:].split('\n')[0])
     text = text[:start] + clusterpath + text[end:]
-    
+
     #Replace the jobstart
     start = text.find('#qsub -t ')+len('#qsub -t ')
     end = start +len(text[start:].split('-')[0])
     text = text[:start] + str(int(jobstart)) + text[end:]
-    
+
     #Replace the job end
     start = text.find('#qsub -t '+str(int(jobstart))+'-')+len('#qsub -t '+str(int(jobstart))+'-')
     end = start +len(text[start:].split(' runall.csh')[0])
     text = text[:start] + str(int(jobend)) + text[end:]
-    
+
     #Replace fill
     start = text.find('job%0')+len('job%0')
     end = start +len(text[start:].split('d" $SGE_TASK_ID')[0])
     text = text[:start] + str(int(fill)) + text[end:]
-    
+
     #If the job is optically thin, replace job
     if optthin:
         start = text.find('job%0')
         end = start+len('job%0')
         text = text[:start]+'job_optthin%0'+text[end:]
-    
+
     #Turn the text back into something that can be written out
     outtext = [s + '\n' for s in text.split('\n')]
-    
+
     #Write out the runall file
     newrunall = open(outpath+'runall.csh', 'w')
     newrunall.writelines(outtext)
     newrunall.close()
-    
+
 def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
     """
     Calculates a reduced chi-squared goodness of fit.
@@ -831,26 +832,26 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
     New instruments can be added with time. If any instrument is added,
     the instrKeylist should be updated in calc_filters and in add_photometry.
     """
-    
+
     #Make observation files backwards compatible
     if 'phot_dens' not in dir(obj):
         obj.phot_dens = 0.0
     if 'spec_dens' not in dir(obj):
         obj.spec_dense = {}
-    
+
     #First check to see if there is a total component
     if 'total' not in model.data:
         if verbose:
             print("MODEL_RCHI2: Model "+model.jobn+" does not have 'total' values, returning...")
         return -1
-    
+
     #If a single set of data is given as a string for obsNeglect, turn it into a list
     if type(obsNeglect) == 'str':
         obsNeglect = [obsNeglect]
-    
+
     #Get number of spectra keys in the neglected objects
     specneglect = np.sum([key in obj.spectra.keys() for key in obsNeglect])
-    
+
     # We compute the chi2 for the photometry and the spectra separately.
     # Start with photometry:
     chiSF = []
@@ -860,10 +861,10 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
     errs = []
     max_lambda = 0.0
     min_lambda = 1e10 # A big number
-    
+
     #If difference in wavelengths of instruments in photometry and calc_filters are greater than this, code will raise an error
-    threshold = 0.1 
-    
+    threshold = 0.1
+
     for obsKey in obj.photometry.keys():
         if obsKey in obsNeglect:
             # In order to be safe, we reset phot_dens to 0 when we discard some photometry
@@ -882,7 +883,7 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
         if obsKey in model.synthFlux.keys():
             for ind,wl in enumerate(obj.photometry[obsKey]['wl']):
                 l = np.argmin(abs(model.synthFlux[obsKey]['wl']-wl)) # We find the band
-                
+
                 #Raise an error if the wavelengths are larger than the threshold given above.
                 if abs((model.synthFlux[obsKey]['wl'][l] - wl)/wl) > threshold:
                     raise ValueError('MODEL_RCHI2: Error with wavelength for '+obsKey+'. Check wavelength for photometry')
@@ -922,7 +923,7 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
         wavelength = np.hstack(wavelength)
         flux = np.hstack(flux)
         errs = np.hstack(errs)
-    
+
         # Check and remove NaNs from the data, if any:
         if np.isnan(np.sum(flux)):
             badVals    = np.where(np.isnan(flux))   # Where the NaNs are located
@@ -934,25 +935,25 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
             badValsMod = np.where(np.isnan(model.data['total']))
             for key in model.data.keys():
                 model.data[key] = np.delete(model.data[key], badValsMod)
-    
+
         # Sort the arrays:
         waveindex      = np.argsort(wavelength)     # Indices that sort the array
         wavelength     = wavelength[waveindex]
         flux           = flux[waveindex]
         errs           = errs[waveindex]
-    
+
         # Interpolate the model so the observations and model are on the same grid:
         modelFlux      = np.power(10,np.interp(np.log10(wavelength), np.log10(model.data['wl']), np.log10(model.data['total'])))
-    
+
         # Calculate the chi for the instruments without synthetic fluxes
         chiP = (flux - modelFlux) / errs
         # The total chi2 for the photometry will be
         rchi_sqP   = np.sum(chiP*chiP) + rchi_sqSF
-    
+
     #If no instruments with synthetic fluxes then chi2 is just chi2 of the synthetic fluxes
     else:
         rchi_sqP   = rchi_sqSF
-    
+
     # "Density" of photometric points, used later for the spectra weighting calculation
     if obj.phot_dens == 0.0:
     # We save it as an attribute so that it doesn't need to be calculated again
@@ -1309,6 +1310,7 @@ class TTS_Model(object):
         self.forsteri   = header['FORSTERI']
         self.enstatit   = header['ENSTATIT']
         self.rin        = header['RIN']
+        self.diskmass   = header['DISKMASS']
         self.dpath      = dpath
         self.fill       = fill
         self.extcorr    = None
@@ -1385,7 +1387,7 @@ class TTS_Model(object):
         """
         Calculates the total flux for our object (likely to be used for plotting and/or analysis). Once calculated, it
         will be added to the data attribute for this object. If already calculated, will overwrite.
-        
+
         INPUTS
         phot: BOOLEAN -- if 1 (True), will add photosphere component to the combined model.
         wall: BOOLEAN -- if 1 (True), will add inner wall component to the combined model.
@@ -1395,16 +1397,16 @@ class TTS_Model(object):
         dust_fill: INTEGER -- if 4, will look for a 4 digit valued dust file (i.e., name_OTD_XXXX.fits).
         altinh: FLOAT/INT -- if not None, will multiply inner wall flux by that amount.
         save: BOOLEAN -- if 1 (True), will print out the components to a .dat file.
-        
+
         OUTPUT
         A boolean value, depending on whether it encountered any key errors or not.
         """
-        
+
         # Add the components to the total flux, checking each component along the way:
         totFlux         = np.zeros(len(self.data['wl']), dtype=float)
         componentNumber = 1
         scatt           = 0     # For tracking if scattered light component exists
-        
+
         if np.all(self.extcorr) != None:
             componentNumber += 1
         if phot:
@@ -1433,7 +1435,7 @@ class TTS_Model(object):
                 print('CALC_TOTAL: Adding disk component to the total flux.')
             totFlux     = totFlux + self.data['disk']
             componentNumber += 1
-        
+
         if dust != 0:
             dustNum     = str(dust).zfill(dust_fill)
             if OTDpath == None:
@@ -1448,7 +1450,7 @@ class TTS_Model(object):
                 self.data['dust']   = dustHDU[0].data[:,1]
             totFlux     = totFlux + self.data['dust']
             componentNumber += 1
-        
+
         # If scattered emission is in the dictionary, add it:
         if 'scatt' in self.data.keys():
             scatt       = 1
@@ -1456,16 +1458,16 @@ class TTS_Model(object):
                 print('CALC_TOTAL: Adding scattered light component to the total flux.')
             totFlux     = totFlux + self.data['scatt']
             componentNumber += 1
-        
+
         # Add the total flux array to the data dictionary attribute:
         if verbose:
             print('CALC_TOTAL: Total flux calculated. Adding to the data structure.')
         self.data['total'] = totFlux
         componentNumber += 1
-        
+
         #Add flags to the model to signify which components have been added together
         self.components = {'total':1, 'phot':phot, 'wall':wall, 'disk':disk, 'dust':dust, 'scatt':scatt, 'iwall':0, 'idisk':0, 'owall':0, 'odisk':0, 'shock':0}
-        
+
         # If save, create an output file with these components printed out:
         if save:
             outputTable = np.zeros([len(totFlux), componentNumber])
@@ -1498,12 +1500,12 @@ class TTS_Model(object):
             if self.extcorr != None:
                 headerStr += 'Tau, '
                 outputTable[:, colNum] = self.extcorr
-            
+
             # Trim the header and save:
             headerStr  = headerStr[0:-2]
             filestring = '%s%s_%s.dat' % (self.dpath, self.name, str(self.jobn).zfill(self.fill))
             np.savetxt(filestring, outputTable, fmt='%.3e', delimiter=', ', header=headerStr, comments='#')
-        
+
         return
 
     @keyErrHandle
@@ -1529,12 +1531,12 @@ class TTS_Model(object):
         New instruments can be added with time. If any instrument is added,
         the instrKeylist should be updated here and in add_photometry.
         """
-        
+
         #First check to see if there is a total component
         if 'total' not in self.data:
             raise ValueError("CALC_FILTERS: Model "+self.jobn+" does not have 'total' values, returning...")
-            
-        
+
+
         try:
             # If a TTS_Obs object is provided, it will calculate synthetic fluxes
             # for the instruments found in the object.
@@ -1738,7 +1740,7 @@ class TTS_Model(object):
         # If we use this model, we need to add the KH photosphere for wavelengths greater than a micron:
         WTTS_ind = np.where(self.data['wl'] > shockTable[-1,0])[0]
         self.data['total'][WTTS_ind] += self.data['phot'][WTTS_ind]
-        
+
         self.components['shock'] = 1
 
         return
@@ -2027,7 +2029,7 @@ class PTD_Model(TTS_Model):
                 print('CALC_TOTAL: Adding photosphere component to the total flux.')
             totFlux     = totFlux + self.data['phot']
             componentNumber += 1
-        
+
         if iwall:
             if verbose:
                 print('CALC_TOTAL: Adding inner wall component to the total flux.')
@@ -2044,20 +2046,20 @@ class PTD_Model(TTS_Model):
                 except AttributeError:
                     pass
             componentNumber += 1
-            
-            
+
+
         if idisk:
             if verbose:
                 print('CALC_TOTAL: Adding inner disk component to the total flux.')
             totFlux     = totFlux + self.data['idisk']
             componentNumber += 1
-        
+
         if odisk:
             if verbose:
                 print('CALC_TOTAL: Adding outer disk component to the total flux.')
             totFlux     = totFlux + self.data['odisk']
             componentNumber += 1
-        
+
         if owall:
             if verbose:
                 print('CALC_TOTAL: Adding outer wall component to the total flux.')
@@ -2074,7 +2076,7 @@ class PTD_Model(TTS_Model):
                 except AttributeError:
                     pass
             componentNumber += 1
-        
+
         if dust != 0:
             dustNum     = str(dust).zfill(dust_fill)
             if OTDpath == None:
@@ -2102,14 +2104,14 @@ class PTD_Model(TTS_Model):
             print('CALC_TOTAL: Total flux calculated. Adding to the data structure.')
         self.data['total'] = totFlux
         componentNumber += 1
-        
+
         #Add flags to the model to signify which components have been added together
         self.components = {'total':1, 'phot':phot, 'iwall':iwall, 'idisk':idisk, 'owall':owall, 'odisk':odisk, 'dust':dust, 'scatt':scatt, 'wall':0, 'disk':0, 'shock':0}
-        
+
         # If save, create an output file with these components printed out:
         if save:
             outputTable = np.zeros([len(totFlux), componentNumber])
-            
+
             # Populate the header and data table with the components and names:
             headerStr   = 'Wavelength, Total Flux, '
             outputTable[:, 0] = self.data['wl']
@@ -2309,7 +2311,7 @@ class TTS_Obs(object):
                 self.ulim.append(scope)                                     # If upper limit, append metadata to ulim attribute list.
         # We reset the attribute phot_dens, since with new photometry it should be recalculated
         self.phot_dens = 0.0
-        
+
         return
 
     def SPPickle(self, picklepath, clob = False, fill = 3):
