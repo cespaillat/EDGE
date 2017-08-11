@@ -126,6 +126,16 @@ f.close()
 #Open up the table
 table = ascii.read(gridpath+paramfiletag+'job_params.txt') 
 
+#Throw up a warning if you are making a huge grid
+if len(table) > 1000:
+    print('WARNING! GRID IS LARGE AND WILL USE SIGNIFICANT LIMITED COMPUTING RESOURCES! SPEAK TO A SUPERVISOR BEFORE RUNNING ON THE CLUSTER!!!')
+    warning = input('Please enter "I understand" to continue making this grid: ')
+    
+    if warning != 'I understand':
+        raise ValueError('Job creation canceled.')
+    else:
+        print('Continuing job creation process...')
+
 #Create the jobfiles using edge.job_file_create
 for i in range(len(table)):
     label = labelend+'_'+str(i+jobnumstart).zfill(fill)
