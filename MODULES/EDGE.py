@@ -225,7 +225,10 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
                 plt.figtext(0.80,0.85,'Rout = '+ str(model.rdisk), color='#010000', size='9')
                 plt.figtext(0.60,0.79,'Altinh = '+ str(model.wallH), color='#010000', size='9')
                 plt.figtext(0.80,0.82,'Mdot = '+ str(model.mdot), color='#010000', size='9')
-                plt.figtext(0.40,0.88,r'M$_{disk}$ = '+ str(round(model.diskmass,5)), color='#010000', size='9')
+                try:
+                    plt.figtext(0.40,0.88,r'M$_{disk}$ = '+ str(round(model.diskmass,5)), color='#010000', size='9')
+                except TypeError:
+                    plt.figtext(0.40,0.88,r'M$_{disk}$ = '+ model.diskmass, color='#010000', size='9')
                 # If we have an outer wall height:
                 try:
                     plt.figtext(0.80,0.79,'AltinhOuter = '+ str(model.owallH), color='#010000', size='9')
