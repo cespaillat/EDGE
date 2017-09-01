@@ -177,10 +177,10 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
                 plt.plot(model.data['wl'], model.data['dust'], ls='--', c='#F80303', linewidth=2.0, label='Opt. Thin Dust')
 
             if model.components['iwall']:
-                plt.plot(model.data['wl'], model.data['iwall']*model.wallH/model.altinh, ls='--', c='#53EB3B', linewidth=2.0, label='Inner Wall')
+                plt.plot(model.data['wl'], model.data['iwall']*model.wallH/model.iwallH, ls='--', c='#53EB3B', linewidth=2.0, label='Inner Wall')
 
             if model.components['wall']:
-                plt.plot(model.data['wl'], model.data['iwall']*model.wallH/model.iwallH, ls='--', c='#53EB3B', linewidth=2.0, label='Wall')
+                plt.plot(model.data['wl'], model.data['iwall']*model.wallH/model.altinh, ls='--', c='#53EB3B', linewidth=2.0, label='Wall')
 
             if model.components['idisk']:
                 plt.plot(model.data['wl'], model.data['idisk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Inner Disk')
