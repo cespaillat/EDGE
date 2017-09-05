@@ -546,7 +546,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
                     hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK'])))
 
             except:
-                print("COLLATE:WARNING IN JOB "+jobnum+": DISK MASS CALCULTION FAILED. ADDED 'FAILED' TAG TO HEADER")
+                print("COLLATE:WARNING IN JOB "+jobnum+": DISK MASS CALCULATION FAILED. ADDED 'FAILED' TAG TO HEADER")
                 failed = True
                 hdu.header.set('DISKMASS','FAILED')
         else:

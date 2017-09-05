@@ -51,7 +51,7 @@ def keyErrHandle(func):
 
 #----------------------------------------------DEPENDENT FUNCTIONS-----------------------------------------------
 # A function is considered dependent if it utilizes either the above independent functions, or the classes below.
-def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, diskcomb=0, msize=7.0, xlim=[2e-1, 2e3], ylim=[1e-15, 1e-9], params=1, leg=1, public=0,odustonly = 0):
+def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, diskcomb=0, msize=7.0, xlim=[2e-1, 2e3], ylim=[1e-15, 1e-9], params=1, leg=1, odustonly = 0):
     """
     Creates a plot of a model and the observations for a given target.
 
@@ -115,104 +115,51 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
                 plt.errorbar(obs.photometry[pkey]['wl'], obs.photometry[pkey]['lFl'], yerr=obs.photometry[pkey]['err'], \
                              mec=colors[colkeys[pind+len(speckeys)]], fmt='o', mfc='w', mew=1.0, markersize=msize, \
                              ecolor=colors[colkeys[pind+len(speckeys)]], elinewidth=2.0, capsize=3.0, label=pkey, zorder=pind+10)
-    # Publication style?
-    if public:
-        print('WARNING: THIS IS LIKELY OUT OF DATE!!!!!')
-        # Now, the model (if a model supplied):
-        if model != None:
-            modkeys         = model.data.keys()
-            if 'phot' in modkeys:
-                plt.plot(model.data['wl'], model.data['phot'], ls='--', c='b', linewidth=2.0, label='Photosphere')
-            # Will be combining the inner/outer walls with the disk emission component:
-            if 'dust' in modkeys:
-                if 'owall' in modkeys:
-                    if 'newIWall' in model.__dict__:
-                        if 'newOWall' in model.__dict__:
-                            diskflux = model.newIWall + model.newOWall + model.data['disk'] + model.data['dust']
-                        else:
-                            diskflux = model.newIWall + model.data['owall'] + model.data['disk'] + model.data['dust']
-                    else:
-                        if 'newOWall' in model.__dict__:
-                            diskflux = model.data['iwall'] + model.newOWall + model.data['disk'] + model.data['dust']
-                        else:
-                            diskflux = model.data['iwall'] + model.data['owall'] + model.data['disk'] + model.data['dust']
+
+    # Now, the model (if a model supplied):
+    if model != None:
+        if model.components['phot']: # stellar photosphere
+            plt.plot(model.data['wl'], model.data['phot'], ls='--', c='b', linewidth=2.0, label='Photosphere')
+
+        if model.components['dust']: # optically thin dust
+            plt.plot(model.data['wl'], model.data['dust'], ls='--', c='#F80303', linewidth=2.0, label='Opt. Thin Dust')
+
+        if model.components['wall']: # wall for TTS model
+            plt.plot(model.data['wl'], model.data['iwall']*model.wallH/model.altinh, ls='--', c='#53EB3B', linewidth=2.0, label='Wall')
+
+        if model.components['disk']: # disk for TTS model (full or transitional disk)
+            plt.plot(model.data['wl'], model.data['disk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Disk')
+
+        if model.components['iwall']: # inner wall for PTD model (pretransitional disk)
+            plt.plot(model.data['wl'], model.data['iwall']*model.wallH/model.iwallH, ls='--', c='#53EB3B', linewidth=2.0, label='Inner Wall')
+
+        if model.components['idisk']: # inner disk for PTD model
+            plt.plot(model.data['wl'], model.data['idisk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Inner Disk')
+
+        if model.components['owall'] and diskcomb == 0: # outer wall for PTD model
+            plt.plot(model.data['wl'], model.data['owall']*model.owallH, ls='--', c='#E9B021', linewidth=2.0, label='Outer Wall')
+
+        if model.components['odisk']: # outer disk for PTD model
+            if diskcomb:
+                try:
+                    diskflux = model.data['owall']*model.owallH + model.data['odisk']
+                except KeyError:
+                    print('LOOK: Error, tried to combine outer wall and disk components but one component is missing!')
                 else:
-                    if 'newIWall' in model.__dict__:
-                        diskflux = model.newIWall + model.data['disk'] + model.data['dust']
-                    else:
-                        diskflux = model.data['iwall'] + model.data['disk'] + model.data['dust']
+                    plt.plot(model.data['wl'], diskflux, ls='--', c='#8B0A1E', linewidth=2.0, label='Outer Disk')
             else:
-                if 'owall' in modkeys:
-                    if 'newIWall' in model.__dict__:
-                        if 'newOWall' in model.__dict__:
-                            diskflux = model.newIWall + model.newOWall + model.data['disk']
-                        else:
-                            diskflux = model.newIWall + model.data['owall'] + model.data['disk']
-                    else:
-                        if 'newOWall' in model.__dict__:
-                            diskflux = model.data['iwall'] + model.newOWall + model.data['disk']
-                        else:
-                            diskflux = model.data['iwall'] + model.data['owall'] + model.data['disk']
-                else:
-                    if 'newIWall' in model.__dict__:
-                        diskflux = model.newIWall + model.data['disk']
-                    else:
-                        diskflux = model.data['iwall'] + model.data['disk']
-            plt.plot(model.data['wl'], diskflux, ls='--', c='#8B0A1E', linewidth=2.0, label='Disk')
-            if 'scatt' in modkeys:
-                plt.plot(model.data['wl'], model.data['scatt'], ls='--', c='#7A6F6F', linewidth=2.0, label='Scattered Light')
-            if 'shock' in modkeys:
-                plt.plot(model.data['WTTS']['wl'], model.data['WTTS']['lFl'], c='b', linewidth=2.0, zorder=1, label='WTTS Photosphere')
-                plt.plot(model.data['shock']['wl'], model.data['shock']['lFl'], c=colors['j'], linewidth=2.0, zorder=2, label='MagE')
-                plt.plot(model.data['shockLong']['wl'], model.data['shockLong']['lFl'], c=colors['s'], linewidth=2.0, zorder=2, label='Shock Model')
-            if 'total' in modkeys:
-                plt.plot(model.data['wl'], model.data['total'], c='k', linewidth=2.0, label='Combined Model')
-    else:
-        # Now, the model (if a model supplied):
-        if model != None:
-            if model.components['phot']:
-                plt.plot(model.data['wl'], model.data['phot'], ls='--', c='b', linewidth=2.0, label='Photosphere')
+                plt.plot(model.data['wl'], model.data['odisk'], ls ='--', c = '#024747', linewidth = 2.0, label = 'Outer Disk')
 
-            if model.components['dust']:
-                plt.plot(model.data['wl'], model.data['dust'], ls='--', c='#F80303', linewidth=2.0, label='Opt. Thin Dust')
+        if model.components['scatt']: # scattered light component
+            plt.plot(model.data['wl'], model.data['scatt'], ls='--', c='#7A6F6F', linewidth=2.0, label='Scattered Light')
 
-            if model.components['iwall']:
-                plt.plot(model.data['wl'], model.data['iwall']*model.wallH/model.iwallH, ls='--', c='#53EB3B', linewidth=2.0, label='Inner Wall')
+        if model.components['shock']: # accretion shock
+            plt.plot(model.data['WTTS']['wl'], model.data['WTTS']['lFl'], c='b', linewidth=2.0, zorder=1, label='WTTS Photosphere')
+            plt.plot(model.data['shock']['wl'], model.data['shock']['lFl'], c=colors['j'], linewidth=2.0, zorder=2, label='MagE')
+            plt.plot(model.data['shockLong']['wl'], model.data['shockLong']['lFl'], c=colors['s'], linewidth=2.0, zorder=2, label='Shock Model')
 
-            if model.components['wall']:
-                plt.plot(model.data['wl'], model.data['iwall']*model.wallH/model.altinh, ls='--', c='#53EB3B', linewidth=2.0, label='Wall')
-
-            if model.components['idisk']:
-                plt.plot(model.data['wl'], model.data['idisk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Inner Disk')
-
-            if model.components['disk']:
-                plt.plot(model.data['wl'], model.data['disk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Disk')
-
-            if model.components['odisk']:
-                if diskcomb:
-                    try:
-                        diskflux = model.data['owall']*model.owallH + model.data['odisk']
-                    except KeyError:
-                        print('LOOK: Error, tried to combine outer wall and disk components but one component is missing!')
-                    else:
-                        plt.plot(model.data['wl'], diskflux, ls='--', c='#8B0A1E', linewidth=2.0, label='Outer Disk')
-                else:
-                    plt.plot(model.data['wl'], model.data['odisk'], ls ='--', c = '#024747', linewidth = 2.0, label = 'Outer Disk')
-
-            if model.components['owall'] and diskcomb == 0:
-                plt.plot(model.data['wl'], model.data['owall']*model.owallH, ls='--', c='#E9B021', linewidth=2.0, label='Outer Wall')
-
-            if model.components['scatt']:
-                plt.plot(model.data['wl'], model.data['scatt'], ls='--', c='#7A6F6F', linewidth=2.0, label='Scattered Light')
-
-            if model.components['shock']:
-                plt.plot(model.data['WTTS']['wl'], model.data['WTTS']['lFl'], c='b', linewidth=2.0, zorder=1, label='WTTS Photosphere')
-                plt.plot(model.data['shock']['wl'], model.data['shock']['lFl'], c=colors['j'], linewidth=2.0, zorder=2, label='MagE')
-                plt.plot(model.data['shockLong']['wl'], model.data['shockLong']['lFl'], c=colors['s'], linewidth=2.0, zorder=2, label='Shock Model')
-
-            if model.components['total']:
-                plt.plot(model.data['wl'], model.data['total'], c='k', linewidth=2.0, label='Combined Model')
-
+        if model.components['total']: # total flux
+            plt.plot(model.data['wl'], model.data['total'], c='k', linewidth=2.0, label='Combined Model')
 
     # Now, the relevant meta-data:
     if model != None:
