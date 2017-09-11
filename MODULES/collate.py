@@ -248,7 +248,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
         sparam = (['MSTAR', 'TSTAR', 'RSTAR', 'DISTANCIA','MDOT', 'MDOTSTAR','ALPHA', 'MUI', 'RDISK',
                    'AMAXS', 'EPS', 'WLCUT_ANGLE', 'WLCUT_SCATT', 'NSILCOMPOUNDS', 'SILTOTABUN',
                    'AMORPFRAC_OLIVINE', 'AMORPFRAC_PYROXENE', 'FORSTERITE_FRAC', 'ENSTATITE_FRAC',
-                   'TEMP', 'ALTINH', 'TSHOCK', 'AMAXW', 'AMAXB'])
+                   'TEMP', 'ALTINH', 'TSHOCK', 'AMAXW', 'AMAXB','D2G'])
         dparam = np.zeros(len(sparam), dtype = float)
 
         #Parse variables according to convention in the job file
@@ -295,7 +295,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
             elif param == 'D2G':
                 try:
-                    dparam[ind] = float(jobf.split(param+'=')[1].split('\n'[0]))
+                    dparam[ind] = float(jobf.split(param+'=')[2].split('\n')[0])
                 except ValueError:
                     raise ValueError('COLLATE: ERROR WITH PARSING D2G. SHOULD NOT HAVE ANYTHING ON LINE AFTER D2G VALUE, GO FIX IN JOB FILE '+jobnum)
 

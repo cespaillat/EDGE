@@ -165,13 +165,15 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
     if model != None:
         if params:
             if odustonly == False:
-                plt.figtext(0.60,0.88,'Eps = '+ str(model.eps), color='#010000', size='9')
-                plt.figtext(0.80,0.88,'Alpha = '+ str(model.alpha), color='#010000', size='9')
-                plt.figtext(0.60,0.82,'Amax = '+ str(model.amax), color='#010000', size='9')
-                plt.figtext(0.60,0.85,'Rin = '+ str(model.rin), color='#010000', size='9')
-                plt.figtext(0.80,0.85,'Rout = '+ str(model.rdisk), color='#010000', size='9')
+                plt.figtext(0.60,0.88,'d2g = '+ str(model.d2g), color='#010000', size='9')
+                plt.figtext(0.60,0.85,'Eps = '+ str(model.eps), color='#010000', size='9')
+                plt.figtext(0.60,0.82,'Rin = '+ str(model.rin), color='#010000', size='9')
                 plt.figtext(0.60,0.79,'Altinh = '+ str(model.wallH), color='#010000', size='9')
+                plt.figtext(0.80,0.88,'Alpha = '+ str(model.alpha), color='#010000', size='9')
+                plt.figtext(0.80,0.85,'Rout = '+ str(model.rdisk), color='#010000', size='9')
                 plt.figtext(0.80,0.82,'Mdot = '+ str(model.mdot), color='#010000', size='9')
+                plt.figtext(0.40,0.85,'Amax = '+ str(model.amax), color='#010000', size='9')
+                plt.figtext(0.40,0.82,'Amaxb = '+ str(model.amaxb), color='#010000', size='9')
                 try:
                     plt.figtext(0.40,0.88,r'M$_{disk}$ = '+ str(round(model.diskmass,5)), color='#010000', size='9')
                 except TypeError:
@@ -197,7 +199,7 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
     plt.xlabel(r'${\rm {\bf \lambda}\; (\mu m)}$')
     plt.title(obs.name.upper())
     if leg:
-        plt.legend(loc=3, numpoints = 1)
+        plt.legend(loc=3, numpoints = 1,fontsize=9)
 
     # Should we save or should we plot?
     if save:
@@ -1247,6 +1249,8 @@ class TTS_Model(object):
         self.mui        = header['MUI']
         self.rdisk      = header['RDISK']
         self.amax       = header['AMAXS']
+        self.amaxb      = header['AMAXB']
+        self.amaxw      = header['AMAXW']
         self.eps        = header['EPS']
         self.tshock     = header['TSHOCK']
         self.temp       = header['TEMP']
@@ -1260,6 +1264,7 @@ class TTS_Model(object):
         self.forsteri   = header['FORSTERI']
         self.enstatit   = header['ENSTATIT']
         self.rin        = header['RIN']
+        self.d2g        = header['D2G']
         self.diskmass   = header['DISKMASS']
         self.dpath      = dpath
         self.fill       = fill
