@@ -789,7 +789,7 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
     if 'phot_dens' not in dir(obj):
         obj.phot_dens = 0.0
     if 'spec_dens' not in dir(obj):
-        obj.spec_dense = {}
+        obj.spec_dens = {}
 
     #First check to see if there is a total component
     if 'total' not in model.data:
