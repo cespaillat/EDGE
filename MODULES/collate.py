@@ -113,6 +113,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
     # Convert jobnum into a string:
     jobnum = str(jobnum).zfill(fill)
+    glob_files = np.array(glob(path+'*'+name+'_'+jobnum+'*'))
 
     # If working with optically thin models
     if optthin == True and shock == False:
@@ -137,7 +138,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
         #Read in the data associated with this model
         dataarr = np.array([])
-        file = glob(path+'fort16*'+name+'*'+jobnum)
+        file = glob_files[['fort16' in element for element in glob_files]]
         failed = 0
         size = 0
         miss = 0
@@ -356,7 +357,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
         miss = 0
 
         if nophot == 0:
-            photfile = glob(path+'Phot*'+jobnum)
+            photfile = glob_files[['Phot' in element for element in glob_files]]
             try:
                 size = os.path.getsize(photfile[0])
             except IndexError:
@@ -383,7 +384,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
         miss = 0
 
         if nowall == 0:
-            wallfile = glob(path+'fort17*'+name+'_'+jobnum)
+            wallfile = glob_files[['fort17' in element for element in glob_files]]
             try:
                 size = os.path.getsize(wallfile[0])
             except IndexError:
@@ -414,7 +415,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
         size = 0
 
         if noangle == 0:
-            anglefile = glob(path+'angle*'+name+'_'+jobnum+'*')
+            anglefile = glob_files[['angle' in element for element in glob_files]]
             try:
                 size = os.path.getsize(anglefile[0])
             except IndexError:
@@ -452,7 +453,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
         size = 0
 
         if noscatt == 0:
-            scattfile = glob(path+'scatt*'+name+'_'+jobnum+'*')
+            scattfile = glob_files[['scatt' in element for element in glob_files]]
             try:
                 size = os.path.getsize(scattfile[0])
             except IndexError:
@@ -530,12 +531,12 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
 
         if nowall != 1:
-            hdu.header.set('RIN', float(np.loadtxt(glob(path+'rin*'+name+'_'+jobnum)[0])))
+            hdu.header.set('RIN', float(np.loadtxt(glob_files[['rin.t' in element for element in glob_files]][0])))
 
         #Get the disk mass
         if noangle != 1:
             try:
-                massfile = np.genfromtxt(glob(path+'fort15*'+name+'_'+jobnum+'*')[0], skip_header = 3)
+                massfile = np.genfromtxt(glob_files[['fort15' in element for element in glob_files]][0], skip_header = 3,skip_footer = 1)
                 diskmassrad = massfile[:,0]
                 diskmassvals = massfile[:,10]
                 massfit = interpolate.interp1d(diskmassrad, diskmassvals)
@@ -546,8 +547,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
                     hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK'])))
 
             except:
-                print("COLLATE:WARNING IN JOB "+jobnum+": DISK MASS CALCULATION FAILED. ADDED 'FAILED' TAG TO HEADER")
-                failed = True
+                print("COLLATE:WARNING IN JOB "+jobnum+": DISK MASS CALCULATION FAILED.")
                 hdu.header.set('DISKMASS','FAILED')
         else:
             hdu.header.set('DISKMASS','FAILED')
@@ -562,7 +562,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
         #Get the Temperature structure data from the prop file
         if notemp == 0:
-            propfile = glob(path+'prop*'+name+'_'+jobnum+'*')
+            propfile = glob_files[['prop' in element for element in glob_files]]
             try:
                 size = os.path.getsize(propfile[0])
             except IndexError:
