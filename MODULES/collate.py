@@ -6,7 +6,6 @@ import pdb
 import os
 from glob import glob
 from scipy import interpolate
-from functools import wraps
 
 def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin=0, clob=0, fill=3, noextinct = 1, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, notemp = 0, shock = 0):
     """
@@ -66,7 +65,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             name = 'myobject'
             dest = 'where/I/want/my/collated/file/to/go/'
             modelnum = 1
-            collate(path, modelnum, name, dest)
+            collate(path, dest, jobnum = modelnum, name = name)
 
             Note that:
             modelnum = '001' will also work.
@@ -80,7 +79,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             name = 'myobject'
             dest = 'where/I/want/my/collated/files/to/go/'
             for i in range(100):
-                collate(path, i+1, name, dest, optthin = 1)
+                collate(path, dest, jobnum = i+1, name = name, optthin = 1)
 
 
      NOTES:
@@ -328,7 +327,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
 
             elif param == 'D2G':
                 try:
-                    dparam[ind] = float(jobf.split(param+'=')[2].split('\n')[0])
+                    dparam[ind] = float(jobf.split('set '+param+'=')[1].split('\n')[0])
                 except ValueError:
                     raise ValueError('COLLATE: ERROR WITH PARSING D2G. SHOULD NOT HAVE ANYTHING ON LINE AFTER D2G VALUE, GO FIX IN JOB FILE '+jobnum)
 
@@ -903,4 +902,4 @@ def masscollate(name, destination = '',path = '', jobnum = None, optthin=0, clob
 
     #Collate the files
     for job in jobnum:
-        collate(path, job, name, destination, optthin=optthin, clob=clob, fill=fill, noextinct = noextinct, noangle = noangle, nowall = nowall, nophot = nophot, noscatt = noscatt, notemp = notemp, shock = shock)
+        collate(path, destination, jobnum=job, name=name, optthin=optthin, clob=clob, fill=fill, noextinct = noextinct, noangle = noangle, nowall = nowall, nophot = nophot, noscatt = noscatt, notemp = notemp, shock = shock)
