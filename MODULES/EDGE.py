@@ -1464,7 +1464,7 @@ class TTS_Model(object):
         return
 
     @keyErrHandle
-    def calc_filters(self,filterspath=commonpath+'Filters/',obj=''):
+    def calc_filters(self,filterspath=commonpath+'Filters/',obj='',verbose=1):
         """
         Calculates the synthetic fluxes for our object at several typical photometric bands (likely
         to be used for chi square analysis). It reads the transmissivity of the filters of different instruments
@@ -1555,7 +1555,8 @@ class TTS_Model(object):
                                         'f11.6': {'wl':Si5filter[:,0],'trans':Si5filter[:,1]},\
                                         'f12.5': {'wl':Si6filter[:,0],'trans':Si6filter[:,1]}}
             else:
-                print('No transmissivities found for instrument '+instrKey)
+                if verbose:
+                    print('No transmissivities found for instrument '+instrKey)
                 continue
 
             intFlux = []

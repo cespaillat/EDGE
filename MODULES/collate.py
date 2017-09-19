@@ -6,8 +6,9 @@ import pdb
 import os
 from glob import glob
 from scipy import interpolate
+from functools import wraps
 
-def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinct = 1, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, notemp = 0, shock = 0):
+def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin=0, clob=0, fill=3, noextinct = 1, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, notemp = 0, shock = 0):
     """
      collate.py
 
@@ -17,19 +18,22 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
             file with a header.
 
      CALLING SEQUENCE:
-            collate(path, jobnum, name, destination, [optthin=1], [clob=1], [high = 1], [noextinc = 1], [noangle = 1], [nowall = 1], [nophot = 1], [noscatt = 0])
+            collate(path, destination, jobnum, name, file_names, [optthin=1], [clob=1], [high = 1], [noextinc = 1], [noangle = 1], [nowall = 1], [nophot = 1], [noscatt = 0])
 
 
      INPUTS:
             path: String of with path to location of jobfiles and model result
                   files. Both MUST be in the same location!
 
+            Destination: String with where you want the fits file to be
+                         sent after it's made
+
             jobnum: String or integer associated with a job number label end.
 
             name: String of the name of the object
 
-            Destination: String with where you want the fits file to be
-                         sent after it's made
+            file_outputs: String of the name of the file with names of DIAD outputs.
+            If this parameter is used, jobnum and name are not required.
 
      OPTIONAL KEYWORDS
             optthin: Set this value to 1 (or True) to run the optically thin dust
@@ -39,17 +43,20 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
             clob: Set this value to 1 (or True) to overwrite a currently existing
                   fits file from a previous run.
             fill: Set this value to the number of digits in your job file (default is 3).
-            nowall: Set this value to 1 (or True) if you do NOT want to include a wall file
+                    NOTE: Not needed if run using file_outputs.
+            nowall: Set this value to 1 (or True) if you do NOT want to include a wall file.
+                    DEFAULT: 0
             noangle: Set this value to 1 (or True) if you do NOT want to to include a disk file
                      NOTE: You cannot perform the self extinction correction without the angle file. If this is set to 1, then
                      the noextin keyword will also be set to 1 automatically.
+                     DEFAULT: 0
             nophot: Set this value to 1 (or True) if you do NOT want to include a photosphere file
+                    DEFAULT: 0
             noextinct: Set this value to 1 (or True) if you do NOT want to apply extinction
                      to the inner wall and photosphere. Generally do not need to since observations are typically de-reddened.
             noscatt: !!!!! NOTE: THIS IS SET TO 1 BY DEFAULT !!!!!
                      Set this value to 1 (or True) if you do NOT want to include the scattered light file.
                      Set this value to 0 (or False) if you DO want to include the scattered light file
-
      EXAMPLES:
             To collate a single model run for the object 'myobject' under the
             job number '001', use the following commands:
@@ -93,6 +100,8 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
             amax in the optthin model did not originally have an s after it. It is changed in
             the header file to have the s to be consistant with the disk models.
 
+            The file_outputs file is created by the jobfile, and it contains the names
+            of the DIAD output files. Its name convention is objectname_001_outputs.
 
      MODIFICATION HISTORY
      Dan Feldman, 19 Oct 2016, Removed numCheck for the zfill fix. Changed high input to fill.
@@ -111,9 +120,33 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
     """
 
-    # Convert jobnum into a string:
-    jobnum = str(jobnum).zfill(fill)
-    glob_files = np.array(glob(path+'*'+name+'_'+jobnum+'*'))
+    # Select way of reading names of DIAD outputs.
+    if file_outputs:
+        # If file_outputs is given, read list_files from it
+        try:
+            f = open(path+file_outputs, 'r')
+        except IOError:
+            print('COLLATE: MISSING file_outputs FILE FOR JOB NUMBER '+jobnum+', RETURNING...')
+            return
+
+        # Names of output files saved in list_files
+        list_files = np.array(f.read().splitlines())
+        f.close()
+
+        # Read name and jobnum
+        name = file_outputs.split('_')[0]
+        jobnum = file_outputs.split('_')[1]
+
+    else:
+        # If file_names is not provided, then jobnum and name should be used
+        if (jobnum is None) or (name is None):
+            raise IOError('COLLATE: file_outputs WAS NOT USED BUT jobnum AND/OR name ARE EMPTY.')
+
+        # Convert jobnum into a string:
+        jobnum = str(jobnum).zfill(fill)
+
+        # Use glob to get the list of output files
+        list_files = np.array(glob(path+'*'+name+'_'+jobnum+'*'))
 
     # If working with optically thin models
     if optthin == True and shock == False:
@@ -138,7 +171,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
         #Read in the data associated with this model
         dataarr = np.array([])
-        file = glob_files[['fort16' in element for element in glob_files]]
+        file = list_files[['fort16' in element for element in list_files]]
         failed = 0
         size = 0
         miss = 0
@@ -196,7 +229,6 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
                             hdu.header.set(param, 1000.)
                         else:
                             hdu.header.set(param, float(samax.replace('p', '.')))
-
 
             #Handle the rest of the variables
             else:
@@ -357,9 +389,9 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
         miss = 0
 
         if nophot == 0:
-            photfile = glob_files[['Phot' in element for element in glob_files]]
+            photfile = list_files[['Phot' in element for element in list_files]][0]
             try:
-                size = os.path.getsize(photfile[0])
+                size = os.path.getsize(photfile)
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING PHOTOSPHERE FILE, ADDED 'FAILED' TAG TO HEADER. NOPHOT SET TO 1")
                 nophot = 1
@@ -367,7 +399,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
                 miss = 1
 
             if miss != 1 and size != 0:
-                phot  = ascii.read(photfile[0])
+                phot  = ascii.read(photfile)
                 axis['PHOTAXIS'] = axis_count
                 dataarr = np.concatenate((dataarr, phot['col1']))
                 dataarr = np.concatenate((dataarr, phot['col2']))
@@ -384,9 +416,9 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
         miss = 0
 
         if nowall == 0:
-            wallfile = glob_files[['fort17' in element for element in glob_files]]
+            wallfile = list_files[['fort17' in element for element in list_files]][0]
             try:
-                size = os.path.getsize(wallfile[0])
+                size = os.path.getsize(wallfile)
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING FORT17 (WALL) FILE, ADDED 'FAILED' TAG TO HEADER. NOWALL SET TO 1")
                 nowall = 1
@@ -394,7 +426,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
                 miss = 1
 
             if miss != 1 and size != 0:
-                wall  =  ascii.read(wallfile[0], data_start = 9)
+                wall  =  ascii.read(wallfile, data_start = 9)
                 axis['WALLAXIS'] = axis_count
                 #If the photosphere was not run, then grab wavelength information from wall file
                 if nophot != 0:
@@ -415,9 +447,9 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
         size = 0
 
         if noangle == 0:
-            anglefile = glob_files[['angle' in element for element in glob_files]]
+            anglefile = list_files[['angle' in element for element in list_files]][0]
             try:
-                size = os.path.getsize(anglefile[0])
+                size = os.path.getsize(anglefile)
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING ANGLE (DISK) FILE, ADDED 'FAILED' TAG TO HEADER. NOANGLE SET TO 1")
                 noangle = 1
@@ -426,7 +458,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
             if miss != 1 and size != 0:
                 try:
-                    angle = ascii.read(anglefile[0], data_start = 1)
+                    angle = ascii.read(anglefile, data_start = 1)
                     axis['ANGAXIS'] = axis_count
 
                     #If the photosphere was not run, and the wall was not run then grab wavelength information from angle file
@@ -453,9 +485,9 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
         size = 0
 
         if noscatt == 0:
-            scattfile = glob_files[['scatt' in element for element in glob_files]]
+            scattfile = list_files[['scatt' in element for element in list_files]][0]
             try:
-                size = os.path.getsize(scattfile[0])
+                size = os.path.getsize(scattfile)
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING SCATT FILE, ADDED 'FAILED' TAG TO HEADER. NOSCATT SET TO 1")
                 noscatt = 1
@@ -463,7 +495,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
                 miss = 1
 
             if miss != 1 and size > 100:
-                scatt = ascii.read(scattfile[0], data_start = 1)
+                scatt = ascii.read(scattfile, data_start = 1)
                 axis['SCATAXIS'] = axis_count
                     #If the photosphere, wall and disk were not run, then grab wavelength information from scatt file
                 if nophot != 0 and nowall != 0 and noangle != 0:
@@ -531,12 +563,12 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
 
         if nowall != 1:
-            hdu.header.set('RIN', float(np.loadtxt(glob_files[['rin.t' in element for element in glob_files]][0])))
+            hdu.header.set('RIN', float(np.loadtxt(list_files[['rin.t' in element for element in list_files]][0])))
 
         #Get the disk mass
         if noangle != 1:
             try:
-                massfile = np.genfromtxt(glob_files[['fort15' in element for element in glob_files]][0], skip_header = 3,skip_footer = 1)
+                massfile = np.genfromtxt(list_files[['fort15' in element for element in list_files]][0], skip_header = 3,skip_footer = 1)
                 diskmassrad = massfile[:,0]
                 diskmassvals = massfile[:,10]
                 massfit = interpolate.interp1d(diskmassrad, diskmassvals)
@@ -562,9 +594,9 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
         #Get the Temperature structure data from the prop file
         if notemp == 0:
-            propfile = glob_files[['prop' in element for element in glob_files]]
+            propfile = list_files[['prop' in element for element in list_files]][0]
             try:
-                size = os.path.getsize(propfile[0])
+                size = os.path.getsize(propfile)
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING PROP (PROPERTIES) FILE, ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
                 notemp =1
@@ -574,7 +606,7 @@ def collate(path, jobnum, name, destination, optthin=0, clob=0, fill=3, noextinc
 
             if miss != 1 and size != 0:
                 try:
-                    propdatatable = ascii.read(propfile[0], data_start = 1)
+                    propdatatable = ascii.read(propfile, data_start = 1)
                 except IndexError:
                     print("COLLATE: WARNING IN JOB "+jobnum+": PROP FILE FOUND, BUT APPEARS TO HAVE FAILED. ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
                     notemp = 1
