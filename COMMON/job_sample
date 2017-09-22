@@ -732,7 +732,7 @@ set salidasedt=angle.mu$MUI.rd$RDISK.rin$RIN.$extension
 if ($ISEDT == 1) then
 echo calculating thermal emission
 echo Calculation of thermal emission $fecha cosi $MUI >> $LOGFILE
-rm -f $salida
+rm -f $salidasedt
 $SEDANGLE << EOD
 $salidasedt
 $FILESALIRR
@@ -774,7 +774,7 @@ $OPAMOL5
 $OPAMOL6
 $WLCUT_ANGLE
 EOD
-echo $salida
+echo $salidasedt
 endif
 #end SED------------------------
 
@@ -786,7 +786,7 @@ set salidaseds=scatt.mu$MUI.rd$RDISK.rin$RIN.$extension
 if ($ISEDS == 1) then
 echo calculating scattered emission
 echo Calculation of scattered emission $fecha cosi $MUI >> $LOGFILE
-rm -f $salida
+rm -f $salidaseds
 $SEDSCATT<< EOD
 $salidaseds
 $FILESALIRR
@@ -827,7 +827,7 @@ $OPAMOL5
 $OPAMOL6
 $WLCUT_SCATT
 EOD
-echo $salida
+echo $salidaseds
 endif
 #end scatter-------------------------------
 
