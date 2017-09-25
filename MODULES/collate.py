@@ -286,36 +286,33 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         #Parse variables according to convention in the job file
         for ind, param in enumerate(sparam):
             if param == 'AMAXS':
-                num_amax = 10 #Number of choices for AMAX, including the case where amax can be 1mm (1000 microns)
-                for num in range(num_amax):
-                    if jobf.split("AMAXS='")[num+1].split("\n")[1][0] == '#':
+                for split_amaxs in jobf.split("AMAXS='")[1:]:
+                    if split_amaxs.split("\n")[1][0] == '#':
                         continue
-                    elif jobf.split("AMAXS='")[num+1].split("\n")[1][0] == 's':
-                        dparam[ind] = float(jobf.split(param+"='")[num+1].split("'")[0])
-                    elif dparam[ind] == 0. and num == num_amax-1:
-                        dparam[ind] = 1000. #HANDLES THE CASE THAT MM SIZED DUST GRAINS EXIST IN JOBFILE
+                    elif split_amaxs.split("\n")[1][0] == 's':
+                        dparam[ind] = float(split_amaxs.split("'")[0])
+                    else:
+                        raise IOError('COLLATE: FAILED ON AMAXS VALUE. FIX JOB FILE '+jobnum)
 
             elif param == 'AMAXW':
-                num_amax = 10 #Number of choices for AMAX, including the case where amax can be 1mm (1000 microns)
-                for num in range(num_amax):
-
-                    if jobf.split("AMAXW='")[num+1].split("\n")[1][0] == '#':
+                for split_amaxw in jobf.split("AMAXW='")[1:]:
+                    if split_amaxw.split("\n")[1][0] == '#':
                         continue
-                    elif jobf.split("AMAXW='")[num+1].split("\n")[1][0] == 's':
+                    elif split_amaxw.split("\n")[1][0] == 's':
                         #Check if the wall has a different value than AMAXS. If not, assign it the value of AMAXS
                         if len(jobf.split("\nset AMAXW=$AMAXS")) > 1:
                             dparam[ind] = dparam[np.array(sparam) == 'AMAXS']
                         else:
-                            dparam[ind] = float(jobf.split(param+"='")[num+1].split("'")[0])
-                    elif dparam[ind] == 0. and num == num_amax-1:
-                        dparam[ind] = 1000. #HANDLES THE CASE THAT MM SIZED DUST GRAINS EXIST IN JOBFILE
+                            dparam[ind] = float(split_amaxw.split("'")[0])
+                    else:
+                        raise IOError('COLLATE: FAILED ON AMAXW VALUE. FIX JOB FILE '+jobnum)
 
             elif param == 'EPS':
-                for num in range(7):
-                    if jobf.split("EPS='")[num+1].split("\n")[1][0] == '#' and num != 7:
+                for split_eps in jobf.split("EPS='")[1:]:
+                    if split_eps.split("\n")[1][0] == '#':
                         continue
-                    elif jobf.split("EPS='")[num+1].split("\n")[1][0] == 's':
-                        dparam[ind] = float(jobf.split(param+"='")[num+1].split("'")[0])
+                    elif split_eps.split("\n")[1][0] == 's':
+                        dparam[ind] = float(split_eps.split("'")[0])
                     else:
                         raise IOError('COLLATE: FAILED ON EPSILON VALUE. FIX JOB FILE '+jobnum)
 

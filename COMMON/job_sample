@@ -110,6 +110,9 @@ set epsilonbig='12.5'
 #set EPS='0.5'
 #set epsilonbig='6.8'
 #------------------------
+#set EPS='0.8'
+#set epsilonbig='3.3'
+#------------------------
 #set EPS='1.0'
 #set epsilonbig='1.0'
 #------------------------
