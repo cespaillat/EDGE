@@ -353,7 +353,7 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
 
     return pickle
 
-def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
+def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = False, **kwargs):
     """
     Creates a new job file that is used by the D'Alessio Model.
 
@@ -394,13 +394,21 @@ def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
     A job file with the name jobXXX, where XXX is the three-string number from 001 - 999. If
     No formal outputs are returned by this function; the file is created in the path directory.
     """
+    # If sample_path has not been set, it is assumed to be path
+    if sample_path == None:
+        sample_path = path
+    # Is this a jobfile for an image or an SED?
+    if image:
+        sample = 'job_image'
+    else:
+        sample = 'job_sample'
 
     # First we have to make sure that the job_sample file has been "fixed" for the \r issue:
-    os.system("cat " + path + "job_sample | tr -d '\r' > " + path + "job_sample2")
-    os.system("mv " + path + "job_sample2 " + path + "job_sample")
+    os.system("cat " + sample_path + sample + " | tr -d '\r' > " + sample_path + sample + "2")
+    os.system("mv " + sample_path + sample + "2 " + sample_path + sample)
 
     # Next, let's read in the sample job file so we have a template:
-    job_file = open(path+'job_sample', 'r')
+    job_file = open(sample_path+sample, 'r')
     fullText = job_file.readlines()     # All text in a list of strings
     job_file.close()
 
@@ -596,7 +604,7 @@ def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
 
     return
 
-def job_optthin_create(jobn, path, fill=3, **kwargs):
+def job_optthin_create(jobn, path, fill=3, sample_path = None, **kwargs):
     """
     Creates a new optically thin dust job file.
 
@@ -632,8 +640,11 @@ def job_optthin_create(jobn, path, fill=3, **kwargs):
     No formal outputs are returned by this function; the file is created in the path directory.
     """
 
+    # If sample_path has not been set, it is assumed to be path
+    if sample_path == None:
+        sample_path = path
     # First, load in the sample job file for a template:
-    job_file = open(path+'job_optthin_sample', 'r')
+    job_file = open(sample_path+'job_optthin_sample', 'r')
     fullText = job_file.readlines()     # All text in a list of strings
     job_file.close()
 
