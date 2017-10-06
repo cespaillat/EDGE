@@ -612,8 +612,9 @@ def job_optthin_create(jobn, path, fill=3, sample_path = None, **kwargs):
 
     INPUTS
     jobn: The job number used to name the output job file.
-    path: The path containing the sample job file, and ultimately, the output.
+    path: The path containing the sample job file (if sample_path is not used), and ultimately, the output.
     fill: Pads the output file such that the name will be job_optthinXXX if 3, job_optthinXXXX if 4, etc
+    sample_path: The path containing the sample job file. If not set, the job_sample will be searched in path.
     **kwargs: The keywords arguments used to make changes to the sample file. Available
               kwargs include:
         amax - maximum grain size

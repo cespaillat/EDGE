@@ -1,0 +1,361 @@
+#!/bin/csh
+# Jun17 Quique: AMAXW, the amax of the dust grains in the wall, by default
+# will be the same as in the disk, but it can be changed independently from the disk.
+
+#this is script to run mm synthesized images with intensity
+#as output
+#modified on 10july08
+
+set labelend='test'
+
+#main directory ------------------------------------
+set MAIN=/project/bu-disks/shared/TODOf77_081109/IMAGES/
+#OPACITY
+set DIROPA=$MAIN/OPACIDADES
+#COMUN
+set DIRCOMUN=$MAIN/COMUN
+
+#stellar parameters  -------------------------------
+set MSTAR='1.0' #in MSUN
+set TSTAR='4730' #in K
+set RSTAR='1.5'  #in Rsun
+set DISTANCIA='140'  #in pasecs
+set MDOT='7.2e-9' #in Msun/yr 
+
+#disk parameters ------------------------------------
+set ALPHA='0.002'
+set MUI='0.57'  #cosine of inclination angle
+#the location of the wall has to be consistent with the
+#location of the hole in the disk. 
+#set RIN='26'  #location of wall in AU; NOTE:the smallest 
+################this can be is 3*RSTAR, contact CE for smaller RIN
+set RDISK='300'  #radius of disk in AU
+
+#dust-to-gas mass ratio -------------------------------
+set D2G=0.0065
+
+#uncomment the size of the small grains in the
+#upper disk; note: uncomment AMAXS and 
+#corresponding lamaxs
+#------------------------
+#se AMAXS='0.05'
+#set lamaxs='amax0p05'
+#------------------------
+#set AMAXS='0.1'
+#set lamaxs='amax0p1'
+#------------------------
+set AMAXS='0.25'
+set lamaxs='amax0p25'
+#------------------------
+#set AMAXS='1.0'
+#set lamaxs='amax1p0'
+#------------------------
+#set AMAXS='2.0'
+#set lamaxs='amax2p0'
+#------------------------
+#set AMAXS='3.0'
+#set lamaxs='amax3p0'
+#------------------------
+#set AMAXS='4.0'
+#set lamaxs='amax4p0'
+#------------------------
+#set AMAXS='5.0'
+#set lamaxs='amax5p0'
+#------------------------
+#set AMAXS='10'
+#set lamaxs='amax10'
+#------------------------
+#set AMAXS='100'
+#set lamaxs='amax100'
+#------------------------
+
+#uncomment settling parameters below
+#------------------------
+#set EPS='0.0001'
+#set epsilonbig='12.5'
+#------------------------
+#set EPS='0.001'
+#set epsilonbig='12.5'
+#------------------------
+#set EPS='0.01'
+#set epsilonbig='12.4'
+#------------------------
+#set EPS='0.1'
+#set epsilonbig='11.4'
+#------------------------
+#set EPS='0.2'
+#set epsilonbig='10.2'
+#------------------------
+set EPS='0.5'
+set epsilonbig='6.8'
+#------------------------
+#set EPS='1.0'
+#set epsilonbig='1.0'
+#------------------------
+
+#this sets size of grains in midplane
+set AMAXB='1000'
+set lamaxb='amax1mm'
+
+#inputs for wall
+set TEMP='130'
+set ALTINH='1.0'
+#dust grain sizes in the wall----------------
+#note: uncomment AMAXW and corresponding lamaxw
+#------------------------
+set AMAXW=$AMAXS
+set lamaxw=$lamaxs
+#------------------------
+#set AMAXW='0.05'
+#set lamaxw='amax0p05'
+#------------------------
+#set AMAXW='0.1'
+#set lamaxw='amax0p1'
+#------------------------
+#set AMAXW='0.25'
+#set lamaxw='amax0p25'
+#------------------------
+#set AMAXW='1.0'
+#set lamaxw='amax1p0'
+#------------------------
+#set AMAXW='2.0'
+#set lamaxw='amax2p0'
+#------------------------
+#set AMAXW='3.0'
+#set lamaxw='amax3p0'
+#------------------------
+#set AMAXW='4.0'
+#set lamaxw='amax4p0'
+#------------------------
+#set AMAXW='5.0'
+#set lamaxw='amax5p0'
+#------------------------
+#set AMAXW='10'
+#set lamaxw='amax10'
+#------------------------
+#set AMAXW='100'
+#set lamaxw='amax100'
+#------------------------
+set AMINW='0.005'
+set PW='3.5'
+set TEMPW=$TEMP
+set TAUMAXL='1.5' #radial "depth" of wall
+set ESCRIBIR='1' #write image? no=0,yes=1, extinguished=2
+set EST='0'             #include star in image? no=0,yes=1, extinguished=2 
+set TAUEXT='0'          #give tau if choose extinguished
+
+set labeps=e$EPS
+set labcom='sg'
+#set labcom='soit'
+set ISUB='1'
+set IALB='0'
+
+set WLFILE=$DIRCOMUN/wlfile_1300um_1pt.ent
+# Should the disk be thick or thin at this lambda?
+# (i.e., run thick or thin version of image?)
+set image='thin' # set to 'thin' or 'thick'
+
+# relative abundances
+set silab=0.004
+set grafab=0.0025
+set iceab=0.00001
+set troiab=0.00000001
+set labelsilab='1'
+set labgrafab='1'
+set labiceab='1'
+
+set IIMAGEDISK='1' #output is fort.10 in grid and fort.62
+set IIMAGEWALL='1' 
+
+##########   Do not change anything below here  ################
+########## (unless you know what you are doing) ################
+
+#subdirectories----------------------------------------
+set DIRPRODISK=$MAIN/PROGRAMS/DISK
+set DIRPROWALL=$MAIN/PROGRAMS/WALL_v2
+set DIRPROADD=$MAIN/ADD
+#set DIRPROTHIN=$MAIN/PROGRAMS/THIN
+
+
+#programs --------------------------------------------------------
+if ($image == 'thin') then
+set PRODISK=$DIRPRODISK/image_wall_disk_othin_v3
+else
+set PRODISK=$DIRPRODISK/image_wall_disk_othick_v3
+endif
+set PROWALL=$DIRPROWALL/wall_grid_t23
+set PROADD=$DIRPROADD/add_RF2
+#set PRORIN=$DIRPROWALL/radiowall
+#set PROTHIN=$DIRPROTHIN/thin
+
+set extension=a$ALPHA.irr.$labelend.e$EPS.$lamaxs\_$lamaxb.dat
+#set extension=$TSTAR.mp$MDOT.a$ALPHA.irr.$labcom\_ts14ng.p3p5.$labeps.$lamaxs\_$lamaxb.dat
+set FILESALIRR=fort14.$extension
+set salidaimage=idiskw.$image.w.mu$MUI.rd$RDISK.tw$TEMPW.$extension.$labelend
+
+
+#begin SEDT-----------------------------------------
+
+#files for wall
+set MAIN2=/project/bu-disks/shared/TODOf77_081109/
+set FILELONGOPA=$MAIN2/CODEf77_081109/OPACIDADES/longitudes_all.ent
+set MAINPOL=$MAIN2/POLVO
+set FILESILWALL=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxw.g.ab$labelsilab.extinc
+set FILEORGWALL=$MAINPOL/GRAF/graf.p3p5.$lamaxw.g.ab$labgrafab.extinc
+set FILEICEWALL=$MAINPOL/H2OICE/h2oice.p3p5.$lamaxw.g.ab$labiceab.extinc.wb08
+
+set FILESILB=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxb.g.ab$labelsilab.extinc
+set FILEGRAFB=$MAINPOL/GRAF/graf.p3p5.$lamaxb.g.ab$labgrafab.extinc
+set FILESILS=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxs.g.ab$labelsilab.extinc
+set FILEGRAFS=$MAINPOL/GRAF/graf.p3p5.$lamaxs.g.ab$labgrafab.extinc
+
+#set FILESIL=$DIRCOMUN/sil.p3p5.amax0p25.g.ab0p0034.extinc
+set LFILESIL=prueba
+#set FILEORG=$DIRCOMUN/org.p3p5.amax0p25.g.ab0p001.extinc
+set FILETROI=$DIRCOMUN/troi.p3p5.amax0p25.g.ab0p000768.extinc
+#set FILEICE=$DIRCOMUN/h2oice.p3p5.amax0p25.g.ab0p00056.extinc
+set FILEOUTSED=fort.17.H$ALTINH.$LFILESIL.ami$AMINW.amx$AMAXW.p$PW.$MUI.t$TEMPW.$labelend
+set FILEIMAGE=fort.1.H$ALTINH.$LFILESIL.ami$AMINW.amx$AMAXW.p$PW.$MUI.t$TEMPW.tau$TAUEXT.$labelend
+
+#input files disk image----------------------------------------------
+set LONG1=$DIROPA/longitudes_tio.ent
+set LONG2=$DIROPA/longco.mod
+set OPATIO1=$DIROPA/opa_tio_t100_p0.dat
+set OPATIO2=$DIROPA/opa_tio_t158.489_p0.dat
+set OPATIO3=$DIROPA/opa_tio_t251.189_p0.dat
+set OPATIO4=$DIROPA/opa_tio_t398.107_p0.dat
+set OPATIO5=$DIROPA/opa_tio_t630.957_p0.dat
+set OPATIO6=$DIROPA/opa_tio_t1000_p0.dat
+set OPATIO7=$DIROPA/opa_tio_t1584.89_p0.dat
+set OPATIO8=$DIROPA/opa_tio_t2511.89_p0.dat
+set OPATIO9=$DIROPA/opa_tio_t3981.07_p0.dat
+set OPATIO10=$DIROPA/opa_tio_t6309.57_p0.dat
+set OPATIO11=$DIROPA/opa_tio_t10000_p0.dat
+set FILEPOBLA=$DIROPA/poblaciones8feb05.dat
+set FILEHIGHT=$DIROPA/hight.dat
+set OPAMOL1=$DIROPA/tio.dat
+set OPAMOL2=$DIROPA/cow1.dat
+set OPAMOL3=$DIROPA/cof1.dat
+set OPAMOL4=$DIROPA/cow2.dat
+set OPAMOL5=$DIROPA/cof2.dat
+set OPAMOL6=$DIROPA/auman.dat
+
+
+echo IIMAGEWALL=$IIMAGEWALL
+
+if ($IIMAGEWALL == 1) then
+echo calculating imagewall
+if ($ESCRIBIR == 0) then
+$PROWALL << EOD
+$TEMP
+$MDOT 
+$MSTAR $TSTAR $RSTAR
+$MUI
+$silab $grafab $troiab $iceab
+$DISTANCIA
+$RDISK
+$ALTINH
+$TAUMAXL
+$WLFILE
+$ESCRIBIR
+$FILEOUTSED
+$FILELONGOPA
+$FILESILWALL
+$FILEORGWALL
+$FILETROI
+$FILEICEWALL
+EOD
+echo $FILEOUTSED
+
+else
+$PROWALL << EOD
+$TEMP
+$MDOT 
+$MSTAR $TSTAR $RSTAR
+$MUI
+$silab $grafab $troiab $iceab
+$DISTANCIA
+$RDISK
+$ALTINH
+$TAUMAXL
+$WLFILE
+$ESCRIBIR
+$EST
+$TAUEXT
+$FILEIMAGE
+$FILEOUTSED
+$FILELONGOPA
+$FILESILWALL
+$FILEORGWALL
+$FILETROI
+$FILEICEWALL
+EOD
+echo $FILEOUTSED
+echo $FILEIMAGE
+
+endif
+endif
+
+
+
+echo calculating image disk
+#rm -f $salidaimage
+$PRODISK << EOD
+$salidaimage
+$FILESALIRR
+$D2G
+$silab $grafab $iceab
+$FILESILB
+$FILEGRAFB
+$FILESILS
+$FILEGRAFS
+$WLFILE
+$FILEIMAGE
+$ISUB
+$DISTANCIA
+$RSTAR
+$RDISK
+$TSTAR
+$MUI
+$LONG1
+$LONG2
+$OPATIO1
+$OPATIO2
+$OPATIO3
+$OPATIO4
+$OPATIO5
+$OPATIO6
+$OPATIO7
+$OPATIO8
+$OPATIO9
+$OPATIO10
+$OPATIO11
+$FILEPOBLA
+$FILEHIGHT
+$OPAMOL1
+$OPAMOL2
+$OPAMOL3
+$OPAMOL4
+$OPAMOL5
+$OPAMOL6
+EOD
+echo $salidaimage
+cp fort.10 grid.$salidaimage
+echo grid.$salidaimage
+endif
+
+set fitsname=$salidaimage.fits
+
+$PROADD << EOD
+$salidaimage
+$fitsname
+$DISTANCIA
+$RDISK
+EOD
+
+echo $fitsname
+
+#rm -f $FILEOUTSED
+#rm -f $FILEIMAGE
+
+exit
