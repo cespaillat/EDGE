@@ -359,9 +359,11 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
 
     INPUTS
     jobnum: The job number used to name the output job file.
-    path: The path containing the sample job file, and ultimately, the output.
+    path: The path containing the sample job file (if sample_path is not used), and ultimately, the output.
     fill: Pads the output file such that the name will be jobXXX if 3, jobXXXX if 4, etc.
     iwall: BOOLEAN -- if True (1), output will turn off switches so we just run as inner wall.
+    image: BOOLEAN -- if True, it will create a job_file for an image instead of an SED.
+    sample_path: The path containing the sample job file. If not set, the job_sample will be searched in path.
     **kwargs: The keywords arguments used to make changes to the sample file. Available
               kwargs include:
         amaxs - maximum grain size in disk
