@@ -93,7 +93,7 @@ d2g = [0.0065] #Dust to gas mass ratio.
 #If you want them to be the same as their associated parameters (amaxs, mdot) then set them to [None]
 #Don't forget the brackets.
 mdotstar = [None] #Mass accretion rate at the star
-amaxw   = [1.0] #Maximum grain size at the wall
+amaxw   = [None] #Maximum grain size at the wall
 
 fill = 3 #Zero padding for the job numbers. Unless you are running many models (>1000) 3 is standard.
 
