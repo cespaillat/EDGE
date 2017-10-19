@@ -47,15 +47,19 @@ For first time users we recommend the following steps:\\
 DIAD is housed on Boston University's (BU) Shared Computing Cluster (SCC).  Throughout this
 manual it will be referred to as either ``the SCC'' or ``the cluster.''
 
-You can log into the SCC via:
+\vspace{2mm}
+
+\noindent You can log into the SCC via:
 
 \vspace{2mm}
 \texttt{[UNIX] ssh -Y username@scc1.bu.edu}
 \vspace{2mm}
 
-Note that in this manual commands entered into a terminal outside of python is preceded by `\texttt{[UNIX]}'.
+\noindent Note that in this manual commands entered into a terminal outside of python is preceded by `\texttt{[UNIX]}'.
 
-When you log in you will be in your home directory.  Here you have only 10~GB of space which will not be enough over time. Most of the your work should take place in the shared space called \texttt{/projectnb/bu-disks} which has significantly more space.  Here you can create a directory where you can put your work using:
+\vspace{2mm}
+
+\noindent When you log in you will be in your home directory.  Here you have only 10~GB of space which will not be enough over time. Most of the your work should take place in the shared space called \texttt{/projectnb/bu-disks} which has significantly more space.  Here you can create a directory where you can put your work using:
 
 \vspace{2mm}
 \texttt{[UNIX] mkdir username}
@@ -67,7 +71,7 @@ When you log in you will be in your home directory.  Here you have only 10~GB of
 \texttt{[UNIX] cd .snapshots}
 \vspace{2mm}
 
-Note that you don't have to change permissions on files, etc.  The default is that group members can see each other's files but not edit them.  No one outside of the ``bu-disks" group will have access.\\
+\noindent Note that you don't have to change permissions on files, etc.  The default is that group members can see each other's files but not edit them.  No one outside of the ``bu-disks" group will have access.\\
 
 \noindent Some useful commands:
 
@@ -102,7 +106,7 @@ Note that you don't have to change permissions on files, etc.  The default is th
 
 \noindent will transfer files from the cluster space to your computer.\\
 
-If you don't submit to the cluster via the qsub command, you can run the script locally by doing
+\noindent If you don't submit to the cluster via the qsub command, you can run the script locally by doing
 
 \vspace{2mm}
 \texttt{[UNIX] csh job001}
@@ -144,6 +148,10 @@ First, you have to set up a GitHub account at
 
 \noindent We recommend you do not place any of your own files in the \texttt{EDGE} directory so that you do not inadvertently overwrite your work when syncing with the repository.
 
+\vspace{2mm}
+
+\noindent \textit{Note: Another useful reference for basic git commands: http://rogerdudler.github.io/git-guide/files/git\_cheat\_sheet.pdf}
+
 \subsection{Adding \edge to your Python path} \label{addingedgetopath}
 
 Note that in order for Python to find \edge, the directory must be placed on your Python path. This can be done by changing your \texttt{.bashrc} (or equivalent) file generally located as a hidden file in your home directory. Typing the following command into a terminal (outside of Python),
@@ -152,14 +160,38 @@ Note that in order for Python to find \edge, the directory must be placed on you
 \texttt{[UNIX] ls -a \textasciitilde/.bashrc}
 \vspace{2mm}
 
-should show you this file. Adding the following line with the path to where you have saved \edge to that file with the text editor of your choice will allow Python to find \edge.
+\noindent should show you this file. Adding the following line with the path to where you have saved \edge to that file with the text editor of your choice will allow Python to find \edge.
 
 \vspace{2mm}
 \texttt{export PYTHONPATH=\${PYTHONPATH}:/path/to/EDGE/MODULES/}
 \vspace{2mm}
 
-Take care to change the directory to where ever you have placed \texttt{EDGE} so your python path can find the \texttt{MODULES} directory.
+\noindent Take care to change the directory to where ever you have placed \edge so your python path can find the \texttt{MODULES} directory.
 
+\vspace{2mm}
+
+\noindent It is also recommended that you add the path to the shared \edge directory on the SCC to your \texttt{.bashrc} file on the SCC. Your \texttt{.bashrc} file on the SCC can be found by using ssh to connect to the cluster (directions in Section \ref{scc}). Next, type: 
+
+\vspace{2mm}
+\texttt{[UNIX] cd} 
+\vspace{2mm}
+
+\noindent which will move you to your home directory and then type:
+
+\vspace{2mm}
+\texttt{[UNIX] ls -a} 
+\vspace{2mm}
+
+\noindent to reveal hidden files. You can then use one of the text editors available on the SCC (e.g., emacs, vi) to add the following line to the \texttt{.bashrc} file:
+
+\vspace{2mm}
+\noindent \texttt{export PYTHONPATH="\${PYTHONPATH}:/project/bu-disks/shared/EDGE/MODULES"}
+\vspace{2mm}
+
+\noindent You will not need to change the path here because this copy of \edge is shared among all SCC users.
+
+\vspace{2mm}
+\noindent \textit{Note: This version of \texttt{EDGE} should be kept up to date with the version on GitHub, but it is possible that the most recent changes may not have been pulled to the SCC.} 
 
 \subsection{Description of \edge package directories} \label{edgepackage}
 
@@ -177,13 +209,19 @@ Within the \edge package, the first level contains a \texttt{LICENSE} file and t
 
 
 \subsubsection{\edge Paths} \label{paths}
-In the beginning of the \texttt{EDGE.py} file, a few paths are defined (e.g., \texttt{figurepath}, \texttt{datapath}, etc.) which define where certain files exist or will exist. You do not have to define these if you don’t want to — all relevant functions and classes will have a keyword that lets you supply the proper path. The paths hardcoded at the top of \edge are very useful when you are consistently using the same directory for your data files, as you can then avoid typing in the path for each function call, but you don’t need to use them. \textbf{IMPORTANT:} If you obtain a new version of \edge from GitHub, you \textbf{will} need to change the paths again. 
+In the beginning of the \texttt{EDGE.py} file, a few paths are defined (e.g., \texttt{figurepath}, \texttt{datapath}, etc.) which define where certain files exist or will exist. All relevant functions also have a keyword that lets you supply the proper path. The paths hardcoded at the top of \edge can be useful when you are consistently using the same directory for your data files, as you can then avoid typing in the path for each function call, but you do not need need to use them. \textbf{IMPORTANT:} If you obtain a new version of \edge from GitHub, you \textbf{will} need to change the paths again. 
 
-If you are using scripts (recommended), it is often better to simply include the path as a part of the call to each function, as it increases portability of the script. This also negates the need to change the paths if you re-download the code from GitHub.
+\noindent \textit{Note: If you are using scripts, it is often better to simply include the path as a part of the call to each function, as it increases portability of the script. This also negates the need to change the paths if you re-download the code from GitHub.}
 
 \section{Intro to python} \label{introtopython}
 \subsection{Basic python usage} 
-Whenever illustrating code that you type into the command line, the code will be preceded by `\texttt{>>>}', however, if it’s a block of code inside of a file and not at the command line, it will not have the `\texttt{>>>}' preceding it. Code entered into a terminal outside of python is preceded by `\texttt{[UNIX]}'. Most of the code that is shown here is written for use at the command line, but for reproduciability it is often better write code within scripts with \texttt{.py} file extensions. Scripts in Python can be run at the terminal using:
+Whenever illustrating code that you type into the command line, the code will be preceded by `\texttt{>>>}', however, if it’s a block of code inside of a file and not at the command line, it will not have the `\texttt{>>>}' preceding it. Here it is assumed that you are using ipython, which is the interactive version of python. This can be started by typing
+
+\vspace{2mm}
+\texttt{[UNIX] ipython}
+\vspace{2mm}
+
+\noindent which will start an \texttt{ipython} session. Code entered into a terminal outside of python is preceded by `\texttt{[UNIX]}'. Most of the code that is shown here is written for use at the command line, but for reproduciability it is often better write code within scripts with \texttt{.py} file extensions. Scripts in Python can be run at the terminal using:
 
 \vspace{2mm}
 \texttt{[UNIX] python name\_of\_script.py}
@@ -195,21 +233,23 @@ or during a Python session with:
 \texttt{>>> run name\_of\_script}
 \vspace{2mm}
 
-Below you will find some Python jargon, followed by descriptions of some of the more complicated functions and classes written in the code, and then finally a step by step guide of how to use the code to load in data and a model for a T-Tauri star, and then how to plot it and calculate a reduced chi-square value.
+\noindent Below you will find some Python jargon, followed by descriptions of some of the more complicated functions and classes written in the code, and then finally a step by step guide of how to use the code to load in data and a model for a T-Tauri star, and then how to plot it and calculate a reduced chi-square value.
 
-In most of the code that follows, unless otherwise noted, it is assumed that you have imported (i.e., loaded in) \edge into your session of Python for use. This is done by typing:
+\vspace{2mm}
+
+\noindent In most of the code that follows, unless otherwise noted, it is assumed that you have imported (i.e., loaded in) \edge into your session of Python for use. This is done by typing:
 
 \vspace{2mm}
 \texttt{>>> import EDGE as edge}
 \vspace{2mm}
 
-\noindent into Python. This will let you use all functions and classes in the code by typing the name of the function or class preceded by “\texttt{edge}”, for example: 
+\noindent into Python. This will let you use all functions and classes in the code by typing the name of the function or class preceded by ``\texttt{edge}" for example: 
 
 \vspace{2mm} 
-\texttt{>>> x = edge.numCheck(2)}
+\texttt{>>> edge.look(fancyStar)}
 \vspace{2mm}
 
-\noindent will store the output of the numCheck function into the variable \texttt{x}. Once you have imported the module, you will not have to do it again for that session, so it will be assumed it has already been done. 
+\noindent where ``\texttt{fancyStar}" is an edge observation object (which is created later in this manual). Once you have imported the module, you will not have to do it again for that session, so it will be assumed it has already been done. 
 
 
 \subsection{Reloading a function}
@@ -247,13 +287,20 @@ This section will contain the important functions and classes contained within M
 The Python module \texttt{collate} takes the output files of a given model run and stores all the information and data into one \texttt{.fits} file for later reference. In order for collate to work properly, your \texttt{labelend} for your models (optically thin dust models or otherwise) must follow the proper naming convention, which will be outlined later. The inputs and keyword arguments can be found in the \texttt{collate} docstring. Note that \texttt{collate} is not included with \edge and must be imported separately. 
 Generally, \texttt{collate} is used on the \textbf{SCC}, after the models have finished running. 
 
-In order to use Python on the \textbf{SCC} (and therefore to use \texttt{collate} on the cluster), you must load in the Anaconda package. Once you have logged in to the cluster, you can load in Anaconda by typing in: 
+\vspace{2mm}
+\noindent \textbf{Important:} Older versions of the jobfile required that the jobs be collated by hand at the end of the run, but now the files are collated automatically. However, it may occasionally be necessary to re-collate jobs manually, which can be done by following the steps here.
+\vspace{2mm}
+
+\noindent In order to use Python on the \textbf{SCC} (and therefore to use \texttt{collate} on the cluster), you must load in the Anaconda package. Once you have logged in to the cluster, you can load in Anaconda by typing in: 
 
 \vspace{2mm}
 \texttt{[UNIX] module load anaconda3}
 \vspace{2mm}
 
-\noindent Once this is done, you have access to Python, as well as all the necessary modules for Python. When you are ready to use collate, enter 
+\noindent Once this is done, you have access to Python, as well as all the necessary modules for Python. \textit{Note: This command can also be added to your \texttt{.bashrc} file on the SCC to avoid this step each time you use the SCC.}
+
+\vspace{2mm}
+\noindent When you are ready to use collate, enter 
 
 \vspace{2mm}
 \texttt{[UNIX] python} 
@@ -269,7 +316,7 @@ Models can be collated individually by entering all the required inputs (see the
 \texttt{>>> collate.masscollate('fancyStar')}
 \vspace{2mm}
 
-\noindent This should collate all of your model runs into \texttt{.fits} files that you can later use for data analysis and plotting. 
+\noindent This should collate all of your model runs into \texttt{.fits} files that you can later use for data analysis and plotting. If you are running \texttt{collate} on models that have already been collated, use the flag \texttt{``clob = True"} in your call to masscollate. This will cause \texttt{collate} to overwrite any fits files that have been created previously.
 
 \textit{For more advanced users:} \texttt{collate} by default also stores information about the structure of the disk in a separate fits extension (extension 1). The data in this extension is stored as a 2D array with the labels for the columns located in the header. 
 
@@ -283,7 +330,7 @@ The \texttt{TTS\_Model} class creates objects that contain the data from an indi
 \texttt{TTS\_Model} currently has three methods. The first is the one necessary to all classes, which is the \texttt{\_\_init\_\_} function, sometimes called the “constructor.” This creates “instances” of the class, i.e., creates individual objects. If the class is the recipe, and the object is the cake, then the \texttt{\_\_init\_\_} function is the cook. Here it loads all of the meta- data into an object, comprised primarily of the model parameters. For example, if you want to load the third model for `fancyStar' into an object, you would type: 
  
 \vspace{2mm}
-\texttt{>>> fancyStar\_3 = edge.TTS\_Model(‘fancyStar’,3)}
+\texttt{>>> fancyStar\_3 = edge.TTS\_Model(``fancyStar",3)}
 \vspace{2mm}
 
 \noindent There are some optional keyword arguments you can supply to \texttt{TTS\_Model} that may change what it does. For example, the \texttt{dpath} keyword is used to tell the class the path where the fits file is located. If you are working a lot in the same directory, you are encouraged to define the data path at the top of the code in the “\texttt{datapath}” variable, and then you will not have to manually supply a path to the \texttt{dpath} keyword. Otherwise, this is a necessity. For a list of all keywords, please see the docstring. 
@@ -299,7 +346,7 @@ The second method is the \texttt{dataInit} method. This method loads the actual 
 The third method is the \texttt{calc\_total} method. This takes all of the components of the model and adds them together to create a “total” flux array. The method has a bunch of keywords that describe each component you may want to add to the total, and some of them are turned on by default, and others are turned off by default. Basic usage of this function is as follows:
 
 \vspace{2mm}
-\texttt{>>> fancyStar\_3.calc\_total}
+\texttt{>>> fancyStar\_3.calc\_total()}
 \vspace{2mm}
 
 \noindent The ones turned on are phot (photosphere), wall (inner wall), and disk. The one turned off is dust (optically thin dust). To turn these on and off, you just specify them when you call the method and set them to 0 or 1. For example: 
@@ -371,7 +418,7 @@ When you first initialize the \texttt{TTS\_Obs} object, you only supply it the n
 \vspace{2mm}
 
 This would initialize an object with the name attribute to hold `fancyStar', and it would have empty spectra and photometry dictionaries. It would also initialize an empty list with the attribute name ‘\texttt{ulim}’ which will potentially hold the names of data containing upper limits. 
-To fill in the observations, you have to make use of the \texttt{add\_spectra} and \texttt{add\_photometry} methods. This will take the supplied data and meta-data and fill in the nested dictionary structure for you. If you are overwriting the data, it will also ask you to make sure you wish to overwrite the data before proceeding. Later in this manual, I will show an example of how to create this type of object, so you can see later how this is done in more detail. 
+To fill in the observations, you have to make use of the \texttt{add\_spectra} and \texttt{add\_photometry} methods. This will take the supplied data and meta-data and fill in the nested dictionary structure for you. If you are overwriting the data, it will also ask you to make sure you wish to overwrite the data before proceeding. Later in this manual, I will show an example of how to create this type of object. 
  
 \subsection{\texttt{SPPickle}}
  
@@ -381,7 +428,7 @@ This function will save your observations as a pickle file so you can load it ba
 \texttt{>>> fancyStar\_obs.SPPickle(clob = True)}
 \vspace{2mm}
 
-The \texttt{clob = True} flag means that the function will `clobber', or overwrite, any existing Pickles with the same name. This is extremely useful for scripts where you would want to create a new Pickle from scratch each time you run the script. If you are feeling more cautious, you can set the \texttt{clob = False} to make it so SPPickle will not overwrite the existing pickle file and instead create a new pickle with a number associated with it.
+\noindent The \texttt{clob = True} flag means that the function will `clobber', or overwrite, any existing Pickles with the same name. This is extremely useful for scripts where you would want to create a new Pickle from scratch each time you run the script. If you are feeling more cautious, you can set the \texttt{clob = False} to make it so SPPickle will not overwrite the existing pickle file and instead create a new pickle with a number associated with it.
 
 \subsection{\texttt{Red\_Obs}}
 
@@ -447,9 +494,9 @@ It also calculates Av(V-R), Av(V-I), Av(R-I), and Av(I-J), dereddened magnitudes
 
 \section{Example: using the code via scripts} \label{scripts}
 
-The previous sections discussed some of the more important functions + modules for running an analyzing models individually. In this section, scripts that use \edge commands in parallel with other python code are presented. Although all of what has been covered earlier can be done at the command line, scripts allow for vastly increased repeatability, transportability and easier bug solving. To get an idea of how to utilize the tools in this code to analyze data, several scripts have been included that model an object from start to finish.
+The previous sections discussed some of the more important functions + modules for running an analyzing models individually. In this section, scripts that use \edge commands in parallel with other python code are presented. Although all of what has been covered earlier can be done at the command line, scripts allow for vastly increased repeatability, transportability and for easier bug solving. To get an idea of how to utilize the tools in this code to analyze data, several scripts have been included that model an object from start to finish.
 
-Inside the DEMO folder in your \edge distribution are the following scripts:
+\noindent Inside the \texttt{DEMO} folder in your \edge distribution are the following scripts:
 
 \vspace{2mm}
 \texttt{DEMO\_make\_imlup.py}
@@ -467,9 +514,9 @@ Inside the DEMO folder in your \edge distribution are the following scripts:
 \texttt{models/}
 \vspace{2mm}
 
-which contain (unsurprisingly) data and models. Inside the \texttt{data} directory is a list of photometry from Vizier in the form of a \texttt{.vot} file,  an IRS spectra in the form of a \texttt{.fits} file, and a de-reddened pickle file of the observations. The \texttt{model} directory contains job files (e.g., `\texttt{job005}') and \texttt{DIAD} results in the form of collated \texttt{.fits} files (e.g., `\texttt{imlup\_005.fits}').
+\noindent which contain (unsurprisingly) data and models. Inside the \texttt{data} directory is a list of photometry from Vizier in the form of a \texttt{.vot} file,  an IRS spectra in the form of a \texttt{.fits} file, and a de-reddened pickle file of the observations. The \texttt{model} directory contains job files (e.g., `\texttt{job005}') and \texttt{DIAD} results in the form of collated \texttt{.fits} files (e.g., `\texttt{imlup\_002.fits}').
 
-We recommend that you create a new directory outside the \edge directory to try this demo and not alter the files in \texttt{DEMO} so you can compare your outputs with those in \texttt{DEMO}.  In your working directory, copy over the \texttt{.py} files from \texttt{DEMO}. Also, create two subdirectories called \texttt{data} and \texttt{models}.  In your working \texttt{data} directory, copy the \texttt{.fits} and \texttt{.vot} files from \texttt{DEMO}.  In your working \texttt{models} directory, copy the \texttt{job\_sample} file from \texttt{DEMO}.
+\noindent The files within \texttt{DEMO} files are meant to be run as is with only the necessary changes to paths. As such, if you plan to modify them, we recommend that you create a new directory outside the \edge directory to try this demo and not alter the files in \texttt{DEMO} so you can compare your outputs with those in \texttt{DEMO}.  This can most easily be done using the \texttt{cp} command on the \texttt{DEMO} file with the \texttt{-r} flag which tells it to copy in the entire directory tree recursively. %In your working directory, copy over the \texttt{.py} files from \texttt{DEMO}. Also, create two subdirectories called \texttt{data} and \texttt{models}.  In your working \texttt{data} directory, copy the \texttt{.fits} and \texttt{.vot} files from \texttt{DEMO}.  In your working \texttt{models} directory, copy the \texttt{job\_sample} file from \texttt{DEMO}.
 
 \subsection{Making the observation pickle}
 
@@ -479,11 +526,14 @@ Change your paths (specpath, photpath, picklepath) in \texttt{DEMO\_make\_imlup.
 \texttt{[UNIX] python DEMO\_make\_imlup.py}
 \vspace{2mm}
 
-Note that there will be several error messages (this is normal) and a new file \texttt{imlup\_obs.pkl} will be created.
+\noindent There will be several error messages (this is normal) and a new file \texttt{imlup\_obs.pkl} will be created at the location specified by picklepath.
+\vspace{2mm}
 
-\texttt{DEMO\_make\_imlup.py} will take in photometry and spectra from the \texttt{DATA} directory in order to make the \texttt{Red\_TTS} observation object which will then be de-reddened and saved to a \texttt{.pkl} file containing the de-reddened \texttt{TTS\_Obs} object. This object can be looked at from the command line using the \texttt{look} function. Uncertainties associated with flux measurements can also be stored in this object/pickle.
+\noindent \texttt{DEMO\_make\_imlup.py} will take in photometry and spectra from the \texttt{DATA} directory in order to make the \texttt{Red\_TTS} observation object which will then be de-reddened and saved to a \texttt{.pkl} file containing the de-reddened \texttt{TTS\_Obs} object. This object can be looked at from the command line using the \texttt{look} function. Uncertainties associated with flux measurements can also be stored in this object/pickle.
 
-\textit{Note: While creating this file for other objects, one must be mindful of the units that the observations are entered in. \edge is constructed to work with units of $ergs\,s^{-1}\,cm^{-2}$ ($\lambda F \lambda$). If your observations have other units, you will need to convert them. \edge does have several useful functions for doing so, e.g., \texttt{convertMag}, \texttt{convertJy}. Units of wavelength must be in microns.}
+\vspace{2mm}
+
+\noindent \textit{Note: While creating this file for other objects, one must be mindful of the units that the observations are entered in. \edge is constructed to work with units of $ergs\,s^{-1}\,cm^{-2}$ ($\lambda F \lambda$). If your observations have other units, you will need to convert them. \edge does have several useful functions for doing so, e.g., \texttt{convertMag}, \texttt{convertJy}. Units of wavelength must be in microns.}
 
 \subsection{Making the job files}
 
@@ -495,15 +545,17 @@ Change your paths (gridpath, clusterpath) in \texttt{DEMO\_jobmaker.py} and do
 \texttt{[UNIX] python DEMO\_jobmaker.py}
 \vspace{2mm}
 
-This will create a small grid of three job files (\texttt{job001,job002,job003}) for models with different values of \texttt{alpha}, the viscosity in the disk.  The job file parameters are in \texttt{DEMO\_imlup\_job\_params.txt}.
+\noindent This will create a small grid of three job files (\texttt{job001,job002,job003}) for models with different values of \texttt{alpha}, the viscosity in the disk.  The job file parameters are in \texttt{DEMO\_imlup\_job\_params.txt}.
 
-\subsection{Running and collating models}
+\subsection{Running and collating models}\label{running}
 
-For the purposes of this tutorial, the jobs for this grid of models have already been uploaded and submitted to the cluster and collated for you, with the fits files you will need for analysis placed in the demo folder. 
+\noindent For the purposes of this tutorial, the jobs for this grid of models have already been uploaded and submitted to the cluster and collated for you, with the fits files you will need for analysis placed in the demo folder. 
+\vspace{2mm}
 
-Below we outline the steps that were taken to create the fits files.  You can follow these steps for practice or just read through these steps and copy the \texttt{.fits} files in \texttt{DEMO/model} into your space. 
+\noindent Below we outline the steps that were taken to create the fits files.  You can follow these steps for practice or just read through these steps and use \texttt{.fits} files in \texttt{DEMO/model}.
+\vspace{2mm}
 
-In practice, the job files you just created would be moved to the \texttt{SCC} using the \texttt{UNIX} command \texttt{scp} as follows: 
+\noindent In practice, the job files you just created would be moved to the \texttt{SCC} using the \texttt{UNIX} command \texttt{scp} as follows: 
 
 \vspace{2mm}
 \texttt{[UNIX] scp job* username@scc1.bu.edu:yourdirectory}
@@ -512,26 +564,47 @@ In practice, the job files you just created would be moved to the \texttt{SCC} u
 For small grids, jobs can be submitted to the cluster individually with
 
 \vspace{2mm}
-\texttt{[UNIX] qsub job001}
-\texttt{[UNIX] qsub job002}
-\texttt{[UNIX] qsub job003}
+\texttt{[UNIX] qsub job001} \\
+\texttt{[UNIX] qsub job002} \\
+\texttt{[UNIX] qsub job003} \\
 \vspace{2mm}
 
-For large grids, it is recommended that jobs are submitted using a \texttt{run\_all.csh} script (also found in the \texttt{DEMO} directory).  You would upload \texttt{run\_all.csh} to your directory and edit the path in \texttt{run\_all.csh} to point to your run directory.  Then you would submit to the cluster with
+For large grids, it is recommended that jobs are submitted using a \texttt{run\_all.csh} script (also found in the \texttt{DEMO} directory). 
+The \texttt{run\_all.csh} file is created when you run  \texttt{DEMO\_jobmaker.py}. 
+You would upload \texttt{run\_all.csh} to your directory and edit the path in \texttt{run\_all.csh} to point to your run directory.  Once the path is correct you would submit to the cluster with
 
 \vspace{2mm}
 \texttt{[UNIX] qsub -t 1-3 runall.csh}
 \vspace{2mm}
 
-where \texttt{1-3} in the example above should correspond to the range of job file numbers.
-
-Once the jobs have all finished running, many files will be generated on the cluster and the results must be collated. This is most easily done using \texttt{masscollate}. First, use \texttt{scp} to get the \texttt{collate.py} file located in \texttt{MODULES} within \texttt{EDGE} in your working directory on the cluster using:
-
-\vspace{2mm}
-\texttt{[UNIX] scp collate.py username@scc1.bu.edu:yourdirectory}
+\noindent where \texttt{1-3} in the example above should correspond to the range of job file numbers. 
 \vspace{2mm}
 
-\noindent Note that you will need to keep track that you have the latest version of \texttt{collate.py} in your working directory.  Then do
+\noindent \textit{Note: If you created the \texttt{run\_all.csh} file with a \texttt{jobmaker} script, then it should already contain the correct path. Additionally, the \texttt{run\_all.csh} script should include a commented out line containing the above command with the correct job numbers so all you need to do is copy and paste.}
+\vspace{2mm}
+
+You can check that your files are running by: 
+
+\vspace{2mm}
+\texttt{[UNIX] qstat -u username}
+\vspace{2mm}
+
+It typically takes around two hours for jobs to run. Sometimes less, sometimes more. If you choose to, you can have an email sent when your files are done by changing the \texttt{runall.csh} file, I would do this in the early stages and then turn it off when you are running larger job arrays. 
+
+\noindent Once the jobs have all finished running, many files will be generated on the cluster and the results must be collated. This is now done automatically, but it may be necessary to re-collate files. This is most easily done using \texttt{masscollate}. If you have set up your \texttt{.bashrc} file correctly on the cluster (see section \ref{scc}), your python should be able to find \texttt{collate.py}.
+
+
+
+
+% First, use \texttt{scp} to get the \texttt{collate.py} file located in \texttt{MODULES} within \texttt{EDGE} in your working directory on the cluster using:
+
+%\vspace{2mm}
+%\texttt{[UNIX] scp collate.py username@scc1.bu.edu:yourdirectory}
+%\vspace{2mm}
+
+%\noindent Note that you will need to keep track that you have the latest version of \texttt{collate.py} in your working directory.  Then do
+\noindent If collating by hand, make sure you have the latest version of collate.py and do the following:
+
 
 \vspace{2mm}
 \texttt{[UNIX] module load anaconda3}
@@ -581,14 +654,13 @@ In this example, we will be searching for the best fitting model using the grid 
 For each job number, the script loads in the model and it checks to see if the job failed using Python's built in error handling and the `\texttt{failed}' tag from \texttt{collate}. 
 Next it initializes the model object using the \texttt{dataInit} function. 
 
-We then enter the for loop over inner wall height and calculate the total emission from all of the model components using the \texttt{calc\_total} function. The $\chi^2$ value for this total emission is calculated and stored. Next the script searches for the lowest $\chi^2$ value for all the different wall heights and selects the lowest value. Using this wall height, a plot is made and saved by the \texttt{look} function, and the value of $\chi^2$ is stored along with the job number and the wall height. This repeats for each job number. \texttt{.pdf} files of each job are created and the best-fit model appears in a gui.  Close the gui. After running the script, the best models can be found by doing the following at the command line:
+We then enter the for loop over inner wall height and calculate the total emission from all of the model components using the \texttt{calc\_total} function. The $\chi^2$ value for this total emission is calculated and stored. Next the script searches for the lowest $\chi^2$ value for all the different wall heights and selects the lowest value. Using this wall height, a plot is made and saved by the \texttt{look} function, and the value of $\chi^2$ is stored along with the job number and the wall height. This repeats for each job number. \texttt{.pdf} files of each job are created and the best-fit model appears in a the default python plotting GUI. Close the GUI. After running the script, the best models can be found by doing the following at the command line:
 
 \vspace{2mm}
 \texttt{>>> print(chi2[order])}
 \vspace{2mm}
 
 where \texttt{order} is an array of indices found by using \texttt{numpy.argsort} on \texttt{chi2[:,1]}, which contains all the $\chi^2$ values. 
-
 
 \section{Example: using the code via the command line} \label{commandline}
 
@@ -605,7 +677,7 @@ If you are working with a \texttt{.fits} file, do
 this imports a module that allows you to the open the fits file 
 
 \vspace{2mm}
-\texttt{>>> irs = fits.open( ‘name\_of\_fits\_file’)}
+\texttt{>>> irs = fits.open(`name\_of\_fits\_file')}
 \vspace{2mm}
 
 \vspace{2mm}	
@@ -614,32 +686,42 @@ this imports a module that allows you to the open the fits file
 	
 this prints all of the information in the fits file
 	
-If you notice in the header there is a section that says ``/DATA FLOW KEYWORDS'' This tells you what columns the data you need are found in, you’ll typically only need the wavelength, flux and flux\_error columns. 
+\noindent If you notice in the header there is a section that says ``/DATA FLOW KEYWORDS'' This tells  you what columns the data you need are found in, you will typically only need the wavelength,  \texttt{flux} and \texttt{flux\_error}, and \texttt{nod\_error} columns. You can collect the data into individual arrays like this:
 
 \vspace{2mm}
-\texttt{>>> irsd= irs[0].data}
+\texttt{>>> irs\_wl= irs[0].data[:,0]}
+\texttt{>>> irs\_flux= irs[0].data[:,1]}
+\texttt{>>> irs\_ferr= irs[0].data[:,3]}
+\texttt{>>> irs\_noderr= irs[0].data[:,3]}
+
 \vspace{2mm}	
 
-stores the data array that includes the wavelength,flux,errors etc.
+\noindent The nod and flux errors should be added in quadrature:
+
+\vspace{2mm}
+\texttt{irs\_err = np.sqrt(irs\_ferr**2 + irs\_noderr**2)}
+\vspace{2mm}
+
+%stores the data array that includes the wavelength,flux,errors etc.
 	   
-\vspace{2mm}
-\texttt{>>> irs.close()}   
-\vspace{2mm}	
+%\vspace{2mm}
+%\texttt{>>> irs.close()}   
+%\vspace{2mm}	
 
-This just closes the fits file.
+%This just closes the fits file.
 
-Unfortunately, you can’t simply store these data columns into their respective arrays.
-For example: \texttt{wave=irsd.data[0]} will not put all of the wavelength data into that array but rather it will go by the row. 
+%Unfortunately, you cannot simply store these data columns into their respective arrays.
+%For example: \texttt{wave=irsd.data[0]} will not put all of the wavelength data into that array but rather it will go by the row. 
 
-BUT there is a nifty trick to this which is using the Transpose function. It simply goes like this:
+%BUT there is a nifty trick to this which is using the Transpose function. It simply goes like this:
 
-\vspace{2mm}
-\texttt{>>> irs\_wave= irsd.T[0]}
-\vspace{2mm}
+%\vspace{2mm}
+%\texttt{>>> irs\_wave= irsd.T[0]}
+%\vspace{2mm}
 
-This will take the first element of that row and put that into an array and fix that problem. Be sure to print these arrays to check if it makes sense!
+%This will take the first element of that row and put that into an array and fix that problem. Be sure to print these arrays to check if it makes sense!
 
-Next Problem:   Keep in mind that the flux and flux\_errors are in Jansky’s which need to be converted into ergs/cm/s$^s$. There is a function in \edge that does that for you. So I recommend converting those fluxes after you have transposed them. 	
+Next Problem:   Keep in mind that the flux and flux\_errors are in Jy which need to be converted into ergs/cm/s$^s$. There is a function in \texttt{util} that does that for you.
 
 If you are working with a \texttt{.csv} file, do
 
@@ -647,21 +729,21 @@ If you are working with a \texttt{.csv} file, do
 \texttt{>>> from astropy.io import ascii}  
 \vspace{2mm}
 
-This imports the module to read csv files.  
+This imports the module to read csv files. Alternatively, if the file is simple, \texttt{np.gentromtxt} will also do the job.
 
 \vspace{2mm}
-\texttt{>>> data= ascii.read(‘name\_of\_csv\_file’, format=’csv’)}
+\texttt{>>> data= ascii.read(`filename', format=`csv')}
 \vspace{2mm}
 
 You can now save the data columns into an array
 
 \vspace{2mm}
-\texttt{>>> wave=data[‘name of wavelength column in csv file’]}
+\texttt{>>> wave=data[`name of wavelength column in csv file']}
 \vspace{2mm}
 
 Be sure to print the arrays to check that the data matches the column.
 
-Be sure to check the unites of the data.  Sometimes the data will be in weird units like  flux/ angstroms or some other wierd thing. If your data is not in Jansky’s or lFl  (ergs/cm/s$^2$) then you need to convert it to get to those units. 
+Be sure to check the units of the data.  Sometimes the data will be in weird units like  flux/ angstroms or some other weird thing. If your data is not in $\lambda F_\lambda$ (ergs/cm/s$^2$) then you need to convert it to get to those units. 
 
 \subsection{Dereddening data}
 
@@ -676,32 +758,32 @@ How to do this is outlined in Section~\ref{functions} but here we outline a spec
 For the observed data:
 
 \vspace{2mm}
-\texttt{>>> PDS66obs = edge.TTS\_Obs(‘PDS66’)}
+\texttt{>>> PDS66obs = edge.TTS\_Obs(`PDS66')}
 \vspace{2mm}
 
 \vspace{2mm}
-\texttt{>>> PDS66obs.add\_photometry(‘Name of where photometry is from’,}\\
+\texttt{>>> PDS66obs.add\_photometry(`Name of where photometry is from',}\\
 \texttt{wavelength\_array, flux\_array, errors = errors\_array)}
 \vspace{2mm}
 
 \vspace{2mm}
-\texttt{>>> PDS66obs.add\_spectra(‘Name of where spectra is from’,}\\
+\texttt{>>> PDS66obs.add\_spectra(`Name of where spectra is from',}\\
 \texttt{wavelength\_array, flux\_array, errors = errors\_array)}
 \vspace{2mm}
 
 For the dereddened data:
 
 \vspace{2mm}
-\texttt{>>> PDS66red =edge.Red\_Obs(‘PDS66’)}
+\texttt{>>> PDS66red =edge.Red\_Obs(`PDS66')}
 \vspace{2mm}
 
 \vspace{2mm}
-\texttt{>>> PDS66red.add\_photometry(‘Name of where photometry is from’,}\\
+\texttt{>>> PDS66red.add\_photometry(`Name of where photometry is from',}\\
 \texttt{wavelength\_array, flux\_array, errors = errors\_array)}	
 \vspace{2mm}
 
 \vspace{2mm}
-\texttt{>>> PDS66red.add\_spectra(‘Name of where spectra is from’,}\\
+\texttt{>>> PDS66red.add\_spectra(`Name of where spectra is from',}\\
 \texttt{wavelength\_array, flux\_array, errors = errors\_array)}	
 \vspace{2mm}
 
@@ -733,7 +815,7 @@ Load pickle file back in to deredden
 \texttt{>>> PDS66r= edge.loadPickle(‘PDS66’, path, red =1 )}
 \vspace{2mm}
 	
-Define the edgepath to where your \edge-master folder is. For me it is like this:
+Define the \texttt{edgepath} to where your \edge-master folder is. For me it is like this:
 
 \vspace{2mm}
 \texttt{>>> edgepath= ‘/Users/ugresearch/Desktop/mandar11/EDGE-master/’}
@@ -752,44 +834,22 @@ This will automatically replace the red pickle file with a new object file. All 
 
 \subsection{Create job files and put on the SCC}
 
-You are going to want to make some job files. There are two ways to do this. You can either use \texttt{edge.job\_file\_create()} from the command line or you can use \texttt{jobmaker.py}. Either of these are fine options. 
+Although it is strong reccomended that you use the \texttt{jobmaker.py} script for job file creation, it can be done at the command line using the \texttt{edge.job\_file\_create()} function in \edge. Before you begin to spit out job files out after job files, make sure you are careful with the \texttt{job\_sample file}. The \texttt{job\_sample} file is the template from which \texttt{job\_file\_create} creates the job files. 
 
-Before you begin to spit out job files out after job files, make sure you are careful with the job\_sample file. The job\_sample file is the template from which job\_file\_create creates the job files. 
+For convenience you will want to change the stellar parameters in the job sample file to match that of your object so you don not have to repeat those parameters in \texttt{job\_file\_create}. Next, and this is the most Important, is that you must ensure that you change the labelend (around line 160 in job\_sample) to that of the name of your object amd the corresponding job number you are about to make with job\_file\_create. 
 
-For convenience you will want to change the stellar parameters in the job sample file to match that of your object so you don’t have to repeat those parameters in job\_file\_create. Next, and this is the Most Important, is that you must ensure that you change the labelend (around line 160 in job\_sample) to that of the name of your object amd the corresponding job number you are about to make with job\_file\_create. 
+I have had many models go bad because the labelend did not match the job number DO NOT LET THIS BE YOU. 
 
-I have had many models go bad because the labelend did not match the job number DON’T LET THIS BE YOU. 
+If you are using \texttt{jobmaker.py}, most of this is taken care of for you.
 
-Once you have double, triple, maybe even quadrupled check your labelend, then you can go into ipython and create the job file.
+%Once you have double, triple, maybe even quadrupled check your labelend, then you can go into ipython and create the job file.
  
-If you open up \edge to around line 762 you can see all the parameters that you will need to input but the ones we usually vary is amaxs, epsilon, and alpha. Rdisk, dist and temp are ones that are also varied but you will often have those values from papers etc. 
+%In \texttt{jobmaker.py} you can see all the parameters that you will need to input but the ones that we usually vary are \texttt{amaxs}, \texttt{epsilon}, and \texttt{alpha}. \texttt{Rdisk}, \texttt{dist} and \texttt{temp} are ones that are also varied but you will often have those values from papers etc. 
 
-Now that you have made some job files open a new tab in the terminal.
 
-Open new tab and go to secure shell: 
+The commands for moving jobs to the cluster, submitting them and collating are the mostly the same as presented in section \ref{running}. One difference is that you will have to create your own runall.csh script.
 
-\vspace{2mm}
-\texttt{[UNIX] ssh username@scc1.bu.edu}
-\vspace{2mm}
-
-\vspace{2mm}
-\texttt{[UNIX] cd /projectnb/bu-disks/username}
-\vspace{2mm}
-
-Create a folder for your object using \texttt{mkdir object\_folder}.
-
-Secure copy the files from your folder into the folder you have made in the cluster. You can do this by putting:
-
-\vspace{2mm}
-\texttt{[UNIX] scp job001 username@scc1.bu.edu:/projectnb/bu-disks/}\\
-\texttt{username/object\_folder}
-\vspace{2mm}
-
-\subsection{Submitting jobs to the SCC}
-
-Go back to your directory and check that the jobfiles are there. Using the same methods of copying job files, copy the runall.csh script from your local computer (in \edge directory) into your directory on the cluster. 
-
-Once you have a runall.csh script and all of your job files edit the runall.csh script so that it matches your directory. 
+Using the same methods of copying job files, copy the \texttt{runall.csh} script from your local computer (in \edge directory) into your directory on the cluster. Check that the path in the \texttt{runall.csh} script matches the directory on the cluster where you are running the code. If it does not, you can make changes to text files on the cluster using one of the text editors there (e.g. emacs/vi). Here are the commands for vi:
 
 \vspace{2mm}
 \texttt{[UNIX] vi runall.csh}
@@ -807,51 +867,75 @@ Then make your changes.
 
 This saves the file, writes over it and exits.
 
-After all your things are in order you can submit a job array!
+After all your things are in order you can submit a job array! Retrieving files is identical to the instructions in section \ref{running}.
 
-\vspace{2mm}
-\texttt{[UNIX] qsub -t 1-1 runall.csh}
-\vspace{2mm}
 
-The ‘1-1’ portion corresponds to the job numbers so it’s essentially from 1 to 1’ if you were only submitting the first job file.
-You can check that your files are running by: 
 
-\vspace{2mm}
-\texttt{[UNIX] qstat -u username}
-\vspace{2mm}
+%Now that you have made some job files open a new tab in the terminal.
 
-It typically takes around two hours for jobs to run. Sometimes less, sometimes more. If you choose to, you can have an email sent when your files are done, I would do this in the early stages and then turn it off when you are running larger job arrays. 
+%Open new tab and go to secure shell: 
 
-\subsection{Collating output files}
+%\vspace{2mm}
+%\texttt{[UNIX] ssh username@scc1.bu.edu}
+%\vspace{2mm}
 
-Copy \texttt{collate.py} from your local computer's \edge directory to the cluster using \texttt{scp}.  I typically have my object folder and then a sub-folder titled “models” where all the data files, runall.csh etc goes but I keep collate in the object file. Just a preference. 
+%\vspace{2mm}
+%\texttt{[UNIX] cd /projectnb/bu-disks/username}
+%\vspace{2mm}
 
-Then do
+%Create a folder for your object using \texttt{mkdir object\_folder}.
 
-\vspace{2mm}
-\texttt{[UNIX] module load anaconda3}
-\texttt{[UNIX] ipython}
-\vspace{2mm}
+%Secure copy the files from your folder into the folder you have made in the cluster. You can do this by putting:
 
-Change the directory to be located in the object files or wherever you have \texttt{collate.py}. Then set a path where you have the data files or want the data files to go. I typically keep these paths the same but you don’t have to 
+%\vspace{2mm}
+%\texttt{[UNIX] scp job001 username@scc1.bu.edu:/projectnb/bu-disks/}\\
+%\texttt{username/object\_folder}
+%\vspace{2mm}
 
-\vspace{2mm}
-\texttt{>>> from collate import collate}
-\vspace{2mm}
+%\subsection{Submitting jobs to the SCC}
 
-Exit python with \texttt{>>> exit()}, then copy the collated \texttt{.fits} files to your local computer.  You can do either of the following.
+%This step is the same at the command line as the instructions in section \ref{running}
 
-\vspace{2mm}
-\texttt{[UNIX] scp username@scc1.bu.edu:/projectnb/bu-disks/username/}\\
-\texttt{object/file\_location/*.fits .} 
-\vspace{2mm}
 
-or
+%\vspace{2mm}
+%\texttt{[UNIX] qsub -t 1-1 runall.csh}
+%\vspace{2mm}
 
-\vspace{2mm}
-\texttt{[UNIX] scp fits\_.fits ugresearch@moya.bu.edu:/Users/ugresearch/}\\
-\texttt{Evan/Object/}
-\vspace{2mm}
+%The ‘1-1’ portion corresponds to the job numbers so it’s essentially from 1 to 1’ if you were only submitting the first job file.
+
+
+%\subsection{Collating output files}
+
+%Copy \texttt{collate.py} from your local computer's \edge directory to the cluster using \texttt{scp}.  I typically have my object folder and then a sub-folder titled “models” where all the data files, runall.csh etc goes but I keep collate in the object file. Just a preference. 
+
+%If you need to collate files by hand make sure you have \texttt{collate.py} in your python path and follow the steps above in section 5.5.
+
+%Then do
+
+%\vspace{2mm}
+%\texttt{[UNIX] module load anaconda3}
+%\texttt{[UNIX] ipython}
+%\vspace{2mm}
+
+%Change the directory to be located in the object files or wherever you have \texttt{collate.py}. Then set a path where you have the data files or want the data files to go. I typically keep these paths the same but you don’t have to 
+
+%\vspace{2mm}
+%\texttt{>>> from collate import collate}
+%\vspace{2mm}
+
+%Exit python with \texttt{>>> exit()}, then copy the collated \texttt{.fits} files to your local computer.  You can do either of the following.
+
+%\vspace{2mm}
+%\texttt{[UNIX] scp username@scc1.bu.edu:/projectnb/bu-disks/username/}\\
+%\texttt{object/file\_location/*.fits .} 
+%\vspace{2mm}
+
+%or
+
+%\vspace{2mm}
+%\texttt{[UNIX] scp fits\_.fits ugresearch@moya.bu.edu:/Users/ugresearch/}\\
+%\texttt{Evan/Object/}
+%\vspace{2mm}
 
 
 \section{Conclusion}

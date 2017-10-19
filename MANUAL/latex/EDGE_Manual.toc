@@ -4,33 +4,31 @@
 \contentsline {subsection}{\numberline {1.3}Using GitHub}{3}
 \contentsline {subsection}{\numberline {1.4}Adding \texttt {EDGE }to your Python path}{4}
 \contentsline {subsection}{\numberline {1.5}Description of \texttt {EDGE }package directories}{4}
-\contentsline {subsubsection}{\numberline {1.5.1}\texttt {EDGE }Paths}{4}
+\contentsline {subsubsection}{\numberline {1.5.1}\texttt {EDGE }Paths}{5}
 \contentsline {section}{\numberline {2}Intro to python}{5}
 \contentsline {subsection}{\numberline {2.1}Basic python usage}{5}
-\contentsline {subsection}{\numberline {2.2}Reloading a function}{5}
-\contentsline {subsection}{\numberline {2.3}Jargon}{5}
+\contentsline {subsection}{\numberline {2.2}Reloading a function}{6}
+\contentsline {subsection}{\numberline {2.3}Jargon}{6}
 \contentsline {section}{\numberline {3}Important Functions and Classes}{6}
-\contentsline {subsection}{\numberline {3.1}Collate}{6}
-\contentsline {subsection}{\numberline {3.2}\texttt {TTS\_Model}}{7}
+\contentsline {subsection}{\numberline {3.1}Collate}{7}
+\contentsline {subsection}{\numberline {3.2}\texttt {TTS\_Model}}{8}
 \contentsline {subsection}{\numberline {3.3}\texttt {PTD\_Model}}{9}
-\contentsline {subsection}{\numberline {3.4}TTS\_Obs}{9}
-\contentsline {subsection}{\numberline {3.5}\texttt {SPPickle}}{10}
-\contentsline {subsection}{\numberline {3.6}\texttt {Red\_Obs}}{10}
+\contentsline {subsection}{\numberline {3.4}TTS\_Obs}{10}
+\contentsline {subsection}{\numberline {3.5}\texttt {SPPickle}}{11}
+\contentsline {subsection}{\numberline {3.6}\texttt {Red\_Obs}}{11}
 \contentsline {subsection}{\numberline {3.7}\texttt {look}}{11}
-\contentsline {subsection}{\numberline {3.8}\texttt {loadPickle}}{11}
-\contentsline {subsection}{\numberline {3.9}\texttt {job\_file\_create}}{11}
-\contentsline {subsection}{\numberline {3.10}\texttt {job\_optthin\_create}}{11}
+\contentsline {subsection}{\numberline {3.8}\texttt {loadPickle}}{12}
+\contentsline {subsection}{\numberline {3.9}\texttt {job\_file\_create}}{12}
+\contentsline {subsection}{\numberline {3.10}\texttt {job\_optthin\_create}}{12}
 \contentsline {subsection}{\numberline {3.11}\texttt {model\_rchi2}}{12}
 \contentsline {subsection}{\numberline {3.12}\texttt {starparam}}{12}
-\contentsline {section}{\numberline {4}Example: using the code via scripts}{12}
+\contentsline {section}{\numberline {4}Example: using the code via scripts}{13}
 \contentsline {subsection}{\numberline {4.1}Making the observation pickle}{13}
-\contentsline {subsection}{\numberline {4.2}Making the job files}{13}
-\contentsline {subsection}{\numberline {4.3}Running and collating models}{13}
-\contentsline {subsection}{\numberline {4.4}Analysis of the models}{14}
-\contentsline {section}{\numberline {5}Example: using the code via the command line}{15}
-\contentsline {subsection}{\numberline {5.1}Reading in data}{15}
-\contentsline {subsection}{\numberline {5.2}Dereddening data}{16}
-\contentsline {subsection}{\numberline {5.3}Create job files and put on the SCC}{18}
-\contentsline {subsection}{\numberline {5.4}Submitting jobs to the SCC}{19}
-\contentsline {subsection}{\numberline {5.5}Collating output files}{19}
-\contentsline {section}{\numberline {6}Conclusion}{20}
+\contentsline {subsection}{\numberline {4.2}Making the job files}{14}
+\contentsline {subsection}{\numberline {4.3}Running and collating models}{14}
+\contentsline {subsection}{\numberline {4.4}Analysis of the models}{15}
+\contentsline {section}{\numberline {5}Example: using the code via the command line}{16}
+\contentsline {subsection}{\numberline {5.1}Reading in data}{16}
+\contentsline {subsection}{\numberline {5.2}Dereddening data}{17}
+\contentsline {subsection}{\numberline {5.3}Create job files and put on the SCC}{19}
+\contentsline {section}{\numberline {6}Conclusion}{19}

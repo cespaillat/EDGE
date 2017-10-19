@@ -1,18 +1,17 @@
 #!/bin/csh
 # HISTORY:
+# Sep17 Quique: Models can now be automatically collated after running.
+# collate.py from the EDGE package is used.
 # Jun17 Quique: New parameter D2G=dust-to-gas mass ratio. It is used in 
 # opa.f(v3) and sed_angle.f(v3p1), but WALL (v2) also needed changes. 
 # Now the opacity files should be calculated for an abunance of 1 
 # for each component. Each component will be then scaled by its abundance.
 # New parameter AMAXW, the amax of the dust grains in the wall. By default
 # it will be the same as in the disk, but it can now be changed independently from the disk.
-#
 # Jun17 CE: New version of Photosphere (v3). It can now use KH95 or PM13 
 # (Pecaut & Mamajek 2013) tables, chosen with the parameter TABLE.
-#
 # Mar17 NC: New version of Photosphere (v2). It now includes a better treatment for
 # Herbig Ae/Be stars.
-#
 # Nov15 Quique: Two different mass accretion rates are used:
 # MDOT: Mass accretion rate in the disk, as usual. Used to calculate the surface 
 # density of the disk. It goes into viscoso as an input and is read from fort14.vis
@@ -33,6 +32,7 @@
 set MAIN=/project/bu-disks/shared/TODOf77_081109
 set MAINCODE=$MAIN/CODEf77_081109
 set MAINPOL=$MAIN/POLVO
+set MAINEDGE=/project/bu-disks/shared/EDGE/MODULES
 
 #stellar parameters  -------------------------------
 set MSTAR='0.6' #in Msun
@@ -109,6 +109,9 @@ set epsilonbig='12.5'
 #------------------------
 #set EPS='0.5'
 #set epsilonbig='6.8'
+#------------------------
+#set EPS='0.8'
+#set epsilonbig='3.3'
 #------------------------
 #set EPS='1.0'
 #set epsilonbig='1.0'
@@ -258,10 +261,14 @@ set ISEDT='1'
 #run sed_scatter (scattered emission)? (0=n,1=y) 
 #has same dependencies as sed_angle
 set ISEDS='0'
+#------------------------
+#collate the model automatically? (0=n,1=y)
+#it uses collate.py from EDGE
+set ICOLLATE='1'
 
 
 ##########################################################
-#DO NOT CHANGE ANYTHING BELOW... 
+#DO NOT CHANGE ANYTHING BELOW...
 #UNLESS YOU KNOW WHAT YOU ARE DOING!
 ##########################################################
 #abundances of graphite and ice
@@ -425,7 +432,7 @@ set FILESILB=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxb.g.ab$labelsilab.extinc
 set FILEGRAFB=$MAINPOL/GRAF/graf.p3p5.$lamaxb.g.ab$labgrafab.extinc
 set FILEICEB=$MAINPOL/H2OICE/h2oice.p3p5.$lamaxb.g.ab$labiceab.extinc.wb08
 
-#copy output from combina to silicate file for small grains 
+#copy output from combina to silicate file for small grains
 #(crystal in upper levels)
 set  FILESILS=$FILESILSALIDA
 set FILEGRAFS=$MAINPOL/GRAF/graf.p3p5.$lamaxs.g.ab$labgrafab.extinc
@@ -545,14 +552,12 @@ EOD
 endif
 #end OPA----------------------------------------
 
+# begin VIS--------------------------------------
 set FILESALVIS=fort14.a$ALPHA.vis.$labcom.$labeps.$lamaxs.dat
-
 set VISFILEPMM=$DIRCOM/pmm.dat
 set VISFILEGAD=$DIRCOM/gadiabatico.dat
 
-# begin VIS--------------------------------------
 if  ($IVIS == 1) then
-
 echo Mstar $MSTAR Tstar $TSTAR Rstar $RSTAR Mdot $MDOT >> $LOGFILE
 echo alpha $ALPHA epsilon $EPS >> $LOGFILE
 
@@ -579,18 +584,17 @@ endif
 # end VIS--------------------------------------------
 
 
+#begin IRR-------------------------------------------
 set extension=a$ALPHA.irr.$labcom.$labeps.$lamaxs\_$lamaxb.dat
-
 set FILESALIRR=fort14.$extension
 
-#begin IRR-------------------------------------------
 if  ($IIRR == 1) then
 set labelepsilon=$labeps
 set labelamax=$lamaxs
 set FILEPLANCKMEANS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
-set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat 
+set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
 set FILEPLANCKMEANSTS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
-set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat 
+set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 set FILEPLANCKMEANSTOT=plancktot.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 set labelepsilon=$labepb
 set labelamax=$lamaxb
@@ -601,7 +605,7 @@ set FILEROSSMEANBTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$lab
 set FILEPLANCKMEANBTOT=plancktot.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 
 rm -f $FILESALIRR
-echo calculating irradiated disk 
+echo calculating irradiated disk
 $IRR_DOSAMAX << EOD
 $TSTAR $RSTAR $MSTAR $Rmagm
 $MDOTSTAR
@@ -627,22 +631,24 @@ endif
 #end IRR---------------------------------------
 
 #begin disk properties calculation--------------
+set FILEOUT=fort15.$extension
+set FILEPROP=prop.$extension
+
 if  ($IPROP == 1) then
 echo calculating disk properties, fort15
-set FILEOUT=fort15.$extension
+
 rm -f $FILEOUT
 $PROPERTIES << EOD
 $FILESALIRR
 $FILEOUT
 EOD
 
-set FILEPROP=prop.$extension
 set labelepsilon=$labeps
 set labelamax=$lamaxs
 set FILEPLANCKMEANS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
-set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat 
+set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
 set FILEPLANCKMEANSTS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
-set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat 
+set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 set FILEPLANCKMEANSTOT=plancktot.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 set labelepsilon=$labepb
 set labelamax=$lamaxb
@@ -674,6 +680,8 @@ endif
 
 #file with RIN, to be used by SED calculations
 set FILERIN=rin.t$TEMP$lamaxw.$labelend
+set FILEWALLSED=fort17.mu$MUI.$TSTAR.mp$MDOT.a$ALPHA.alt$ALTINH.t$TEMP$lamaxw.$labelend
+set FILEWALLIMAGE=wallimage.mu$MUI.$extension.$labelend
 
 if  ($IWALLDUST == 1) then
 #begin wall at dust destruction calculation--------------
@@ -691,9 +699,6 @@ set TAUEXT='0'          #give tau if choose extinguished
 set FILESILWALL=$FILESILSALIDAW
 set FILEORGWALL=$MAINPOL/GRAF/graf.p3p5.$lamaxw.g.ab$labgrafab.extinc
 set FILEICEWALL=$MAINPOL/H2OICE/h2oice.p3p5.$lamaxw.g.ab$labiceab.extinc.wb08
-
-set FILEWALLSED=fort17.mu$MUI.$TSTAR.mp$MDOT.a$ALPHA.alt$ALTINH.t$TEMP$lamaxw.$labelend
-set FILEWALLIMAGE=wallimage.mu$MUI.$extension.$labelend
 
 $WALLFAST << EOD
 $TEMP
@@ -722,17 +727,17 @@ endif
 #recover RIN from wall calculation
 set RIN=`cat $FILERIN`
 echo RIN $RIN >> $LOGFILE
-echo RIN $RIN 
+echo RIN $RIN
 
 #begin SEDT-----------------------------------------
+set salidasedt=angle.mu$MUI.rd$RDISK.rin$RIN.$extension
 
 if ($ISEDT == 1) then
-set salida=angle.mu$MUI.rd$RDISK.rin$RIN.$extension
 echo calculating thermal emission
 echo Calculation of thermal emission $fecha cosi $MUI >> $LOGFILE
-rm -f $salida
+rm -f $salidasedt
 $SEDANGLE << EOD
-$salida
+$salidasedt
 $FILESALIRR
 $D2G
 $silab $grafab $iceab
@@ -772,7 +777,7 @@ $OPAMOL5
 $OPAMOL6
 $WLCUT_ANGLE
 EOD
-echo $salida
+echo $salidasedt
 endif
 #end SED------------------------
 
@@ -780,14 +785,13 @@ endif
 #begin scatter-----------------------------------
 
 echo $WLCUT_SCATT WLCUT_SCATT
-
+set salidaseds=scatt.mu$MUI.rd$RDISK.rin$RIN.$extension
 if ($ISEDS == 1) then
-set salida=scatt.mu$MUI.rd$RDISK.rin$RIN.$extension
 echo calculating scattered emission
 echo Calculation of scattered emission $fecha cosi $MUI >> $LOGFILE
-rm -f $salida
+rm -f $salidaseds
 $SEDSCATT<< EOD
-$salida
+$salidaseds
 $FILESALIRR
 $EPS
 $FILESILB
@@ -826,11 +830,32 @@ $OPAMOL5
 $OPAMOL6
 $WLCUT_SCATT
 EOD
-echo $salida
+echo $salidaseds
 endif
 #end scatter-------------------------------
 
+#collate the model
+if ($ICOLLATE == 1) then
+module load anaconda3 # necessary to run python3 in BU cluster
+setenv PYTHONPATH $PYTHONPATH\:$MAINEDGE
+set fileoutput=$labelend'_outputs'
+echo $FILEPHOT > $fileoutput
+echo $FILERIN >> $fileoutput
+echo $FILEWALLSED >> $fileoutput
+echo $salidasedt >> $fileoutput
+echo $salidaseds >> $fileoutput
+echo $FILESALIRR >> $fileoutput
+echo $FILEOUT >> $fileoutput
+echo $FILEPROP >> $fileoutput
+
+set nophot="abs($IPHOT - 1)"
+set nowall="abs($IWALLDUST - 1)"
+set noangle="abs($ISEDT - 1)"
+set noscatt="abs($ISEDS - 1)"
+
+python -c "from collate import collate; collate('./','./',file_outputs='$fileoutput',nophot=$nophot,nowall=$nowall,noangle=$noangle,noscatt=$noscatt)"
+
+endif
+#end collate
 
 exit
-
-

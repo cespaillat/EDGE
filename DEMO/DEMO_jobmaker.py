@@ -49,7 +49,7 @@ MODIFICATION HISTORY
 gridpath = '/Users/Connor/Desktop/Research/diad/EDGE/DEMO/models/'
 
 #Where you will be running the jobs on the cluster
-clusterpath = '/projectnb/bu-disks/connorr/test/'
+clusterpath = '/projectnb/bu-disks/connorr/DEMO/'
 
 #Tag that you can add to make the parameter file identifiable for a given run
 #Can leave it blank if you don't care. 

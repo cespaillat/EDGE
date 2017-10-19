@@ -67,7 +67,7 @@ for job in jobs:
     #Load in the header. It will be used to check if jobs have failed.
     hdu = fits.open(modelpath+obj+'_'+job+'.fits')
     
-    #Load innthe model
+    #Load in the model
     model = edge.TTS_Model(obj, job, dpath = modelpath)
     
     #Check to see if the model failed and if it did, move onto the next model.

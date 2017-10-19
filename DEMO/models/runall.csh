@@ -9,7 +9,7 @@
 #$ -j y
 
 ##change to run directory
-cd /projectnb/bu-disks/connorr/test/
+cd /projectnb/bu-disks/connorr/DEMO/
 
 ##and run job.
 set my_job = `printf "job%03d" $SGE_TASK_ID`
