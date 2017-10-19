@@ -240,8 +240,8 @@ def searchJobs(target, dpath=datapath, **kwargs):
     print('THIS MIGHT BE DEFUNCT!')
 
     job_matches         = np.array([], dtype='str')
-    targList = glob(picklepath+'*')
-    targList = [x[len(picklepath):] for x in targList]
+    targList = glob(dpath+'*')
+    targList = [x[len(dpath):] for x in targList]
 
     # Pop out all files that do not correspond to jobs:
     not_data            = []
@@ -272,86 +272,45 @@ def searchJobs(target, dpath=datapath, **kwargs):
 
     return job_matches
 
-def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False):
-    """
-    Loads in a pickle saved from the TTS_Obs class.
-
-    INPUTS
-    name: The name of the object whose observations are stored in the pickle.
-    picklepath: The directory location of pickle. Default path is datapath, defined at top of this module.
-    num: An optional number provided if there are multiple pickles for this object and you want to load a specific one.
-    red: If loading in a red object use this
-    fill: Zero padding on job numbers
-    py2: If using pickles created with python2 set this flag to True
-
-    OUTPUT
-    pickle: The object containing the data loaded in from the pickle.
-    """
-
-    if py2:
-        if red:
-            if num == None:
-                # Check if there is more than one
-                flist = glob(picklepath+'*')
-                flist = [x[len(picklepath):] for x in flist]
-                if (name + '_red_1.pkl') in flist:
-                    print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
-                f               = open(picklepath+name+'_red.pkl', 'rb')
-                pickle          = cPickle.load(f, encoding = 'latin1')
-                f.close()
-            elif num != None:
-                f               = open(picklepath+name+'_red_'+str(num).zfill(fill)+'.pkl', 'rb')
-                pickle          = cPickle.load(f, encoding = 'latin1')
-                f.close()
-            return pickle
-        else:
-            if num == None:
-                # Check if there is more than one
-                flist = glob(picklepath+'*')
-                flist = [x[len(picklepath):] for x in flist]
-                if (name + '_obs_1.pkl') in flist:
-                    print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
-                f               = open(picklepath+name+'_obs.pkl', 'rb')
-                pickle          = cPickle.load(f, encoding = 'latin1')
-                f.close()
-            elif num != None:
-                f               = open(picklepath+name+'_obs_'+str(num).zfill(fill)+'.pkl', 'rb')
-                pickle          = cPickle.load(f, encoding = 'latin1')
-                f.close()
-
-    else:
-        if red:
-            if num == None:
-                # Check if there is more than one
-                flist = glob(picklepath+'*')
-                flist = [x[len(picklepath):] for x in flist]
-                if (name + '_red_1.pkl') in flist:
-                    print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
-                f               = open(picklepath+name+'_red.pkl', 'rb')
-                pickle          = cPickle.load(f)
-                f.close()
-            elif num != None:
-                f               = open(picklepath+name+'_red_'+str(num).zfill(fill)+'.pkl', 'rb')
-                pickle          = cPickle.load(f)
-                f.close()
-            return pickle
-        else:
-            if num == None:
-                # Check if there is more than one
-                flist = glob(picklepath+'*')
-                flist = [x[len(picklepath):] for x in flist]
-
-                if (name + '_obs_1.pkl') in flist:
-                    print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
-                f               = open(picklepath+name+'_obs.pkl', 'rb')
-                pickle          = cPickle.load(f)
-                f.close()
-            elif num != None:
-                f               = open(picklepath+name+'_obs_'+str(num).zfill(fill)+'.pkl', 'rb')
-                pickle          = cPickle.load(f)
-                f.close()
-
-    return pickle
+def loadObs(name, datapath = datapath):
+    '''
+    Loads in a fits file saved from the TTS_Obs class and places that information into a TTS_obs object
+    
+    INPUTS:
+        name: [string] name of the object stored in the fits file
+    
+    OPTIONAL INPUTS:
+        datapath: [string] Location of the fits file. Default is the datapath
+    
+    AUTHOR:
+        Connor Robinson, October 19th, 2017
+    '''
+    
+    #Read in the object
+    HDU = fits.open(datapath+name+'_obs.fits')
+    
+    #Create the empty TTS_Obs object
+    obj = TTS_Obs(name)
+    
+    #Extract the unique instrument keys
+    photkeys = list(np.unique(HDU[1].data['instrument']))
+    speckeys = list(np.unique(HDU[2].data['instrument']))
+    
+    #Extract if keys are upper limits
+    ulim = HDU[1].data['ulim']
+    
+    #Add photometry
+    for pkey in photkeys:
+        #If there are upper limits, then save the photometry as upper limits. Note that as it stands, if one point is upper limit then all
+        #points are assumed to be upper limits. Not ideal, but this is already assumed in other parts of the code.
+        obj.add_photometry(pkey, HDU[1].data['wl'][HDU[1].data['instrument'] == pkey], HDU[1].data['lFl'][HDU[1].data['instrument'] == pkey], \
+            HDU[1].data['err'][HDU[1].data['instrument'] == pkey], ulim = (np.sum(ulim[HDU[1].data['instrument'] == pkey]) > 1)) 
+        
+    #Add spectra
+    for skey in speckeys:
+        obj.add_spectra(skey, HDU[2].data['wl'][HDU[2].data['instrument'] == skey], HDU[2].data['lFl'][HDU[2].data['instrument'] == skey], HDU[2].data['err'][HDU[2].data['instrument'] == skey])
+    
+    return obj
 
 def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
     """
@@ -1133,12 +1092,12 @@ def binSpectra(obs, speckeys=[], ppbin=2):
     keys.
 
     INPUTS
-    obs: The observations pickle, which should be an instance if TTS_Obs or Red_Obs.
+    obs: The observations object, which should be an instance if TTS_Obs or Red_Obs.
     speckeys: The keys corresponding to the spectra that should be binned.
     ppbin: The number of points in a given bin.
 
     OUTPUT
-    Though no output is explicitly given, the binned spectra are saved to the observations pickle.
+    Though no output is explicitly given, the binned spectra are saved to the observations object.
     """
 
     if len(speckeys) == 0:
@@ -2107,8 +2066,8 @@ class PTD_Model(TTS_Model):
 
 class TTS_Obs(object):
     """
-    Contains all the observational data for a given target system. Allows you to create a pickle with the data, so it can
-    be reloaded in at a future time without the need to re-initialize the object. However, to open up the pickle, you will
+    Contains all the observational data for a given target system. Allows you to create a fits file with the data, so it can
+    be reloaded in at a future time without the need to re-initialize the object. However, to create the object fits file, you will
     need to have this source code where Python can access it.
 
     ATTRIBUTES
@@ -2123,7 +2082,7 @@ class TTS_Obs(object):
     __init__: Initializes an instance of this class. Creates initial attributes (name and empty data dictionaries).
     add_spectra: Adds an entry (or replaces an entry) in the spectra attribute dictionary.
     add_photometry: Adds an entry (or replaces an entry) in the photometry attribute dictionary.
-    SPPickle: Saves the object as a pickle to be reloaded later. This will not work if you've reloaded the module before saving.
+    saveObs: Saves the object as a fits to be reloaded later.
     """
 
     def __init__(self, name):
@@ -2270,51 +2229,134 @@ class TTS_Obs(object):
 
         return
 
-    def SPPickle(self, picklepath, clob = False, fill = 3):
+    def saveObs(self, datapath=datapath, clob = 1, make_csv = False, dered = True,\
+        Av = None, extlaw = None, Mstar = None, Mref = None, Rstar = None, \
+        Rref = None, Tstar = None, Tref = None, dist = None, dref = None):
         """
-        Saves the object as a pickle. Damn it Jim, I'm a doctor not a pickle farmer!
-
-        WARNING: If you reload the module BEFORE you save the observations as a pickle, this will NOT work! I'm not
-        sure how to go about fixing this issue, so just be aware of this.
-
-        INPUTS
-        picklepath: The path where you will save the pickle. I recommend datapath for simplicity.
-        clob: boolean, if set to True, will clobber the old pickle
-        fill: How many numbers used in the model files (4 = name_XXXX.fits).
-
+        Saves a TTS_Obs object as a fits file (Replacing pickle files)
+        
+        INPUTS:
+            None
+        
+        OPTIONAL INPUTS:
+            datapath:[string] Path where the data will be saved. Default is datapath
+            clob:[boolean] Overwrites existing files if true
+            Av: [float] Extinction (Av)
+            extlaw: [string] Law used to de-redden data
+            make_csv: [boolean] Makes two .csv files containing photometry and spectra if true
+            dered: [boolean] True if the data has been dereddened. Default here is True, since this
+                   is working with the TTS_Obs class
+        
+            Mtar: [float] Mass of the star in Msun
+            Mref: [string] Reference for Mstar
+        
+            Rstar: [float] Radius of the star in Rstar
+            Rref: [string] Reference for Rstar
+        
+            Tstar: [float] Temperature of the star in K
+            Tref: [string] Reference for Tstar
+        
+            dist: [float] Distance to the star in pc
+            dref: [string] Reference for dist
+    
         OUTPUT:
-        A pickle file of the name [self.name]_obs.pkl in the directory provided in picklepath.
+            A fits file with there extensions.
+            The primary extension (extension 0) only has information in the header about the target
+            The second extension (extension 1) contains photometry of the object in a binary fits table
+            The third extension (extension 2) contains spectra of the object in a binary fits table
+            
+            Each table contains data points, errors, and the associated instrument. Extension 1 also contains
+            if the object is an upper limit
+        
+        Author:
+            Connor Robinson, October 19th, 2017
         """
-
-        # Check whether or not the pickle already exists:
-        pathlist = glob(picklepath+'*')
-        pathlist = [x[len(picklepath):] for x in pathlist]
-        outname         = self.name + '_obs.pkl'
-        count           = 1
-        while 1:
-            if outname in pathlist and clob == False:
-                if count == 1:
-                    print('SPPICKLE: Pickle already exists in directory. For safety, will change name.')
-                countstr= str(count).zfill(fill)
-                count   = count + 1
-                outname = self.name + '_obs_' + countstr + '.pkl'
-            else:
-                break
-        # Now that that's settled, let's save the pickle.
-        f               = open(picklepath + outname, 'wb')
-        cPickle.dump(self, f)
-        f.close()
-        return
+        photkeys = list(self.photometry.keys())
+        speckeys = list(self.spectra.keys())
+        
+        #Break the photometry down into something easier to write
+        photometry = []
+        for pkey in photkeys:
+            for i in np.arange(len(self.photometry[pkey]['wl'])):
+                if 'err' in self.photometry[pkey].keys():
+                    if pkey in self.ulim:
+                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1])
+                    else:
+                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0])
+                else:
+                    if pkey in self.ulim:
+                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1])
+                    else:
+                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0])
+                    
+        #Do the same for the spectra
+        spectra = []
+        for skey in speckeys:
+            for i in np.arange(len(self.spectra[skey]['wl'])):
+                if 'err' in self.spectra[skey].keys():
+                    spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], self.spectra[skey]['err'][i], skey])
+                else:
+                    spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey])
+                    
+        photometry = np.array(photometry)
+        spectra = np.array(spectra)
+        
+        #Now create the fits extensions using binary fits files
+        photHDU = fits.BinTableHDU.from_columns(\
+            [fits.Column(name='wl', format='E', array=photometry[:,0]),\
+            fits.Column(name='lFl', format='E', array=photometry[:,1]),\
+            fits.Column(name='err', format='E', array=photometry[:,2]),\
+            fits.Column(name='instrument', format='A20', array=photometry[:,3]),\
+            fits.Column(name='ulim', format='E', array=photometry[:,4])])
+            
+        specHDU = fits.BinTableHDU.from_columns(\
+            [fits.Column(name='wl', format='E', array=spectra[:,0]),\
+            fits.Column(name='lFl', format='E', array=spectra[:,1]),\
+            fits.Column(name='err', format='E', array=spectra[:,2]),\
+            fits.Column(name='instrument', format='A20', array=spectra[:,3])])
+        
+        #Denote which extension is which
+        photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
+        specHDU.header.set('FITS_EXT', 'SPECTRA')
+        
+        #Build the primary header
+        prihdr = fits.Header()
+        prihdr['DERED'] = dered
+        
+        if Av:
+            prihdr['AV'] = Av
+        if extlaw:
+            prihdr['EXTLAW'] = extlaw
+        
+        prihdr['COMMENT'] = 'This file contains photometry in extension 1'
+        prihdr['COMMENT'] = 'and contains spectra in extension 2 in the'
+        prihdr['COMMENT'] = 'form of binary fits tables. See '
+        prihdr['COMMENT'] = 'http://docs.astropy.org/en/stable/io/fits/ for'
+        prihdr['COMMENT'] = 'more information about binary fits tables.'
+        prihdr['COMMENT'] = 'Extension 0 does not contain a table as primary'
+        prihdr['COMMENT'] = 'FITS extensions cannot hold binary tables,'
+        prihdr['COMMENT'] = 'but it does hold some information about the object'
+        prihdr['COMMENT'] = 'in the header.'
+        prihdr['COMMENT'] = '**********************************************'
+        prihdr['COMMENT'] = 'This file was created with EDGE, which is'
+        prihdr['COMMENT'] = 'here: https://github.com/cespaillat/EDGE .'
+        
+        priHDU = fits.PrimaryHDU(header=prihdr)
+        
+        HDU = fits.HDUList([priHDU, photHDU, specHDU])
+        HDU.writeto(datapath+self.name+'_obs.fits', clobber = clob)
+        
 
 class Red_Obs(TTS_Obs):
     """
     A similar class to TTS_Obs, except meant to be utilized for observations that have not yet been
-    dereddened. Once dereddened, the pickle will be saved as a TTS_Obs object. If saved prior to
-    dereddening, the pickle will be associated with Red_Obs instead. I recommend keeping both.
+    dereddened. Once dereddened, the Red_Obs object will be saved as a TTS_Obs object fits file. If saved prior to
+    dereddening, the fits file will be associated with Red_Obs instead. I recommend keeping both.
 
     """
 
-    def dered(self, Av, Av_unc, law, picklepath, flux=1, lpath=commonpath, err_prop=1, UV = 0, clob = False):
+    def dered(self, Av, Av_unc, law, datapath, flux=1, lpath=commonpath, err_prop=1, UV = 0, clob = False, \
+        Mstar = None, Mref = None, Rstar = None, Rref = None, Tstar = None, Tref = None, dist = None):
         """
         Deredden the spectra/photometry present in the object, and then convert to TTS_Obs structure.
         This function is adapted from the IDL procedure 'dered_calc.pro' (written by Melissa McClure).
@@ -2325,7 +2367,7 @@ class Red_Obs(TTS_Obs):
         Av_unc: The uncertainty in the Av value provided.
         law: The extinction law to be used -- these extinction laws are found in the ext_laws.pkl file.
              The options you have are 'mkm09_rv5', 'mkm09_rv3', and 'mathis90_rv3.1'
-        picklepath: Where your dereddened observations pickle will be saved.
+        datapath: Where your dereddened observations fits will be saved.
         flux: BOOLEAN -- if True (1), the function will treat your photometry as flux units (erg s-1 cm-2).
               if False (0), the function will treat your photometry as being Flambda (erg s-1 cm-2 cm-1).
         lpath: Where the 'ext_laws.pkl' file is located. I suggest hard coding it as 'edgepath'.
@@ -2334,11 +2376,12 @@ class Red_Obs(TTS_Obs):
         UV: Uses dereddening law from Whittet et al. 2004 based on the extinction towards HD 29647
             for wavelengths between 0.125-9.33 microns.
             NOTE: This is ONLY useful for stars extincted by diffuse media, with RV = 3.1 (MATHIS LAW)
-        clob: boolean, if set to True, will clobber the old pickle
+        clob: boolean, if set to True, will clobber the old fits file
 
         OUTPUT
-        There will be a pickle file called '[self.name]_obs.pkl' in the path provided in picklepath. If
-        there is already an obs pickle file there, it will add an integer to the name to differentiate
+        Returns the dereddened object.
+        Also creates a fits file called '[self.name]_obs.fits' in the path provided in datapath. If
+        there is already an obs fits file there, it will add an integer to the name to differentiate
         between the two files, rather than overwriting.
         """
 
@@ -2571,45 +2614,125 @@ class Red_Obs(TTS_Obs):
             except TypeError:
                 pass
             deredObs.add_photometry(photKey, self.photometry[photKey]['wl'], phot_dered, errors=phot_err, ulim=ulimVal, verbose = 0)
-
-
-
+        
         # Now that the new TTS_Obs object has been created and filled in, we must save it:
-        deredObs.SPPickle(picklepath=picklepath, clob = clob)
+        deredObs.saveObs(datapath = datapath, clob = clob, Av = Av, extlaw = law)
+        return deredObs
 
-        return
-
-
-    def SPPickle(self, picklepath, clob = False, fill = 3):
+    def saveObs(self, datapath=datapath, clob = 1, make_csv = False, dered = False,\
+        Av = None, extlaw = None, Mstar = None, Mref = None, Rstar = None, \
+        Rref = None, Tstar = None, Tref = None, dist = None, dref = None):
         """
-        The new version of SPPickle, different so you can differentiate between red and dered pickles.
-
-        INPUT
-        picklepath: The path where the new pickle file will be located.
-        clob: boolean, if set to True, will clobber the old pickle
-        fill: How many numbers used in the model files (4 = name_XXXX.fits).
-
-        OUTPUT
-        A new pickle file in picklepath, of the name [self.name]_red.pkl
+        Saves a TTS_Obs object as a fits file (Replacing pickle files)
+        
+        INPUTS:
+            None
+        
+        OPTIONAL INPUTS:
+            datapath:[string] Path where the data will be saved. Default is datapath
+            clob:[boolean] Overwrites existing files if true
+            Av: [float] Extinction (Av)
+            extlaw: [string] Law used to de-redden data
+            make_csv: [boolean] Makes two .csv files containing photometry and spectra if true
+            dered: [boolean] True if the data has been dereddened. Default here is False, since this
+                   is working with the Red_Obs class
+        
+            Mtar: [float] Mass of the star in Msun
+            Mref: [string] Reference for Mstar
+        
+            Rstar: [float] Radius of the star in Rstar
+            Rref: [string] Reference for Rstar
+        
+            Tstar: [float] Temperature of the star in K
+            Tref: [string] Reference for Tstar
+        
+            dist: [float] Distance to the star in pc
+            dref: [string] Reference for dist
+    
+        OUTPUT:
+            A fits file with there extensions.
+            The primary extension (extension 0) only has information in the header about the target
+            The second extension (extension 1) contains photometry of the object in a binary fits table
+            The third extension (extension 2) contains spectra of the object in a binary fits table
+            
+            Each table contains data points, errors, and the associated instrument. Extension 1 also contains
+            if the object is an upper limit
+        
+        Author:
+            Connor Robinson, October 19th, 2017
         """
-
-        # Check whether or not the pickle already exists:
-        pathlist = glob(picklepath+'*')
-        pathlist = [x[len(picklepath):] for x in pathlist]
-
-        outname         = self.name + '_red.pkl'
-        count           = 1
-        while 1:
-            if outname in pathlist and clob == False:
-                if count == 1:
-                    print('SPPICKLE: Pickle already exists in directory. For safety, will change name.')
-                countstr= str(count).zfill(fill)
-                count   = count + 1
-                outname = self.name + '_red_' + countstr + '.pkl'
-            else:
-                break
-        # Now that that's settled, let's save the pickle.
-        f               = open(picklepath + outname, 'wb')
-        cPickle.dump(self, f)
-        f.close()
-        return
+        photkeys = list(self.photometry.keys())
+        speckeys = list(self.spectra.keys())
+        
+        #Break the photometry down into something easier to write
+        photometry = []
+        for pkey in photkeys:
+            for i in np.arange(len(self.photometry[pkey]['wl'])):
+                if 'err' in self.photometry[pkey].keys():
+                    if pkey in self.ulim:
+                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1])
+                    else:
+                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0])
+                else:
+                    if pkey in self.ulim:
+                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1])
+                    else:
+                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0])
+                    
+        #Do the same for the spectra
+        spectra = []
+        for skey in speckeys:
+            for i in np.arange(len(self.spectra[skey]['wl'])):
+                if 'err' in self.spectra[skey].keys():
+                    spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], self.spectra[skey]['err'][i], skey])
+                else:
+                    spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey])
+                    
+        photometry = np.array(photometry)
+        spectra = np.array(spectra)
+        
+        #Now create the fits extensions using binary fits files
+        photHDU = fits.BinTableHDU.from_columns(\
+            [fits.Column(name='wl', format='E', array=photometry[:,0]),\
+            fits.Column(name='lFl', format='E', array=photometry[:,1]),\
+            fits.Column(name='err', format='E', array=photometry[:,2]),\
+            fits.Column(name='instrument', format='A20', array=photometry[:,3]),\
+            fits.Column(name='ulim', format='E', array=photometry[:,4])])
+            
+        specHDU = fits.BinTableHDU.from_columns(\
+            [fits.Column(name='wl', format='E', array=spectra[:,0]),\
+            fits.Column(name='lFl', format='E', array=spectra[:,1]),\
+            fits.Column(name='err', format='E', array=spectra[:,2]),\
+            fits.Column(name='instrument', format='A20', array=spectra[:,3])])
+        
+        #Denote which extension is which
+        photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
+        specHDU.header.set('FITS_EXT', 'SPECTRA')
+        
+        #Build the primary header
+        prihdr = fits.Header()
+        prihdr['DERED'] = dered
+        
+        if Av:
+            prihdr['AV'] = Av
+        if extlaw:
+            prihdr['EXTLAW'] = extlaw
+        
+        prihdr['COMMENT'] = 'This file contains photometry in extension 1'
+        prihdr['COMMENT'] = 'and contains spectra in extension 2 in the'
+        prihdr['COMMENT'] = 'form of binary fits tables. See '
+        prihdr['COMMENT'] = 'http://docs.astropy.org/en/stable/io/fits/ for'
+        prihdr['COMMENT'] = 'more information about binary fits tables.'
+        prihdr['COMMENT'] = 'Extension 0 does not contain a table as primary'
+        prihdr['COMMENT'] = 'FITS extensions cannot hold binary tables,'
+        prihdr['COMMENT'] = 'but it does hold some information about the object'
+        prihdr['COMMENT'] = 'in the header.'
+        prihdr['COMMENT'] = '**********************************************'
+        prihdr['COMMENT'] = 'This file was created with EDGE, which is'
+        prihdr['COMMENT'] = 'here: https://github.com/cespaillat/EDGE .'
+        
+        priHDU = fits.PrimaryHDU(header=prihdr)
+        
+        HDU = fits.HDUList([priHDU, photHDU, specHDU])
+        HDU.writeto(datapath+self.name+'_obs.fits', clobber = clob)
+        

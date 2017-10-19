@@ -38,7 +38,7 @@ AUTHOR:
 obj = 'imlup'
 
 #Set up paths. YOU WILL NEED TO CHANGE THIS!!!
-picklepath = '/Users/Connor/Desktop/Research/diad/EDGE/DEMO/data/'
+datapath = '/Users/Connor/Desktop/Research/diad/EDGE/DEMO/data/'
 modelpath  = '/Users/Connor/Desktop/Research/diad/EDGE/DEMO/models/'
 figpath    = '/Users/Connor/Desktop/Research/diad/EDGE/DEMO/'
 
@@ -53,8 +53,8 @@ jobs = np.arange(3)+1
 #Define list of wall heights to try
 altinh = [1,2,3,4,5]
 
-#Load in the data pickle
-targ = edge.loadPickle(obj, picklepath = picklepath)
+#Load in the data from the fits file
+targ = edge.loadObs(obj, datapath = datapath)
 
 #Create a blank list to append onto later
 chi2 = []
