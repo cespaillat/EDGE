@@ -272,6 +272,87 @@ def searchJobs(target, dpath=datapath, **kwargs):
 
     return job_matches
 
+def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False):
+    """
+    Loads in a pickle saved from the TTS_Obs class.
+
+    INPUTS
+    name: The name of the object whose observations are stored in the pickle.
+    picklepath: The directory location of pickle. Default path is datapath, defined at top of this module.
+    num: An optional number provided if there are multiple pickles for this object and you want to load a specific one.
+    red: If loading in a red object use this
+    fill: Zero padding on job numbers
+    py2: If using pickles created with python2 set this flag to True
+
+    OUTPUT
+    pickle: The object containing the data loaded in from the pickle.
+    """
+
+    if py2:
+        if red:
+            if num == None:
+                # Check if there is more than one
+                flist = glob(picklepath+'*')
+                flist = [x[len(picklepath):] for x in flist]
+                if (name + '_red_1.pkl') in flist:
+                    print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
+                f               = open(picklepath+name+'_red.pkl', 'rb')
+                pickle          = cPickle.load(f, encoding = 'latin1')
+                f.close()
+            elif num != None:
+                f               = open(picklepath+name+'_red_'+str(num).zfill(fill)+'.pkl', 'rb')
+                pickle          = cPickle.load(f, encoding = 'latin1')
+                f.close()
+            return pickle
+        else:
+            if num == None:
+                # Check if there is more than one
+                flist = glob(picklepath+'*')
+                flist = [x[len(picklepath):] for x in flist]
+                if (name + '_obs_1.pkl') in flist:
+                    print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
+                f               = open(picklepath+name+'_obs.pkl', 'rb')
+                pickle          = cPickle.load(f, encoding = 'latin1')
+                f.close()
+            elif num != None:
+                f               = open(picklepath+name+'_obs_'+str(num).zfill(fill)+'.pkl', 'rb')
+                pickle          = cPickle.load(f, encoding = 'latin1')
+                f.close()
+
+    else:
+        if red:
+            if num == None:
+                # Check if there is more than one
+                flist = glob(picklepath+'*')
+                flist = [x[len(picklepath):] for x in flist]
+                if (name + '_red_1.pkl') in flist:
+                    print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
+                f               = open(picklepath+name+'_red.pkl', 'rb')
+                pickle          = cPickle.load(f)
+                f.close()
+            elif num != None:
+                f               = open(picklepath+name+'_red_'+str(num).zfill(fill)+'.pkl', 'rb')
+                pickle          = cPickle.load(f)
+                f.close()
+            return pickle
+        else:
+            if num == None:
+                # Check if there is more than one
+                flist = glob(picklepath+'*')
+                flist = [x[len(picklepath):] for x in flist]
+
+                if (name + '_obs_1.pkl') in flist:
+                    print('LOADPICKLE: Warning! There is more than one pickle file for this object! Make sure it is the right one!')
+                f               = open(picklepath+name+'_obs.pkl', 'rb')
+                pickle          = cPickle.load(f)
+                f.close()
+            elif num != None:
+                f               = open(picklepath+name+'_obs_'+str(num).zfill(fill)+'.pkl', 'rb')
+                pickle          = cPickle.load(f)
+                f.close()
+
+    return pickle
+
 def loadObs(name, datapath = datapath):
     '''
     Loads in a fits file saved from the TTS_Obs class and places that information into a TTS_obs object
@@ -2229,6 +2310,42 @@ class TTS_Obs(object):
 
         return
 
+    def SPPickle(self, picklepath, clob = False, fill = 3):
+        """
+        Saves the object as a pickle. Damn it Jim, I'm a doctor not a pickle farmer!
+
+        WARNING: If you reload the module BEFORE you save the observations as a pickle, this will NOT work! I'm not
+        sure how to go about fixing this issue, so just be aware of this.
+
+        INPUTS
+        picklepath: The path where you will save the pickle. I recommend datapath for simplicity.
+        clob: boolean, if set to True, will clobber the old pickle
+        fill: How many numbers used in the model files (4 = name_XXXX.fits).
+
+        OUTPUT:
+        A pickle file of the name [self.name]_obs.pkl in the directory provided in picklepath.
+        """
+
+        # Check whether or not the pickle already exists:
+        pathlist = glob(picklepath+'*')
+        pathlist = [x[len(picklepath):] for x in pathlist]
+        outname         = self.name + '_obs.pkl'
+        count           = 1
+        while 1:
+            if outname in pathlist and clob == False:
+                if count == 1:
+                    print('SPPICKLE: Pickle already exists in directory. For safety, will change name.')
+                countstr= str(count).zfill(fill)
+                count   = count + 1
+                outname = self.name + '_obs_' + countstr + '.pkl'
+            else:
+                break
+        # Now that that's settled, let's save the pickle.
+        f               = open(picklepath + outname, 'wb')
+        cPickle.dump(self, f)
+        f.close()
+        return
+
     def saveObs(self, datapath=datapath, clob = 1, make_csv = False, dered = True,\
         Av = None, extlaw = None, Mstar = None, Mref = None, Rstar = None, \
         Rref = None, Tstar = None, Tref = None, dist = None, dref = None):
@@ -2619,6 +2736,8 @@ class Red_Obs(TTS_Obs):
         deredObs.saveObs(datapath = datapath, clob = clob, Av = Av, extlaw = law)
         return deredObs
 
+
+
     def saveObs(self, datapath=datapath, clob = 1, make_csv = False, dered = False,\
         Av = None, extlaw = None, Mstar = None, Mref = None, Rstar = None, \
         Rref = None, Tstar = None, Tref = None, dist = None, dref = None):
@@ -2736,3 +2855,36 @@ class Red_Obs(TTS_Obs):
         HDU = fits.HDUList([priHDU, photHDU, specHDU])
         HDU.writeto(datapath+self.name+'_obs.fits', clobber = clob)
         
+    def SPPickle(self, picklepath, clob = False, fill = 3):
+        """
+        The new version of SPPickle, different so you can differentiate between red and dered pickles.
+
+        INPUT
+        picklepath: The path where the new pickle file will be located.
+        clob: boolean, if set to True, will clobber the old pickle
+        fill: How many numbers used in the model files (4 = name_XXXX.fits).
+
+        OUTPUT
+        A new pickle file in picklepath, of the name [self.name]_red.pkl
+        """
+
+        # Check whether or not the pickle already exists:
+        pathlist = glob(picklepath+'*')
+        pathlist = [x[len(picklepath):] for x in pathlist]
+
+        outname         = self.name + '_red.pkl'
+        count           = 1
+        while 1:
+            if outname in pathlist and clob == False:
+                if count == 1:
+                    print('SPPICKLE: Pickle already exists in directory. For safety, will change name.')
+                countstr= str(count).zfill(fill)
+                count   = count + 1
+                outname = self.name + '_red_' + countstr + '.pkl'
+            else:
+                break
+        # Now that that's settled, let's save the pickle.
+        f               = open(picklepath + outname, 'wb')
+        cPickle.dump(self, f)
+        f.close()
+        return
