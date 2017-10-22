@@ -145,8 +145,7 @@ set EST='0'             #include star in image? no=0,yes=1, extinguished=2
 set TAUEXT='0'          #give tau if choose extinguished
 
 set labeps=e$EPS
-set labcom='sg'
-#set labcom='soit'
+set labcom=$labelend
 set ISUB='1'
 set IALB='0'
 
@@ -200,13 +199,15 @@ set salidaimage=idiskw.$image.w.mu$MUI.rd$RDISK.tw$TEMPW.$extension.$labelend
 set MAIN2=/project/bu-disks/shared/TODOf77_081109/
 set FILELONGOPA=$MAIN2/CODEf77_081109/OPACIDADES/longitudes_all.ent
 set MAINPOL=$MAIN2/POLVO
-set FILESILWALL=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxw.g.ab$labelsilab.extinc
+set FILESILWALL=sil.p3p5.$lamaxw.g.$labcom
+#set FILESILWALL=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxw.g.ab$labelsilab.extinc
 set FILEORGWALL=$MAINPOL/GRAF/graf.p3p5.$lamaxw.g.ab$labgrafab.extinc
 set FILEICEWALL=$MAINPOL/H2OICE/h2oice.p3p5.$lamaxw.g.ab$labiceab.extinc.wb08
 
 set FILESILB=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxb.g.ab$labelsilab.extinc
 set FILEGRAFB=$MAINPOL/GRAF/graf.p3p5.$lamaxb.g.ab$labgrafab.extinc
-set FILESILS=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxs.g.ab$labelsilab.extinc
+set FILESILS=sil.p3p5.$lamaxs.g.$labcom
+#set FILESILS=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxs.g.ab$labelsilab.extinc
 set FILEGRAFS=$MAINPOL/GRAF/graf.p3p5.$lamaxs.g.ab$labgrafab.extinc
 
 #set FILESIL=$DIRCOMUN/sil.p3p5.amax0p25.g.ab0p0034.extinc
