@@ -356,52 +356,54 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
 def loadObs(name, datapath = datapath):
     '''
     Loads in a fits file saved from the TTS_Obs class and places that information into a TTS_obs object
-    
+
     INPUTS:
         name: [string] name of the object stored in the fits file
-    
+
     OPTIONAL INPUTS:
         datapath: [string] Location of the fits file. Default is the datapath
-    
+
     AUTHOR:
         Connor Robinson, October 19th, 2017
     '''
-    
+
     #Read in the object
     HDU = fits.open(datapath+name+'_obs.fits')
-    
+
     #Create the empty TTS_Obs object
     obj = TTS_Obs(name)
-    
+
     #Extract the unique instrument keys
     photkeys = list(np.unique(HDU[1].data['instrument']))
     speckeys = list(np.unique(HDU[2].data['instrument']))
-    
+
     #Extract if keys are upper limits
     ulim = HDU[1].data['ulim']
-    
+
     #Add photometry
     for pkey in photkeys:
         #If there are upper limits, then save the photometry as upper limits. Note that as it stands, if one point is upper limit then all
         #points are assumed to be upper limits. Not ideal, but this is already assumed in other parts of the code.
         obj.add_photometry(pkey, HDU[1].data['wl'][HDU[1].data['instrument'] == pkey], HDU[1].data['lFl'][HDU[1].data['instrument'] == pkey], \
-            HDU[1].data['err'][HDU[1].data['instrument'] == pkey], ulim = (np.sum(ulim[HDU[1].data['instrument'] == pkey]) > 1)) 
-        
+            HDU[1].data['err'][HDU[1].data['instrument'] == pkey], ulim = (np.sum(ulim[HDU[1].data['instrument'] == pkey]) > 1))
+
     #Add spectra
     for skey in speckeys:
         obj.add_spectra(skey, HDU[2].data['wl'][HDU[2].data['instrument'] == skey], HDU[2].data['lFl'][HDU[2].data['instrument'] == skey], HDU[2].data['err'][HDU[2].data['instrument'] == skey])
-    
+
     return obj
 
-def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
+def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = False, **kwargs):
     """
     Creates a new job file that is used by the D'Alessio Model.
 
     INPUTS
     jobnum: The job number used to name the output job file.
-    path: The path containing the sample job file, and ultimately, the output.
+    path: The path containing the sample job file (if sample_path is not used), and ultimately, the output.
     fill: Pads the output file such that the name will be jobXXX if 3, jobXXXX if 4, etc.
     iwall: BOOLEAN -- if True (1), output will turn off switches so we just run as inner wall.
+    image: BOOLEAN -- if True, it will create a job_file for an image instead of an SED.
+    sample_path: The path containing the sample job file. If not set, the job_sample will be searched in path.
     **kwargs: The keywords arguments used to make changes to the sample file. Available
               kwargs include:
         amaxs - maximum grain size in disk
@@ -434,13 +436,21 @@ def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
     A job file with the name jobXXX, where XXX is the three-string number from 001 - 999. If
     No formal outputs are returned by this function; the file is created in the path directory.
     """
+    # If sample_path has not been set, it is assumed to be path
+    if sample_path == None:
+        sample_path = path
+    # Is this a jobfile for an image or an SED?
+    if image:
+        sample = 'job_image'
+    else:
+        sample = 'job_sample'
 
     # First we have to make sure that the job_sample file has been "fixed" for the \r issue:
-    os.system("cat " + path + "job_sample | tr -d '\r' > " + path + "job_sample2")
-    os.system("mv " + path + "job_sample2 " + path + "job_sample")
+    os.system("cat " + sample_path + sample + " | tr -d '\r' > " + sample_path + sample + "2")
+    os.system("mv " + sample_path + sample + "2 " + sample_path + sample)
 
     # Next, let's read in the sample job file so we have a template:
-    job_file = open(path+'job_sample', 'r')
+    job_file = open(sample_path+sample, 'r')
     fullText = job_file.readlines()     # All text in a list of strings
     job_file.close()
 
@@ -636,14 +646,15 @@ def job_file_create(jobnum, path, fill=3, iwall=0, **kwargs):
 
     return
 
-def job_optthin_create(jobn, path, fill=3, **kwargs):
+def job_optthin_create(jobn, path, fill=3, sample_path = None, **kwargs):
     """
     Creates a new optically thin dust job file.
 
     INPUTS
     jobn: The job number used to name the output job file.
-    path: The path containing the sample job file, and ultimately, the output.
+    path: The path containing the sample job file (if sample_path is not used), and ultimately, the output.
     fill: Pads the output file such that the name will be job_optthinXXX if 3, job_optthinXXXX if 4, etc
+    sample_path: The path containing the sample job file. If not set, the job_sample will be searched in path.
     **kwargs: The keywords arguments used to make changes to the sample file. Available
               kwargs include:
         amax - maximum grain size
@@ -672,8 +683,11 @@ def job_optthin_create(jobn, path, fill=3, **kwargs):
     No formal outputs are returned by this function; the file is created in the path directory.
     """
 
+    # If sample_path has not been set, it is assumed to be path
+    if sample_path == None:
+        sample_path = path
     # First, load in the sample job file for a template:
-    job_file = open(path+'job_optthin_sample', 'r')
+    job_file = open(sample_path+'job_optthin_sample', 'r')
     fullText = job_file.readlines()     # All text in a list of strings
     job_file.close()
 
@@ -2351,10 +2365,10 @@ class TTS_Obs(object):
         Rref = None, Tstar = None, Tref = None, dist = None, dref = None):
         """
         Saves a TTS_Obs object as a fits file (Replacing pickle files)
-        
+
         INPUTS:
             None
-        
+
         OPTIONAL INPUTS:
             datapath:[string] Path where the data will be saved. Default is datapath
             clob:[boolean] Overwrites existing files if true
@@ -2363,34 +2377,34 @@ class TTS_Obs(object):
             make_csv: [boolean] Makes two .csv files containing photometry and spectra if true
             dered: [boolean] True if the data has been dereddened. Default here is True, since this
                    is working with the TTS_Obs class
-        
+
             Mtar: [float] Mass of the star in Msun
             Mref: [string] Reference for Mstar
-        
+
             Rstar: [float] Radius of the star in Rstar
             Rref: [string] Reference for Rstar
-        
+
             Tstar: [float] Temperature of the star in K
             Tref: [string] Reference for Tstar
-        
+
             dist: [float] Distance to the star in pc
             dref: [string] Reference for dist
-    
+
         OUTPUT:
             A fits file with there extensions.
             The primary extension (extension 0) only has information in the header about the target
             The second extension (extension 1) contains photometry of the object in a binary fits table
             The third extension (extension 2) contains spectra of the object in a binary fits table
-            
+
             Each table contains data points, errors, and the associated instrument. Extension 1 also contains
             if the object is an upper limit
-        
+
         Author:
             Connor Robinson, October 19th, 2017
         """
         photkeys = list(self.photometry.keys())
         speckeys = list(self.spectra.keys())
-        
+
         #Break the photometry down into something easier to write
         photometry = []
         for pkey in photkeys:
@@ -2405,7 +2419,7 @@ class TTS_Obs(object):
                         photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1])
                     else:
                         photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0])
-                    
+
         #Do the same for the spectra
         spectra = []
         for skey in speckeys:
@@ -2414,10 +2428,10 @@ class TTS_Obs(object):
                     spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], self.spectra[skey]['err'][i], skey])
                 else:
                     spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey])
-                    
+
         photometry = np.array(photometry)
         spectra = np.array(spectra)
-        
+
         #Now create the fits extensions using binary fits files
         photHDU = fits.BinTableHDU.from_columns(\
             [fits.Column(name='wl', format='E', array=photometry[:,0]),\
@@ -2425,26 +2439,26 @@ class TTS_Obs(object):
             fits.Column(name='err', format='E', array=photometry[:,2]),\
             fits.Column(name='instrument', format='A20', array=photometry[:,3]),\
             fits.Column(name='ulim', format='E', array=photometry[:,4])])
-            
+
         specHDU = fits.BinTableHDU.from_columns(\
             [fits.Column(name='wl', format='E', array=spectra[:,0]),\
             fits.Column(name='lFl', format='E', array=spectra[:,1]),\
             fits.Column(name='err', format='E', array=spectra[:,2]),\
             fits.Column(name='instrument', format='A20', array=spectra[:,3])])
-        
+
         #Denote which extension is which
         photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
         specHDU.header.set('FITS_EXT', 'SPECTRA')
-        
+
         #Build the primary header
         prihdr = fits.Header()
         prihdr['DERED'] = dered
-        
+
         if Av:
             prihdr['AV'] = Av
         if extlaw:
             prihdr['EXTLAW'] = extlaw
-        
+
         prihdr['COMMENT'] = 'This file contains photometry in extension 1'
         prihdr['COMMENT'] = 'and contains spectra in extension 2 in the'
         prihdr['COMMENT'] = 'form of binary fits tables. See '
@@ -2457,12 +2471,12 @@ class TTS_Obs(object):
         prihdr['COMMENT'] = '**********************************************'
         prihdr['COMMENT'] = 'This file was created with EDGE, which is'
         prihdr['COMMENT'] = 'here: https://github.com/cespaillat/EDGE .'
-        
+
         priHDU = fits.PrimaryHDU(header=prihdr)
-        
+
         HDU = fits.HDUList([priHDU, photHDU, specHDU])
         HDU.writeto(datapath+self.name+'_obs.fits', clobber = clob)
-        
+
 
 class Red_Obs(TTS_Obs):
     """
@@ -2731,7 +2745,7 @@ class Red_Obs(TTS_Obs):
             except TypeError:
                 pass
             deredObs.add_photometry(photKey, self.photometry[photKey]['wl'], phot_dered, errors=phot_err, ulim=ulimVal, verbose = 0)
-        
+
         # Now that the new TTS_Obs object has been created and filled in, we must save it:
         deredObs.saveObs(datapath = datapath, clob = clob, Av = Av, extlaw = law)
         return deredObs
@@ -2743,10 +2757,10 @@ class Red_Obs(TTS_Obs):
         Rref = None, Tstar = None, Tref = None, dist = None, dref = None):
         """
         Saves a TTS_Obs object as a fits file (Replacing pickle files)
-        
+
         INPUTS:
             None
-        
+
         OPTIONAL INPUTS:
             datapath:[string] Path where the data will be saved. Default is datapath
             clob:[boolean] Overwrites existing files if true
@@ -2755,34 +2769,34 @@ class Red_Obs(TTS_Obs):
             make_csv: [boolean] Makes two .csv files containing photometry and spectra if true
             dered: [boolean] True if the data has been dereddened. Default here is False, since this
                    is working with the Red_Obs class
-        
+
             Mtar: [float] Mass of the star in Msun
             Mref: [string] Reference for Mstar
-        
+
             Rstar: [float] Radius of the star in Rstar
             Rref: [string] Reference for Rstar
-        
+
             Tstar: [float] Temperature of the star in K
             Tref: [string] Reference for Tstar
-        
+
             dist: [float] Distance to the star in pc
             dref: [string] Reference for dist
-    
+
         OUTPUT:
             A fits file with there extensions.
             The primary extension (extension 0) only has information in the header about the target
             The second extension (extension 1) contains photometry of the object in a binary fits table
             The third extension (extension 2) contains spectra of the object in a binary fits table
-            
+
             Each table contains data points, errors, and the associated instrument. Extension 1 also contains
             if the object is an upper limit
-        
+
         Author:
             Connor Robinson, October 19th, 2017
         """
         photkeys = list(self.photometry.keys())
         speckeys = list(self.spectra.keys())
-        
+
         #Break the photometry down into something easier to write
         photometry = []
         for pkey in photkeys:
@@ -2797,7 +2811,7 @@ class Red_Obs(TTS_Obs):
                         photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1])
                     else:
                         photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0])
-                    
+
         #Do the same for the spectra
         spectra = []
         for skey in speckeys:
@@ -2806,10 +2820,10 @@ class Red_Obs(TTS_Obs):
                     spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], self.spectra[skey]['err'][i], skey])
                 else:
                     spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey])
-                    
+
         photometry = np.array(photometry)
         spectra = np.array(spectra)
-        
+
         #Now create the fits extensions using binary fits files
         photHDU = fits.BinTableHDU.from_columns(\
             [fits.Column(name='wl', format='E', array=photometry[:,0]),\
@@ -2817,26 +2831,26 @@ class Red_Obs(TTS_Obs):
             fits.Column(name='err', format='E', array=photometry[:,2]),\
             fits.Column(name='instrument', format='A20', array=photometry[:,3]),\
             fits.Column(name='ulim', format='E', array=photometry[:,4])])
-            
+
         specHDU = fits.BinTableHDU.from_columns(\
             [fits.Column(name='wl', format='E', array=spectra[:,0]),\
             fits.Column(name='lFl', format='E', array=spectra[:,1]),\
             fits.Column(name='err', format='E', array=spectra[:,2]),\
             fits.Column(name='instrument', format='A20', array=spectra[:,3])])
-        
+
         #Denote which extension is which
         photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
         specHDU.header.set('FITS_EXT', 'SPECTRA')
-        
+
         #Build the primary header
         prihdr = fits.Header()
         prihdr['DERED'] = dered
-        
+
         if Av:
             prihdr['AV'] = Av
         if extlaw:
             prihdr['EXTLAW'] = extlaw
-        
+
         prihdr['COMMENT'] = 'This file contains photometry in extension 1'
         prihdr['COMMENT'] = 'and contains spectra in extension 2 in the'
         prihdr['COMMENT'] = 'form of binary fits tables. See '
@@ -2849,12 +2863,12 @@ class Red_Obs(TTS_Obs):
         prihdr['COMMENT'] = '**********************************************'
         prihdr['COMMENT'] = 'This file was created with EDGE, which is'
         prihdr['COMMENT'] = 'here: https://github.com/cespaillat/EDGE .'
-        
+
         priHDU = fits.PrimaryHDU(header=prihdr)
-        
+
         HDU = fits.HDUList([priHDU, photHDU, specHDU])
         HDU.writeto(datapath+self.name+'_obs.fits', clobber = clob)
-        
+
     def SPPickle(self, picklepath, clob = False, fill = 3):
         """
         The new version of SPPickle, different so you can differentiate between red and dered pickles.
