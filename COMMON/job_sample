@@ -2,15 +2,14 @@
 # HISTORY:
 # Sep17 Quique: Models can now be automatically collated after running.
 # collate.py from the EDGE package is used.
-# Jun17 Quique: New parameter D2G=dust-to-gas mass ratio. It is used in 
-# opa.f(v3) and sed_angle.f(v3p1), but WALL (v2) also needed changes. 
+# Jun17 Quique: New parameter D2G=dust-to-gas mass ratio. 
 # Now the opacity files should be calculated for an abunance of 1 
 # for each component. Each component will be then scaled by its abundance.
 # New parameter AMAXW, the amax of the dust grains in the wall. By default
 # it will be the same as in the disk, but it can now be changed independently from the disk.
-# Jun17 CE: New version of Photosphere (v3). It can now use KH95 or PM13 
+# Jun17 CE: New version of Photosphere. It can now use KH95 or PM13 
 # (Pecaut & Mamajek 2013) tables, chosen with the parameter TABLE.
-# Mar17 NC: New version of Photosphere (v2). It now includes a better treatment for
+# Mar17 NC: New version of Photosphere. It now includes a better treatment for
 # Herbig Ae/Be stars.
 # Nov15 Quique: Two different mass accretion rates are used:
 # MDOT: Mass accretion rate in the disk, as usual. Used to calculate the surface 
@@ -29,7 +28,7 @@
 #d ust destruction radius
 
 #main directories ------------------------------------
-set MAIN=/project/bu-disks/shared/TODOf77_081109
+set MAIN=/project/bu-disks/shared/DIAD
 set MAINCODE=$MAIN/CODEf77_081109
 set MAINPOL=$MAIN/POLVO
 set MAINEDGE=/project/bu-disks/shared/EDGE/MODULES
@@ -120,7 +119,7 @@ set epsilonbig='12.5'
 
 #wall parameters ------------------------------------
 set TEMP=1400. #temperature at inner edge (i.e., wall) of disk
-set ALTINH=3   #scale height of all
+set ALTINH=3   #scale height of wall
 #dust grain sizes in the wall----------------
 #note: uncomment AMAXW and corresponding lamaxw
 #------------------------
@@ -162,12 +161,10 @@ set lamaxw=$lamaxs
 #this sets the wavelength resolution
 #note: you can create your own files of varying wavelength coverage
 #the file must be in microns
-#for water ice
-#set WLFILE=$MAINCODE/COMUN/longitudes_ice.ent
 #for crystals and ice
-#set WLFILE=$MAINCODE/COMUN/longitudes_crystsil+ice.ent
+#set WLFILE=$MAINCODE/COMUN/wlfile_crystsil+ice.ent
 #for basic runs
-set WLFILE=$MAINCODE/COMUN/longitudes_4testruns_shorter.ent
+set WLFILE=$MAINCODE/COMUN/wlfile_standard.ent
 
 #The following variables let you choose which wavelengths
 #the flux will be calculated for.
@@ -266,9 +263,8 @@ set ISEDS='0'
 #it uses collate.py from EDGE
 set ICOLLATE='1'
 
-
 ##########################################################
-#DO NOT CHANGE ANYTHING BELOW...
+#DO NOT CHANGE ANYTHING BELOW... 
 #UNLESS YOU KNOW WHAT YOU ARE DOING!
 ##########################################################
 #abundances of graphite and ice
@@ -309,16 +305,16 @@ set labeps=e$EPS
 set labepb=e$epsilonbig
 
 #programs ----------------------------------------------------------------
-set PHOTOS=$DIRPRO/photosphere_v3
+set PHOTOS=$DIRPRO/photosphere
 set COMBINA=$DIRPRO/combina
-set OPA_PROG=$DIROPA/opa_sgi_tsub1400_nogas_ssh_v3
+set OPA_PROG=$DIROPA/opa_mean
 set VIS_PROG=$DIRPRO/viscoso
-set IRR_DOSAMAX=$DIRPRO/irr_dosamax_v4
+set IRR_DOSAMAX=$DIRPRO/irradiado
 set PROPERTIES=$DIRPRO/readfort14
 set PROP_PROG=$DIRPRO/prop_dos
-set WALLFAST=$DIRPRO/WALL_v2/wall_fast
-set SEDANGLE=$DIRPRO/sed_angle_dossinborde_rinau_sgi_ialb0_v3p1
-set SEDSCATT=$DIRPRO/sed_scatter_dos_rinau_sgi
+set WALLFAST=$DIRPRO/WALL/wall_fast
+set SEDANGLE=$DIRPRO/sed_angle
+set SEDSCATT=$DIRPRO/sed_scatter
 
 #input files----------------------------------------------
 set LONG1=$DIROPA/longitudes_all.ent
@@ -352,8 +348,8 @@ echo $FILEFORSTERITE FA $FORSTERITE_FRAC  >> $LOGFILE
 echo $FILEENSTATITE FA $ENSTATITE_FRAC  >> $LOGFILE
 
 #begin PHOT calculation -----------------------
-set TABLEKH=$DIRPRO/tabla_a5_kh95
-set TABLEPM=$DIRPRO/tabla_no5_pm13
+set TABLEKH=$DIRCOM/tabla_a5_kh95
+set TABLEPM=$DIRCOM/tabla_no5_pm13
 set FILEPHOT=Phot$TSTAR.$labcom
 set TABLE='pm13'  #can be 'kh95' or 'pm13'
 if  ($IPHOT == 1) then
@@ -432,7 +428,7 @@ set FILESILB=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxb.g.ab$labelsilab.extinc
 set FILEGRAFB=$MAINPOL/GRAF/graf.p3p5.$lamaxb.g.ab$labgrafab.extinc
 set FILEICEB=$MAINPOL/H2OICE/h2oice.p3p5.$lamaxb.g.ab$labiceab.extinc.wb08
 
-#copy output from combina to silicate file for small grains
+#copy output from combina to silicate file for small grains 
 #(crystal in upper levels)
 set  FILESILS=$FILESILSALIDA
 set FILEGRAFS=$MAINPOL/GRAF/graf.p3p5.$lamaxs.g.ab$labgrafab.extinc
@@ -552,12 +548,14 @@ EOD
 endif
 #end OPA----------------------------------------
 
+
 # begin VIS--------------------------------------
 set FILESALVIS=fort14.a$ALPHA.vis.$labcom.$labeps.$lamaxs.dat
 set VISFILEPMM=$DIRCOM/pmm.dat
 set VISFILEGAD=$DIRCOM/gadiabatico.dat
 
 if  ($IVIS == 1) then
+
 echo Mstar $MSTAR Tstar $TSTAR Rstar $RSTAR Mdot $MDOT >> $LOGFILE
 echo alpha $ALPHA epsilon $EPS >> $LOGFILE
 
@@ -592,9 +590,9 @@ if  ($IIRR == 1) then
 set labelepsilon=$labeps
 set labelamax=$lamaxs
 set FILEPLANCKMEANS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
-set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
+set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat 
 set FILEPLANCKMEANSTS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
-set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
+set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat 
 set FILEPLANCKMEANSTOT=plancktot.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 set labelepsilon=$labepb
 set labelamax=$lamaxb
@@ -605,7 +603,7 @@ set FILEROSSMEANBTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$lab
 set FILEPLANCKMEANBTOT=plancktot.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 
 rm -f $FILESALIRR
-echo calculating irradiated disk
+echo calculating irradiated disk 
 $IRR_DOSAMAX << EOD
 $TSTAR $RSTAR $MSTAR $Rmagm
 $MDOTSTAR
@@ -636,7 +634,6 @@ set FILEPROP=prop.$extension
 
 if  ($IPROP == 1) then
 echo calculating disk properties, fort15
-
 rm -f $FILEOUT
 $PROPERTIES << EOD
 $FILESALIRR
@@ -646,9 +643,9 @@ EOD
 set labelepsilon=$labeps
 set labelamax=$lamaxs
 set FILEPLANCKMEANS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
-set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
+set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat 
 set FILEPLANCKMEANSTS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
-set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
+set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat 
 set FILEPLANCKMEANSTOT=plancktot.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 set labelepsilon=$labepb
 set labelamax=$lamaxb
@@ -727,7 +724,7 @@ endif
 #recover RIN from wall calculation
 set RIN=`cat $FILERIN`
 echo RIN $RIN >> $LOGFILE
-echo RIN $RIN
+echo RIN $RIN 
 
 #begin SEDT-----------------------------------------
 set salidasedt=angle.mu$MUI.rd$RDISK.rin$RIN.$extension
@@ -735,7 +732,7 @@ set salidasedt=angle.mu$MUI.rd$RDISK.rin$RIN.$extension
 if ($ISEDT == 1) then
 echo calculating thermal emission
 echo Calculation of thermal emission $fecha cosi $MUI >> $LOGFILE
-rm -f $salidasedt
+rm -f $salida
 $SEDANGLE << EOD
 $salidasedt
 $FILESALIRR
@@ -777,7 +774,7 @@ $OPAMOL5
 $OPAMOL6
 $WLCUT_ANGLE
 EOD
-echo $salidasedt
+echo $salida
 endif
 #end SED------------------------
 
@@ -789,7 +786,7 @@ set salidaseds=scatt.mu$MUI.rd$RDISK.rin$RIN.$extension
 if ($ISEDS == 1) then
 echo calculating scattered emission
 echo Calculation of scattered emission $fecha cosi $MUI >> $LOGFILE
-rm -f $salidaseds
+rm -f $salida
 $SEDSCATT<< EOD
 $salidaseds
 $FILESALIRR
@@ -830,7 +827,7 @@ $OPAMOL5
 $OPAMOL6
 $WLCUT_SCATT
 EOD
-echo $salidaseds
+echo $salida
 endif
 #end scatter-------------------------------
 
@@ -858,4 +855,7 @@ python -c "from collate import collate; collate('./','./',file_outputs='$fileout
 endif
 #end collate
 
+
 exit
+
+

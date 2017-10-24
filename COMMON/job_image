@@ -1,4 +1,7 @@
 #!/bin/csh
+# Sep17 Quique: new parameter D2G, the dust-to-gas mass ratio. Also, new parameter
+# image that can be set to 'thin' or 'thick', depending on which type of image
+# one needs. Thus, there is now just one jobfile for the images.
 # Jun17 Quique: AMAXW, the amax of the dust grains in the wall, by default
 # will be the same as in the disk, but it can be changed independently from the disk.
 
@@ -9,11 +12,14 @@
 set labelend='test'
 
 #main directory ------------------------------------
-set MAIN=/project/bu-disks/shared/TODOf77_081109/IMAGES/
+set MAIN=/project/bu-disks/shared/DIAD
+set MAINCODE=$MAIN/CODEf77_081109
 #OPACITY
-set DIROPA=$MAIN/OPACIDADES
+set DIROPA=$MAINCODE/OPACIDADES
 #COMUN
-set DIRCOMUN=$MAIN/COMUN
+set DIRCOMUN=$MAINCODE/COMUN
+#POLVO
+set MAINPOL=$MAIN/POLVO
 
 #stellar parameters  -------------------------------
 set MSTAR='1.0' #in MSUN
@@ -101,8 +107,8 @@ set AMAXB='1000'
 set lamaxb='amax1mm'
 
 #inputs for wall
-set TEMP='130'
-set ALTINH='1.0'
+set TEMP=130. #temperature at inner edge (i.e., wall) of disk
+set ALTINH=1 #scale height of wall
 #dust grain sizes in the wall----------------
 #note: uncomment AMAXW and corresponding lamaxw
 #------------------------
@@ -152,7 +158,9 @@ set labcom=$labelend
 set ISUB='1'
 set IALB='0'
 
-set WLFILE=$DIRCOMUN/wlfile_1300um_1pt.ent
+#set WLFILE=$DIRCOMUN/wlfile_1300um_1pt.ent
+set WL=1300 # wavelength in microns
+
 # Should the disk be thick or thin at this lambda?
 # (i.e., run thick or thin version of image?)
 set image='thin' # set to 'thin' or 'thick'
@@ -173,17 +181,16 @@ set IIMAGEWALL='1'
 ########## (unless you know what you are doing) ################
 
 #subdirectories----------------------------------------
-set DIRPRODISK=$MAIN/PROGRAMS/DISK
-set DIRPROWALL=$MAIN/PROGRAMS/WALL_v2
-set DIRPROADD=$MAIN/ADD
+set DIRPRODISK=$MAINCODE/IMAGES/PROGRAMS/DISK
+set DIRPROWALL=$MAINCODE/IMAGES/PROGRAMS/WALL
+set DIRPROADD=$MAINCODE/IMAGES/ADD
 #set DIRPROTHIN=$MAIN/PROGRAMS/THIN
-
 
 #programs --------------------------------------------------------
 if ($image == 'thin') then
-set PRODISK=$DIRPRODISK/image_wall_disk_othin_v3
+set PRODISK=$DIRPRODISK/image_wall_disk_othin
 else
-set PRODISK=$DIRPRODISK/image_wall_disk_othick_v3
+set PRODISK=$DIRPRODISK/image_wall_disk_othick
 endif
 set PROWALL=$DIRPROWALL/wall_grid_t23
 set PROADD=$DIRPROADD/add_RF2
@@ -193,19 +200,19 @@ set PROADD=$DIRPROADD/add_RF2
 set extension=a$ALPHA.irr.$labelend.e$EPS.$lamaxs\_$lamaxb.dat
 #set extension=$TSTAR.mp$MDOT.a$ALPHA.irr.$labcom\_ts14ng.p3p5.$labeps.$lamaxs\_$lamaxb.dat
 set FILESALIRR=fort14.$extension
-set salidaimage=idiskw.$image.w.mu$MUI.rd$RDISK.tw$TEMPW.$extension.$labelend
+set salidaimage=idiskw.$image.w.mu$MUI.rd$RDISK.tw$TEMPW.$extension.$labelend.WL$WL
 
 
 #begin SEDT-----------------------------------------
 
 #files for wall
-set MAIN2=/project/bu-disks/shared/TODOf77_081109/
-set FILELONGOPA=$MAIN2/CODEf77_081109/OPACIDADES/longitudes_all.ent
-set MAINPOL=$MAIN2/POLVO
+set FILELONGOPA=$DIROPA/longitudes_all.ent
+
 set FILESILWALL=sil.p3p5.$lamaxw.g.$labcom
 #set FILESILWALL=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxw.g.ab$labelsilab.extinc
 set FILEORGWALL=$MAINPOL/GRAF/graf.p3p5.$lamaxw.g.ab$labgrafab.extinc
 set FILEICEWALL=$MAINPOL/H2OICE/h2oice.p3p5.$lamaxw.g.ab$labiceab.extinc.wb08
+set FILETROI=$MAINPOL/TROI/troi.p3p5.$lamaxw.g.ab0p000768.extinc
 
 set FILESILB=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxb.g.ab$labelsilab.extinc
 set FILEGRAFB=$MAINPOL/GRAF/graf.p3p5.$lamaxb.g.ab$labgrafab.extinc
@@ -213,13 +220,9 @@ set FILESILS=sil.p3p5.$lamaxs.g.$labcom
 #set FILESILS=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxs.g.ab$labelsilab.extinc
 set FILEGRAFS=$MAINPOL/GRAF/graf.p3p5.$lamaxs.g.ab$labgrafab.extinc
 
-#set FILESIL=$DIRCOMUN/sil.p3p5.amax0p25.g.ab0p0034.extinc
 set LFILESIL=prueba
-#set FILEORG=$DIRCOMUN/org.p3p5.amax0p25.g.ab0p001.extinc
-set FILETROI=$DIRCOMUN/troi.p3p5.amax0p25.g.ab0p000768.extinc
-#set FILEICE=$DIRCOMUN/h2oice.p3p5.amax0p25.g.ab0p00056.extinc
-set FILEOUTSED=fort.17.H$ALTINH.$LFILESIL.ami$AMINW.amx$AMAXW.p$PW.$MUI.t$TEMPW.$labelend
-set FILEIMAGE=fort.1.H$ALTINH.$LFILESIL.ami$AMINW.amx$AMAXW.p$PW.$MUI.t$TEMPW.tau$TAUEXT.$labelend
+set FILEOUTSED=fort.17.H$ALTINH.$LFILESIL.ami$AMINW.amx$AMAXW.p$PW.$MUI.t$TEMPW.$labelend.WL$WL
+set FILEIMAGE=fort.1.H$ALTINH.$LFILESIL.ami$AMINW.amx$AMAXW.p$PW.$MUI.t$TEMPW.tau$TAUEXT.$labelend.WL$WL
 
 #input files disk image----------------------------------------------
 set LONG1=$DIROPA/longitudes_tio.ent
@@ -260,7 +263,7 @@ $DISTANCIA
 $RDISK
 $ALTINH
 $TAUMAXL
-$WLFILE
+$WL
 $ESCRIBIR
 $FILEOUTSED
 $FILELONGOPA
@@ -282,7 +285,7 @@ $DISTANCIA
 $RDISK
 $ALTINH
 $TAUMAXL
-$WLFILE
+$WL
 $ESCRIBIR
 $EST
 $TAUEXT
@@ -313,7 +316,7 @@ $FILESILB
 $FILEGRAFB
 $FILESILS
 $FILEGRAFS
-$WLFILE
+$WL
 $FILEIMAGE
 $ISUB
 $DISTANCIA

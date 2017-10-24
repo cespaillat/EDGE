@@ -429,6 +429,10 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
         amaxw - maximum grain size in the wall. If not supplied, code will assume that it is the same as the the grain size in the disk
         d2g - Dust to gas mass ratio
 
+              kwargs used only for the image (if image is True):
+        wavelength - wavelength (in microns) at which the image will be calculated
+        imagetype - Type of image. Can be thick or thin, depending on whether the disk will be optically thin or optically thick at this wavelength
+
         Some can still be included, such as dust grain compositions. They just aren't
         currently supported. If any supplied kwargs are unused, it will print at the end.
 
@@ -585,24 +589,56 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
             text = text[:start]+paramstr +text[end:]
 
         #Fix the special case of temp + Tshock
-        elif param == 'TEMP' or param == 'TSHOCK':
+        elif param == 'TEMP':
             start = text.find('set '+param+"=") + len('set '+param+"=")
             end = start + len(text[start:].split(".")[0])
             text = text[:start]+paramstr+text[end:]
+        #This parameter does not work with the image code yet
+        elif param == 'TSHOCK':
+            if image:
+                print("WARNING: parameter 'TSHOCK' is not yet supported by image code.")
+            else:
+                start = text.find('set '+param+"=") + len('set '+param+"=")
+                end = start + len(text[start:].split(".")[0])
+                text = text[:start]+paramstr+text[end:]
         #Fix the special case of altinh
         elif param == 'ALTINH':
             start = text.find('set '+param+'=') + len('set '+param+'=')
             end = start + len(text[start:].split("#")[0])
             text = text[:start]+paramstr+'    '+text[end:]
         #Fix the special case of MDOTSTAR (Sometimes it is $MDOT)
+        #Also, this parameter does not work with the image code yet
         elif param == 'MDOTSTAR':
-            start = text.find('set '+param+'=') + len('set '+param+'=')
-            end = start + len(text[start:].split("#")[0])
-            text = text[:start]+"'"+paramstr+"'"+' '+text[end:]
+            if image:
+                print("WARNING: parameter 'MDOTSTAR' is not yet supported by image code.")
+            else:
+                start = text.find('set '+param+'=') + len('set '+param+'=')
+                end = start + len(text[start:].split("#")[0])
+                text = text[:start]+"'"+paramstr+"'"+' '+text[end:]
         elif param == 'D2G':
             start = text.find('set '+param+'=') + len('set '+param+'=')
             end = start + len(text[start:].split("\n")[0])
             text = text[:start]+paramstr+text[end:]
+        #Special case of wavelength (only used if creating jobfile for image)
+        elif param == 'WAVELENGTH':
+            if image:
+                start = text.find('set WL=') + len('set WL=')
+                end = start + len(text[start:].split(" #")[0])
+                text = text[:start]+paramstr+text[end:]
+            else:
+                print("WARNING: You used the parameter 'wavelength', but it is \
+                only used when creating a jobfile for an image.")
+        #Special case of imagetype (only used if creating jobfile for image)
+        elif param == 'IMAGETYPE':
+            if image:
+                if (paramstr != 'thin') and (paramstr != 'thick'):
+                    raise IOError("JOB_FILE_CREATE: imagetype can only be 'thin' or 'thick'")
+                start = text.find("set image='") + len("set image='")
+                end = start + len(text[start:].split("'")[0])
+                text = text[:start]+paramstr+text[end:]
+            else:
+                print("WARNING: You used the parameter 'imagetype', but it is \
+                only used when creating a jobfile for an image.")
 
         #Change the rest
         else:
@@ -634,8 +670,12 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
     outtext = [s + '\n' for s in text.split('\n')]
 
     # Once all changes have been made, we just create a new job file:
+    if image:
+        outjob = 'job_image'
+    else:
+        outjob = 'job'
     string_num  = str(jobnum).zfill(fill)
-    newJob      = open(path+'job'+string_num, 'w')
+    newJob      = open(path+outjob+string_num, 'w')
     newJob.writelines(outtext)
     newJob.close()
 
@@ -758,7 +798,7 @@ def job_optthin_create(jobn, path, fill=3, sample_path = None, **kwargs):
 
     return
 
-def create_runall(jobstart, jobend, clusterpath, optthin = False, outpath = '', commonpath = commonpath, fill = 3):
+def create_runall(jobstart, jobend, clusterpath, optthin = False, image = False, outpath = '', commonpath = commonpath, fill = 3):
     '''
     create_runall()
 
@@ -768,6 +808,7 @@ def create_runall(jobstart, jobend, clusterpath, optthin = False, outpath = '', 
 
     OPTIONAL INPUTS:
         optthin: [Boolean] Set to True for optically thin dust models.
+        image: [Boolean] Set to True for images (If optthin is also True, this will not have any effect).
         outpath: [String] Location of where the runall script should be sent. Default is current directory.
         edgepath: [String] Path to where the runall_template file is located. Default is the edge director
     '''
@@ -804,6 +845,10 @@ def create_runall(jobstart, jobend, clusterpath, optthin = False, outpath = '', 
         start = text.find('job%0')
         end = start+len('job%0')
         text = text[:start]+'job_optthin%0'+text[end:]
+    elif image:
+        start = text.find('job%0')
+        end = start+len('job%0')
+        text = text[:start]+'job_image%0'+text[end:]
 
     #Turn the text back into something that can be written out
     outtext = [s + '\n' for s in text.split('\n')]
