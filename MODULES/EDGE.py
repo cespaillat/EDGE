@@ -1211,6 +1211,135 @@ def binSpectra(obs, speckeys=[], ppbin=2):
 
     return
 
+
+def temp_structure(model, figure_path=None, bw=False):
+    """ Produces a figure of the temperature structure of the disk.
+    
+    Purpose:
+    --------
+    This function takes a collated .fits model and creates a pdf figure of its
+    temperature structure.
+
+    Parameters:
+    -----------
+    model : string
+        Path of the .fits collated model.
+    figure_path : string.
+        Path (and optionally, name) of the figure. Default is None.
+        Options for this parameter include (do not forget the .pdf extension when necessary):
+        - If no figure_path is specified, the figure will be saved in the current directory
+        with the original model name.
+        - If only a name is specified (e.g. figure.pdf), the figure will be in the current
+        directory with the provided filename name.
+        - If a path with no figure name (i.e. /path/to/figure/) is provided, the figure will
+        be saved in that path with the original model name. Do not forget the slash at the end!
+        - If the whole path and figure name are specified (i.e. /path/to/figure/figure.pdf),
+        the figure will be saved there with the corresponding name.
+    bw : bool
+        If True, the figure lines will be black dotted and dashed lines for clarity when
+        printed in bacl and white. Default is false.
+
+    Example:
+    --------
+    The temp_structure function takes a collated DIAD model to produce a figure of three temperatures 
+    (midplane, tau=2/3, and surface) at different radii. It takes three parameters: the path to the 
+    collated diad model (model), the path and/or name of the figure (figure_path, optional), and 
+    whether the figure should be in black and white or not (bw, optional, default is False). You may 
+    simply specify one collated model (e.g. model.fits) and run:
+
+    my_model = 'model_001.fits'
+    temp_structure(my_model)
+
+    This will produce a 'model_001.pdf' figure in the current directory.
+
+    You may specify the path, name, or both (combined) for the output figure, i.e.:
+
+    my_model = 'model_001.fits'
+    figure_path = 'figure1.pdf'
+    figure_path = '/path/to/figures/'
+    figure_path = '/path/to/figures/figure1.pdf'
+    # any of these will work
+    temp_structure(my_model, figure_path=figure_path)
+
+    are all valid inputs. In the first case, you will get a 'figure1.pdf' figure in the current directory. 
+    In the second case, you will get a figure called 'model_001.pdf' in '/path/to/figures/'. And in the 
+    third case, 'figure1.pdf' will be created in '/path/to/figures/'.
+
+    Also, you may choose to produce the figure in black and white for better clarity when printed. 
+    In that case, set the 'bw' parameter to True, i.e.:
+
+    my_model = 'model_002.fits'
+    figure_path = '/path/to/figures/figure2.pdf'
+    temp_structure(my_model, figure_path=figure_path, bw=True)
+
+    Will produce a figure in black and white at '/path/to/figures/figure2.pdf'.
+    
+    Description of temperatures stored in collated models:
+    ------------------------------------------------------
+        The temperatures are stored in the second layer of the fits files. Each index contains:
+        0, RADIUS: radii (AUs)
+        1, TEFF: temperature related to disk viscosity. Not very useful.
+        2, TIRR: temperature related to the irradiation on the disk. Not very useful.
+        3, TZEQ0: temperature at z=0, which is the disk midplane.
+        4, TZEQZMX: temperature at z=infinity, which is the upper layer of the disk.
+        5, TZEQZS: temperature at the irradiation surface, which corresponds to tau = 2/3
+        6, TZTAU: temperature at surface defined by tau = 1.
+    """
+
+    # create the figure name if needed
+    # 1) nothing specified
+    if figure_path is None:
+        figname = os.path.basename(model+'.pdf').replace('.fits', '')
+    else:
+        basename = os.path.basename(figure_path)
+        # 2) look for slashes to know if a path has been specified or just a name
+        if '/' in figure_path:
+            # 3) if there is a basename after the path, then the user provided a
+            # a full path
+            if len(basename) > 0:
+                figname = figure_path
+            # 4) if not, only the path was specified
+            else:
+                figname = figure_path + os.path.basename(model+'.pdf')
+        # 5) in this case, only a figure name was specified
+        else:
+            figname = figure_path
+
+    # read model and extract temperatures
+    model = fits.open(model)
+    radii = model[1].data[0]
+    t_midplane = model[1].data[3]
+    t_surface = model[1].data[4]
+    t_tau_twothirds = model[1].data[5]
+
+    # make figure (no interactive plotting needed)
+    fig = plt.figure(figsize=(6, 4))
+    ax = fig.add_subplot(111)
+    # plot the profiles
+    # this is the color case
+    if bw is False:
+        plt.plot(radii, t_midplane, label=r'$T_{\rm midplane}$')
+        plt.plot(radii, t_surface, label=r'$T_{z \infty}$')
+        plt.plot(radii, t_tau_twothirds, label=r'$T_{\tau=2/3}$')
+    # black and white case
+    else:
+        plt.plot(radii, t_midplane, 'k:', label=r'$T_{\rm midplane}$')
+        plt.plot(radii, t_surface, 'k-', label=r'$T_{z \infty}$')
+        plt.plot(radii, t_tau_twothirds, 'k--', label=r'$T_{\tau=2/3}$')
+
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlabel('Radius (AU)', size=16)
+    plt.ylabel('T (K)', size=16)
+    plt.legend(loc='best', fontsize=14)
+    ax.axes.tick_params(axis='both', labelsize=13)
+    # save figure and close it
+    plt.savefig(figname, dpi=200, bbox_inches='tight')
+    plt.close()
+    
+    return
+
+
 #---------------------------------------------------CLASSES------------------------------------------------------
 class TTS_Model(object):
     """
