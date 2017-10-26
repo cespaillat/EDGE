@@ -2548,18 +2548,33 @@ class TTS_Obs(object):
         spectra = np.array(spectra)
         
         #Now create the fits extensions using binary fits files
-        photHDU = fits.BinTableHDU.from_columns(\
-            [fits.Column(name='wl', format='E', array=photometry[:,0]),\
-            fits.Column(name='lFl', format='E', array=photometry[:,1]),\
-            fits.Column(name='err', format='E', array=photometry[:,2]),\
-            fits.Column(name='instrument', format='A20', array=photometry[:,3]),\
-            fits.Column(name='ulim', format='E', array=photometry[:,4])])
-            
-        specHDU = fits.BinTableHDU.from_columns(\
-            [fits.Column(name='wl', format='E', array=spectra[:,0]),\
-            fits.Column(name='lFl', format='E', array=spectra[:,1]),\
-            fits.Column(name='err', format='E', array=spectra[:,2]),\
-            fits.Column(name='instrument', format='A20', array=spectra[:,3])])
+        if len(photkeys) != 0:
+            photHDU = fits.BinTableHDU.from_columns(\
+                [fits.Column(name='wl', format='E', array=photometry[:,0]),\
+                fits.Column(name='lFl', format='E', array=photometry[:,1]),\
+                fits.Column(name='err', format='E', array=photometry[:,2]),\
+                fits.Column(name='instrument', format='A20', array=photometry[:,3]),\
+                fits.Column(name='ulim', format='E', array=photometry[:,4])])
+        else:
+            photHDU = fits.BinTableHDU.from_columns(
+                [fits.Column(name='wl', format='E'),\
+                fits.Column(name='lFl', format='E'),\
+                fits.Column(name='err', format='E'),\
+                fits.Column(name='instrument', format='A20'),\
+                fits.Column(name='ulim', format='E') ])
+        
+        if len(speckeys) != 0:
+            specHDU = fits.BinTableHDU.from_columns(\
+                [fits.Column(name='wl', format='E', array=spectra[:,0]),\
+                fits.Column(name='lFl', format='E', array=spectra[:,1]),\
+                fits.Column(name='err', format='E', array=spectra[:,2]),\
+                fits.Column(name='instrument', format='A20', array=spectra[:,3])])
+        else:
+            specHDU = fits.BinTableHDU.from_columns(\
+                [fits.Column(name='wl', format='E'),\
+                fits.Column(name='lFl', format='E'),\
+                fits.Column(name='err', format='E'),\
+                fits.Column(name='instrument', format='A20')])
         
         #Denote which extension is which
         photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
