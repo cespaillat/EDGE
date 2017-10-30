@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from astropy.io import ascii
+from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
 import math
@@ -569,6 +570,7 @@ def interp(x0, x, y, n,i0):
 	+ (y[i0 + 1] * (x0 - x[i0]))) / (x[i0 + 1] - x[i0]))
      
 	return interp
+
 
 #-------------------------------------------------------------
 def parameters_siess(tstar,lui,commonpath=commonpath):
