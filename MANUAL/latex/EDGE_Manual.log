@@ -1,4 +1,4 @@
-This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  19 OCT 2017 10:03
+This is pdfTeX, Version 3.14159265-2.6-1.40.17 (TeX Live 2016) (preloaded format=pdflatex 2016.5.22)  25 OCT 2017 18:18
 entering extended mode
  restricted \write18 enabled.
  file:line:error style messages enabled.
@@ -387,111 +387,94 @@ Underfull \hbox (badness 10000) in paragraph at lines 74--75
  []
 
 [2]
-Underfull \hbox (badness 10000) in paragraph at lines 107--108
-
- []
-
-
-Overfull \hbox (16.49698pt too wide) in paragraph at lines 120--122
+Overfull \hbox (16.49698pt too wide) in paragraph at lines 118--120
 []\OT1/cmtt/m/n/10 http://www.bu.edu/tech/support/research/system-usage/running
 -jobs/
  []
 
-
-Overfull \hbox (32.62509pt too wide) in paragraph at lines 153--154
+LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <12> not available
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 121.
+[3]
+Overfull \hbox (32.62509pt too wide) in paragraph at lines 158--159
 \OT1/cmr/m/it/10 Note: An-other use-ful ref-er-ence for ba-sic git com-mands: h
 ttp://rogerdudler.github.io/git-
  []
 
-LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <12> not available
-(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 155.
-[3]
-Overfull \hbox (17.24684pt too wide) in paragraph at lines 188--190
+
+Overfull \hbox (17.24684pt too wide) in paragraph at lines 193--195
 \OT1/cmtt/m/n/10 export PYTHONPATH="$PYTHONPATH:/project/bu-disks/shared/EDGE/M
 ODULES"
  []
 
 
-Underfull \hbox (badness 10000) in paragraph at lines 198--199
+Underfull \hbox (badness 10000) in paragraph at lines 203--204
 
- []
-
-
-Overfull \hbox (5.87419pt too wide) in paragraph at lines 200--209
-\OT1/cmtt/m/n/10 MODULES \OT1/cmr/m/n/10 con-tains the main Python mod-ules, fu
-nc-tions, and classes (i.e., EDGE.py
  []
 
 [4]
 LaTeX Font Info:    Font shape `OT1/cmtt/bx/n' in size <10> not available
-(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 211.
- [5] [6] [7] [8]
-LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 369
+(Font)              Font shape `OT1/cmtt/m/n' tried instead on input line 216.
+ [5]
+Overfull \hbox (59.88972pt too wide) in paragraph at lines 283--285
+\OT1/cmr/m/n/10 tion about work-ing with fits files can be found here: http://d
+ocs.astropy.org/en/stable/io/fits/
+ []
+
+[6] [7] [8]
+LaTeX Font Info:    Try loading font information for OMS+cmtt on input line 383
 .
-LaTeX Font Info:    No file OMScmtt.fd. on input line 369.
+LaTeX Font Info:    No file OMScmtt.fd. on input line 383.
 
 
 LaTeX Font Warning: Font shape `OMS/cmtt/m/n' undefined
 (Font)              using `OMS/cmsy/m/n' instead
-(Font)              for symbol `textbraceleft' on input line 369.
+(Font)              for symbol `textbraceleft' on input line 383.
 
-[9] [10] [11] [12]
-Overfull \hbox (4.2242pt too wide) in paragraph at lines 529--531
-\OT1/cmr/m/n/10 There will be sev-eral er-ror mes-sages (this is nor-mal) and a
- new file \OT1/cmtt/m/n/10 imlup[]obs.pkl
+[9] [10]
+Overfull \hbox (37.83524pt too wide) in paragraph at lines 459--460
+\OT1/cmr/m/n/10 Once the `\OT1/cmtt/m/n/10 red\OT1/cmr/m/n/10 ' ob-ject is cre-
+ated you must then load data into it us-ing \OT1/cmtt/m/n/10 add[]photometry\OT
+1/cmr/m/n/10 and
  []
 
-[13]
-Overfull \hbox (31.94612pt too wide) in paragraph at lines 540--541
+[11] [12] [13]
+Overfull \hbox (9.47415pt too wide) in paragraph at lines 548--550
+\OT1/cmr/m/n/10 There will be sev-eral er-ror mes-sages (this is nor-mal) and a
+ new file \OT1/cmtt/m/n/10 imlup[]obs.fits
+ []
+
+
+Overfull \hbox (31.94612pt too wide) in paragraph at lines 559--560
 \OT1/cmr/m/n/10 The next step is to make the job files for \OT1/cmtt/m/n/10 DIA
 D\OT1/cmr/m/n/10 . This is done us-ing the \OT1/cmtt/m/n/10 DEMO[]jobmaker.py\O
 T1/cmr/m/n/10 . 
  []
 
-
-Overfull \hbox (7.33553pt too wide) in paragraph at lines 572--575
-[]\OT1/cmr/m/n/10 For large grids, it is rec-om-mended that jobs are sub-mit-te
-d us-ing a \OT1/cmtt/m/n/10 run[]all.csh
- []
-
 [14] [15]
-Overfull \hbox (55.77133pt too wide) in paragraph at lines 639--640
-\OT1/cmr/m/n/10 be com-pared against the DIAD mod-els. This will be done us-ing
- the \OT1/cmtt/m/n/10 DEMO[]analysis[]imlup.py
- []
-
-
-Overfull \hbox (12.78172pt too wide) in paragraph at lines 641--642
-[]\OT1/cmr/m/n/10 Change the paths (pick-lepath, mod-el-path, fig-path) in \OT1
-/cmtt/m/n/10 DEMO[]analysis[]imlup.py
- []
-
-
-Overfull \hbox (13.24905pt too wide) in paragraph at lines 663--664
-[]\OT1/cmr/m/n/10 where \OT1/cmtt/m/n/10 order \OT1/cmr/m/n/10 is an ar-ray of 
-in-dices found by us-ing \OT1/cmtt/m/n/10 numpy.argsort \OT1/cmr/m/n/10 on \OT1
-/cmtt/m/n/10 chi2[:,1]\OT1/cmr/m/n/10 ,
+Overfull \hbox (43.27132pt too wide) in paragraph at lines 660--661
+\OT1/cmr/m/n/10 com-pared against the DIAD mod-els. This will be done us-ing th
+e \OT1/cmtt/m/n/10 DEMO[]analysis[]imlup.py
  []
 
 [16]
-Overfull \hbox (42.78117pt too wide) in paragraph at lines 692--696
+Overfull \hbox (42.78117pt too wide) in paragraph at lines 716--720
 []\OT1/cmtt/m/n/10 >>> irs[]wl= irs[0].data[:,0] >>> irs[]flux= irs[0].data[:,1
 ] >>> irs[]ferr=
  []
 
 [17]
-Overfull \hbox (0.74712pt too wide) in paragraph at lines 821--823
-[]\OT1/cmtt/m/n/10 >>> edgepath= `/Users/ugresearch/Desktop/mandar11/EDGE-maste
-r/'
+Overfull \hbox (21.0268pt too wide) in paragraph at lines 801--804
+\OT1/cmtt/m/n/10 >>> PDS66 = PDS66red.dered(Av, `extinction[]law', flux=1,datap
+ath=path, 
  []
 
 [18]
-Overfull \hbox (14.8094pt too wide) in paragraph at lines 837--838
+Overfull \hbox (14.8094pt too wide) in paragraph at lines 848--849
 \OT1/cmr/m/n/10 file cre-ation, it can be done at the com-mand line us-ing the 
 \OT1/cmtt/m/n/10 edge.job[]file[]create()
  []
 
-[19] (./EDGE_Manual.aux)
+[19] [20] (./EDGE_Manual.aux)
 
 LaTeX Font Warning: Some font shapes were not available, defaults substituted.
 
@@ -503,7 +486,7 @@ Here is how much of TeX's memory you used:
  4163 multiletter control sequences out of 15000+600000
  9520 words of font info for 35 fonts, out of 8000000 for 9000
  1141 hyphenation exceptions out of 8191
- 23i,6n,20p,918b,199s stack positions out of 5000i,500n,10000p,200000b,80000s
+ 23i,6n,20p,816b,199s stack positions out of 5000i,500n,10000p,200000b,80000s
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx10.pfb
 ></usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx12.pfb>
 </usr/local/texlive/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmbx9.pfb></
@@ -521,10 +504,10 @@ e/2016/texmf-dist/fonts/type1/public/amsfonts/cm/cmsy7.pfb></usr/local/texlive/
 016/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt10.pfb></usr/local/texlive/20
 16/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt12.pfb></usr/local/texlive/201
 6/texmf-dist/fonts/type1/public/amsfonts/cm/cmtt9.pfb>
-Output written on EDGE_Manual.pdf (20 pages, 255807 bytes).
+Output written on EDGE_Manual.pdf (21 pages, 257176 bytes).
 PDF statistics:
- 137 PDF objects out of 1000 (max. 8388607)
- 97 compressed objects within 1 object stream
+ 140 PDF objects out of 1000 (max. 8388607)
+ 99 compressed objects within 1 object stream
  0 named destinations out of 1000 (max. 500000)
  1 words of extra memory for PDF output out of 10000 (max. 10000000)
 
