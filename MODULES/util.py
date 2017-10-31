@@ -508,6 +508,51 @@ def MdotCalc(Umag, Rmag, d_pc, Temp, Mstar, Rstar):
 
     return Mdot
 
+
+def significant_digit(value):
+    '''
+    Returns the significant digit (order of mag) of a number
+    '''
+    return int(np.floor(np.log10(abs(value))))
+
+
+def round_to_significant(value, uncertainty):
+    '''
+    PURPOSE:
+        Returns a value and its uncertainty rounded to the corresponding significant
+    
+    INPUTS:
+        value:[float] Value of the measurement
+        uncertainty:[float] Uncertainty in the measurement. 
+    
+    NOTES:
+        If the leading sigficant digit is 1 or 2, then keep the proceeding significant digits
+        If the leading significant digit is above 3 or above, then round to the place of the leading significant digit
+    
+    AUTHOR:
+        Sierra Grant, October 10th, 2017
+    '''
+    value, uncertainty = np.float(value), np.float(uncertainty)
+    sd = significant_digit(uncertainty)
+    sd_val = float(str(uncertainty)[str(uncertainty).index(".")-sd])
+    if sd_val>2.0:
+        #print(uncertainty,sd,sd_val,'I AM GREATER THAN 2')
+        # round value and uncertainty (we used -1 in front of sd to change the behaviour of round)
+        value = np.round(value, -1 * sd)
+        uncertainty = np.round(uncertainty, -1 * sd)
+        # if uncertainty >= 1, make it int
+        if uncertainty >= 1:
+            value, uncertainty = int(value), int(uncertainty)
+        return ("{:."+str(-1*sd)+"f}").format(value),("{:."+str(-1*sd)+"f}").format(uncertainty)
+    if sd_val<=2.0:
+        #print(uncertainty,sd,sd_val,'I AM LESS THAN 2')
+        value = np.round(value, -1 * sd + 1)
+        uncertainty = np.round(uncertainty, -1 * sd + 1)
+        if str(uncertainty)[str(uncertainty).index(".")-sd] == '3':
+            return ("{:."+str(-1*sd)+"f}").format(value),("{:."+str(-1*sd)+"f}").format(uncertainty)
+        else:
+            return ("{:."+str(-1*sd+1)+"f}").format(value),("{:."+str(-1*sd+1)+"f}").format(uncertainty)
+
 def linearInterp(x0, x1, x2, y1, y2, y1err, y2err):
     """
     Linearly interpolates between two values assuming the y values have errors.
