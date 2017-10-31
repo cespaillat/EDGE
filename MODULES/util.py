@@ -7,6 +7,7 @@ import matplotlib.pyplot as plt
 import math
 import scipy.interpolate as sinterp
 import os
+import pdb
 
 utilpath        = os.path.dirname(os.path.realpath(__file__))+'/'
 commonpath     = utilpath+'/../COMMON/'
@@ -534,7 +535,7 @@ def round_to_significant(value, uncertainty):
     '''
     value, uncertainty = np.float(value), np.float(uncertainty)
     sd = significant_digit(uncertainty)
-    sd_val = float(str(uncertainty)[str(uncertainty).index(".")-sd])
+    sd_val = float( ('{:1.'+str(int(np.abs(sd)+5))+'f}').format(uncertainty)[str(uncertainty).index(".")-sd])
     if sd_val>2.0:
         #print(uncertainty,sd,sd_val,'I AM GREATER THAN 2')
         # round value and uncertainty (we used -1 in front of sd to change the behaviour of round)
