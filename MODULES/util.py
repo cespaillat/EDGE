@@ -533,6 +533,7 @@ def round_to_significant(value, uncertainty):
     AUTHOR:
         Sierra Grant, October 10th, 2017
     '''
+    
     value, uncertainty = np.float(value), np.float(uncertainty)
     sd = significant_digit(uncertainty)
     sd_val = float( ('{:1.'+str(int(np.abs(sd)+5))+'f}').format(uncertainty)[str(uncertainty).index(".")-sd])
@@ -549,7 +550,7 @@ def round_to_significant(value, uncertainty):
         #print(uncertainty,sd,sd_val,'I AM LESS THAN 2')
         value = np.round(value, -1 * sd + 1)
         uncertainty = np.round(uncertainty, -1 * sd + 1)
-        if str(uncertainty)[str(uncertainty).index(".")-sd] == '3':
+        if ('{:1.'+str(int(np.abs(sd)+5))+'f}').format(uncertainty)[('{:1.'+str(int(np.abs(sd)+5))+'f}').format(uncertainty).index(".")-sd] == '3':
             return ("{:."+str(-1*sd)+"f}").format(value),("{:."+str(-1*sd)+"f}").format(uncertainty)
         else:
             return ("{:."+str(-1*sd+1)+"f}").format(value),("{:."+str(-1*sd+1)+"f}").format(uncertainty)
