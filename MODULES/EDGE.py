@@ -408,6 +408,7 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
               kwargs include:
         amaxs - maximum grain size in disk
         epsilon - settling parameter
+        ztran - height of transition between big and small grains
         mstar - mass of protostar
         tstar - effective temperature of protostar
         rstar - radius of protostar
@@ -428,6 +429,10 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
         lamaxb - string for maximum grain size in the disk midplane (currently accepts '1mm' and '1cm')
         amaxw - maximum grain size in the wall. If not supplied, code will assume that it is the same as the the grain size in the disk
         d2g - Dust to gas mass ratio
+
+              kwargs used only for the image (if image is True):
+        wavelength - wavelength (in microns) at which the image will be calculated
+        imagetype - Type of image. Can be thick or thin, depending on whether the disk will be optically thin or optically thick at this wavelength
 
         Some can still be included, such as dust grain compositions. They just aren't
         currently supported. If any supplied kwargs are unused, it will print at the end.
@@ -534,29 +539,6 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
         text = text[:start] + text[start+1:]
 
 
-
-    # Now, we examine the epsilon parameter if a value provided:
-    if 'epsilon' in kwargs:
-        epsVal = kwargs['epsilon']
-        epsStr = str(epsVal)
-
-        #Add # to the one that was missing one
-        start = text.find('\nset EPS=')
-        text = text[:start+1]+'#'+text[start+1:]
-
-        start = text[start:].find('\nset epsilonbig') + start
-        text = text[:start+1]+'#'+text[start+1:]
-
-        #Now remove the # for the selected epsilon value
-        start = text.find("#set EPS='"+epsStr)
-        text = text[:start] + text[start+1:]
-
-        start = text[start:].find('#set epsilonbig=') + start
-        text = text[:start] + text[start+1:]
-
-        del kwargs['epsilon']
-
-
     #Now go through the rest of the parameters
     dummykwargs = copy.deepcopy(kwargs)
     for param in dummykwargs:
@@ -585,24 +567,47 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
             text = text[:start]+paramstr +text[end:]
 
         #Fix the special case of temp + Tshock
-        elif param == 'TEMP' or param == 'TSHOCK':
+        elif param == 'TEMP':
             start = text.find('set '+param+"=") + len('set '+param+"=")
             end = start + len(text[start:].split(".")[0])
             text = text[:start]+paramstr+text[end:]
-        #Fix the special case of altinh
-        elif param == 'ALTINH':
-            start = text.find('set '+param+'=') + len('set '+param+'=')
-            end = start + len(text[start:].split("#")[0])
-            text = text[:start]+paramstr+'    '+text[end:]
+        #This parameter does not work with the image code yet
+        elif param == 'TSHOCK':
+            if image:
+                print("WARNING: parameter 'TSHOCK' is not yet supported by image code.")
+            else:
+                start = text.find('set '+param+"=") + len('set '+param+"=")
+                end = start + len(text[start:].split(".")[0])
+                text = text[:start]+paramstr+text[end:]
         #Fix the special case of MDOTSTAR (Sometimes it is $MDOT)
+        #Also, this parameter does not work with the image code yet
         elif param == 'MDOTSTAR':
-            start = text.find('set '+param+'=') + len('set '+param+'=')
-            end = start + len(text[start:].split("#")[0])
-            text = text[:start]+"'"+paramstr+"'"+' '+text[end:]
-        elif param == 'D2G':
-            start = text.find('set '+param+'=') + len('set '+param+'=')
-            end = start + len(text[start:].split("\n")[0])
-            text = text[:start]+paramstr+text[end:]
+            if image:
+                print("WARNING: parameter 'MDOTSTAR' is not yet supported by image code.")
+            else:
+                start = text.find('set '+param+'=') + len('set '+param+'=')
+                end = start + len(text[start:].split("#")[0])
+                text = text[:start]+"'"+paramstr+"'"+' '+text[end:]
+        #Special case of wavelength (only used if creating jobfile for image)
+        elif param == 'WAVELENGTH':
+            if image:
+                start = text.find('set WL=') + len('set WL=')
+                end = start + len(text[start:].split(" #")[0])
+                text = text[:start]+paramstr+text[end:]
+            else:
+                print("WARNING: You used the parameter 'wavelength', but it is \
+                only used when creating a jobfile for an image.")
+        #Special case of imagetype (only used if creating jobfile for image)
+        elif param == 'IMAGETYPE':
+            if image:
+                if (paramstr != 'thin') and (paramstr != 'thick'):
+                    raise IOError("JOB_FILE_CREATE: imagetype can only be 'thin' or 'thick'")
+                start = text.find("set image='") + len("set image='")
+                end = start + len(text[start:].split("'")[0])
+                text = text[:start]+paramstr+text[end:]
+            else:
+                print("WARNING: You used the parameter 'imagetype', but it is \
+                only used when creating a jobfile for an image.")
 
         #Change the rest
         else:
@@ -634,8 +639,12 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
     outtext = [s + '\n' for s in text.split('\n')]
 
     # Once all changes have been made, we just create a new job file:
+    if image:
+        outjob = 'job_image'
+    else:
+        outjob = 'job'
     string_num  = str(jobnum).zfill(fill)
-    newJob      = open(path+'job'+string_num, 'w')
+    newJob      = open(path+outjob+string_num, 'w')
     newJob.writelines(outtext)
     newJob.close()
 
@@ -758,7 +767,7 @@ def job_optthin_create(jobn, path, fill=3, sample_path = None, **kwargs):
 
     return
 
-def create_runall(jobstart, jobend, clusterpath, optthin = False, outpath = '', commonpath = commonpath, fill = 3):
+def create_runall(jobstart, jobend, clusterpath, optthin = False, image = False, outpath = '', commonpath = commonpath, fill = 3):
     '''
     create_runall()
 
@@ -768,6 +777,7 @@ def create_runall(jobstart, jobend, clusterpath, optthin = False, outpath = '', 
 
     OPTIONAL INPUTS:
         optthin: [Boolean] Set to True for optically thin dust models.
+        image: [Boolean] Set to True for images (If optthin is also True, this will not have any effect).
         outpath: [String] Location of where the runall script should be sent. Default is current directory.
         edgepath: [String] Path to where the runall_template file is located. Default is the edge director
     '''
@@ -804,6 +814,10 @@ def create_runall(jobstart, jobend, clusterpath, optthin = False, outpath = '', 
         start = text.find('job%0')
         end = start+len('job%0')
         text = text[:start]+'job_optthin%0'+text[end:]
+    elif image:
+        start = text.find('job%0')
+        end = start+len('job%0')
+        text = text[:start]+'job_image%0'+text[end:]
 
     #Turn the text back into something that can be written out
     outtext = [s + '\n' for s in text.split('\n')]
@@ -1226,9 +1240,9 @@ def binSpectra(obs, speckeys=[], ppbin=2):
     return
 
 
-def temp_structure(model, figure_path=None, bw=False):
+def temp_structure(model, figure_path=None, bw=False,xlim=[],ylim=[]):
     """ Produces a figure of the temperature structure of the disk.
-    
+
     Purpose:
     --------
     This function takes a collated .fits model and creates a pdf figure of its
@@ -1255,10 +1269,10 @@ def temp_structure(model, figure_path=None, bw=False):
 
     Example:
     --------
-    The temp_structure function takes a collated DIAD model to produce a figure of three temperatures 
-    (midplane, tau=2/3, and surface) at different radii. It takes three parameters: the path to the 
-    collated diad model (model), the path and/or name of the figure (figure_path, optional), and 
-    whether the figure should be in black and white or not (bw, optional, default is False). You may 
+    The temp_structure function takes a collated DIAD model to produce a figure of three temperatures
+    (midplane, tau=2/3, and surface) at different radii. It takes three parameters: the path to the
+    collated diad model (model), the path and/or name of the figure (figure_path, optional), and
+    whether the figure should be in black and white or not (bw, optional, default is False). You may
     simply specify one collated model (e.g. model.fits) and run:
 
     my_model = 'model_001.fits'
@@ -1275,11 +1289,11 @@ def temp_structure(model, figure_path=None, bw=False):
     # any of these will work
     temp_structure(my_model, figure_path=figure_path)
 
-    are all valid inputs. In the first case, you will get a 'figure1.pdf' figure in the current directory. 
-    In the second case, you will get a figure called 'model_001.pdf' in '/path/to/figures/'. And in the 
+    are all valid inputs. In the first case, you will get a 'figure1.pdf' figure in the current directory.
+    In the second case, you will get a figure called 'model_001.pdf' in '/path/to/figures/'. And in the
     third case, 'figure1.pdf' will be created in '/path/to/figures/'.
 
-    Also, you may choose to produce the figure in black and white for better clarity when printed. 
+    Also, you may choose to produce the figure in black and white for better clarity when printed.
     In that case, set the 'bw' parameter to True, i.e.:
 
     my_model = 'model_002.fits'
@@ -1287,7 +1301,7 @@ def temp_structure(model, figure_path=None, bw=False):
     temp_structure(my_model, figure_path=figure_path, bw=True)
 
     Will produce a figure in black and white at '/path/to/figures/figure2.pdf'.
-    
+
     Description of temperatures stored in collated models:
     ------------------------------------------------------
         The temperatures are stored in the second layer of the fits files. Each index contains:
@@ -1347,10 +1361,16 @@ def temp_structure(model, figure_path=None, bw=False):
     plt.ylabel('T (K)', size=16)
     plt.legend(loc='best', fontsize=14)
     ax.axes.tick_params(axis='both', labelsize=13)
+    if xlim:
+        ax.set_xlim([xlim[0],xlim[1]])
+    if ylim:
+        ax.set_ylim([ylim[0],ylim[1]])
+
     # save figure and close it
     plt.savefig(figname, dpi=200, bbox_inches='tight')
     plt.close()
-    
+    model.close()
+
     return
 
 
@@ -1374,6 +1394,7 @@ class TTS_Model(object):
     rdisk: The outer radius of the disk.
     amax: The "maximum" grain size in the disk. (or just suspended in the photosphere of the disk?)
     eps: The epsilon parameter, i.e., the amount of dust settling in the disk.
+    ztran: height of transition between big and small grains, in hydrostatic scale heights
     tshock: The temperature of the shock at the stellar photosphere.
     temp: The temperature at the inner wall (1400 K maximum).
     altinh: Scale heights of extent of the inner wall.
@@ -1435,6 +1456,7 @@ class TTS_Model(object):
         self.amaxb      = header['AMAXB']
         self.amaxw      = header['AMAXW']
         self.eps        = header['EPS']
+        self.ztran      = header['ZTRAN']
         self.tshock     = header['TSHOCK']
         self.temp       = header['TEMP']
         self.altinh     = header['ALTINH']
@@ -2576,7 +2598,7 @@ class TTS_Obs(object):
                 fits.Column(name='err', format='E'),\
                 fits.Column(name='instrument', format='A20'),\
                 fits.Column(name='ulim', format='E') ])
-        
+
         if len(speckeys) != 0:
             specHDU = fits.BinTableHDU.from_columns(\
                 [fits.Column(name='wl', format='E', array=spectra[:,0]),\
@@ -2589,7 +2611,7 @@ class TTS_Obs(object):
                 fits.Column(name='lFl', format='E'),\
                 fits.Column(name='err', format='E'),\
                 fits.Column(name='instrument', format='A20')])
-        
+
         #Denote which extension is which
         photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
         specHDU.header.set('FITS_EXT', 'SPECTRA')
