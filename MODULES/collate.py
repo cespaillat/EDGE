@@ -278,7 +278,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
 
         #Define what variables to record
         sparam = (['MSTAR', 'TSTAR', 'RSTAR', 'DISTANCIA','MDOT', 'MDOTSTAR','ALPHA', 'MUI', 'RDISK',
-                   'AMAXS', 'EPS', 'WLCUT_ANGLE', 'WLCUT_SCATT', 'NSILCOMPOUNDS', 'SILTOTABUN',
+                   'AMAXS', 'EPS', 'ZTRAN', 'WLCUT_ANGLE', 'WLCUT_SCATT', 'NSILCOMPOUNDS', 'SILTOTABUN',
                    'AMORPFRAC_OLIVINE', 'AMORPFRAC_PYROXENE', 'FORSTERITE_FRAC', 'ENSTATITE_FRAC',
                    'TEMP', 'ALTINH', 'TSHOCK', 'AMAXW', 'AMAXB','D2G'])
         dparam = np.zeros(len(sparam), dtype = float)
@@ -307,38 +307,11 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                     else:
                         raise IOError('COLLATE: FAILED ON AMAXW VALUE. FIX JOB FILE '+jobnum)
 
-            elif param == 'EPS':
-                for split_eps in jobf.split("EPS='")[1:]:
-                    if split_eps.split("\n")[1][0] == '#':
-                        continue
-                    elif split_eps.split("\n")[1][0] == 's':
-                        dparam[ind] = float(split_eps.split("'")[0])
-                    else:
-                        raise IOError('COLLATE: FAILED ON EPSILON VALUE. FIX JOB FILE '+jobnum)
-
             elif param == 'TEMP' or param == 'TSHOCK':
                 try:
                     dparam[ind] = float(jobf.split(param+"=")[1].split(".")[0])
                 except ValueError:
                     raise ValueError('COLLATE: MISSING . AFTER '+param+' VALUE, GO FIX IN JOB FILE ' +jobnum)
-
-            elif param == 'D2G':
-                try:
-                    dparam[ind] = float(jobf.split('set '+param+'=')[1].split('\n')[0])
-                except ValueError:
-                    raise ValueError('COLLATE: ERROR WITH PARSING D2G. SHOULD NOT HAVE ANYTHING ON LINE AFTER D2G VALUE, GO FIX IN JOB FILE '+jobnum)
-
-            elif param == 'ALTINH':
-                try:
-                    dparam[ind] = float(jobf.split(param+"=")[1].split(" ")[0])
-                except ValueError:
-                    raise ValueError('COLLATE: MISSING SPACE [ ] AFTER ALTINH VALUE, GO FIX IN JOB FILE '+jobnum)
-
-            elif param == 'AMAXB':
-                try:
-                    dparam[ind] = float(jobf.split("AMAXB=")[1].split("'")[1])
-                except ValueError:
-                    raise ValueError('COLLATE: ERROR WITH PARSING AMAXB, GO FIX IN JOB FILE '+jobnum)
 
             elif param == 'MDOTSTAR':
                 #MDOTSTAR is set often set to $MDOT, but could also be set to a number
@@ -355,7 +328,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                         print('COLLATE: WARNING IN JOB '+jobnum+ ': NO VALUE FOR MDOTSTAR IN JOBFILE, ASSUMING MDOTSTAR = MDOT')
 
             else:
-                dparam[ind] = float(jobf.split(param+"='")[1].split("'")[0])
+                dparam[ind] = float(jobf.split('set '+param+"='")[1].split("'")[0])
 
         #Rename header labels that are too long
         sparam[sparam.index('AMORPFRAC_OLIVINE')]  = 'AMORF_OL'

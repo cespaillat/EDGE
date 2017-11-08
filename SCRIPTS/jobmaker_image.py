@@ -26,10 +26,9 @@ HOW TO USE THIS SCRIPT:
     5) Run the script
 
 NOTES:
-    - 'amaxs', 'amaxw', 'epsilon' and lamaxb only accept certain values. 'amaxw' accepts the same values as 'amaxs'
+    - 'amaxs', 'amaxw', and lamaxb only accept certain values. 'amaxw' accepts the same values as 'amaxs'
     Here are the possible values:
         amaxs/amaxw: [0.1, 0.25, 1.0, 2.0, 3.0, 4.0, 5.0, 10, 100]
-        epsilon: [0.0001, 0.001, 0.01, 0.1, 0.2, 0.5, 1.0]
         lamaxb: ['500', '1mm', '2mm', '5mm', '1cm', '2cm']
     - 'image' can be set to either 'thin' or 'thick', depending on whether the disk will be optically thin or thick
     at the wavelength of the image.

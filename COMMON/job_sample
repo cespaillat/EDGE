@@ -1,23 +1,25 @@
 #!/bin/csh
 # HISTORY:
+# Nov17 Quique: epsilonbig is now calculated inside irradiado, so eps and ztran
+# can be given any value. Also some changes to paths and naming of files.
 # Sep17 Quique: Models can now be automatically collated after running.
 # collate.py from the EDGE package is used.
-# Jun17 Quique: New parameter D2G=dust-to-gas mass ratio. 
-# Now the opacity files should be calculated for an abunance of 1 
+# Jun17 Quique: New parameter D2G=dust-to-gas mass ratio.
+# Now the opacity files should be calculated for an abunance of 1
 # for each component. Each component will be then scaled by its abundance.
 # New parameter AMAXW, the amax of the dust grains in the wall. By default
 # it will be the same as in the disk, but it can now be changed independently from the disk.
-# Jun17 CE: New version of Photosphere. It can now use KH95 or PM13 
+# Jun17 CE: New version of Photosphere. It can now use KH95 or PM13
 # (Pecaut & Mamajek 2013) tables, chosen with the parameter TABLE.
 # Mar17 NC: New version of Photosphere. It now includes a better treatment for
 # Herbig Ae/Be stars.
 # Nov15 Quique: Two different mass accretion rates are used:
-# MDOT: Mass accretion rate in the disk, as usual. Used to calculate the surface 
+# MDOT: Mass accretion rate in the disk, as usual. Used to calculate the surface
 # density of the disk. It goes into viscoso as an input and is read from fort14.vis
 # in irr_dosamax.
 # MDOTSTAR: Mass accretion rate onto the star. Note that
-# it could be different to MDOT in the disk (e.g. if a planet is creating a 
-# cavity in the disk). This mass accretion rate is used to calculate the 
+# it could be different to MDOT in the disk (e.g. if a planet is creating a
+# cavity in the disk). This mass accretion rate is used to calculate the
 # accretion luimnosity in opamean, irr_dosamax and the wall.
 #
 # 6aug15 CE cleaned up to work with EDGE
@@ -38,24 +40,29 @@ set MSTAR='0.6' #in Msun
 set TSTAR='4060' #in K
 set RSTAR='2.8'  #in Rsun
 set DISTANCIA='400'  #in pasecs
-set MDOT='3.0e-8' #in Msun/yr 
+set MDOT='3.0e-8' #in Msun/yr
 set MDOTSTAR=$MDOT #in Msun/yr. Mass accretion rate onto the star. Note that
-# it could be different to MDOT in the disk (e.g. if a planet is creating a 
-# cavity in the disk). This mass accretion rate is used to calculate the 
+# it could be different to MDOT in the disk (e.g. if a planet is creating a
+# cavity in the disk). This mass accretion rate is used to calculate the
 # accretion luimnosity in opamean, irr_dosamax and the wall.
 
 #shock parameters ----------------------------
 set TSHOCK=8000.  #in K
 
 #outer disk parameters ------------------------------------
-set ALPHA='0.01' 
+set ALPHA='0.01'
 set MUI='0.5'  #cosine of inclination angle
 set RDISK='30'  #outer radius of disk in AU
 
 #dust-to-gas mass ratio -------------------------------
-set D2G=0.0065
+set D2G='0.0065'
 
-#dust grain sizes & settling in upper disk layer----------------
+#settling------------------------
+set EPS='0.0001'
+set ZTRAN='0.1' #height of transition between big and small grains (in scale height)
+#------------------------
+
+#dust grain size in upper disk layer----------------
 #note: uncomment AMAXS and corresponding lamaxs
 #------------------------
 #set AMAXS='0.05'
@@ -89,37 +96,13 @@ set lamaxs='amax0p25'
 #set lamaxs='amax100'
 #------------------------
 
-#note: uncomment EPS and corresponding epsilonbig
-#------------------------
-set EPS='0.0001'
-set epsilonbig='12.5'
-#-----------------------
-#set EPS='0.001'
-#set epsilonbig='12.5'
-#------------------------
-#set EPS='0.01'
-#set epsilonbig='12.4'
-#------------------------
-#set EPS='0.1'
-#set epsilonbig='11.4'
-#------------------------
-#set EPS='0.2'
-#set epsilonbig='10.2'
-#------------------------
-#set EPS='0.5'
-#set epsilonbig='6.8'
-#------------------------
-#set EPS='0.8'
-#set epsilonbig='3.3'
-#------------------------
-#set EPS='1.0'
-#set epsilonbig='1.0'
-#------------------------
-
+#dust grain size in midplane--------------
+set AMAXB='1000'
+set lamaxb='amax1mm'
 
 #wall parameters ------------------------------------
 set TEMP=1400. #temperature at inner edge (i.e., wall) of disk
-set ALTINH=3   #scale height of wall
+set ALTINH='3'   #scale height of wall
 #dust grain sizes in the wall----------------
 #note: uncomment AMAXW and corresponding lamaxw
 #------------------------
@@ -170,7 +153,7 @@ set WLFILE=$MAINCODE/COMUN/wlfile_standard.ent
 #the flux will be calculated for.
 #For sed_angle*f the code will calculate fluxes for
 #wavelengths longer than WLCUT_ANGLE and sed_scatt*f
-#will calculate fluxes for wavelengths smaller than 
+#will calculate fluxes for wavelengths smaller than
 #WLCUT_SCATT.
 set WLCUT_ANGLE='0'
 set WLCUT_SCATT='5'
@@ -178,7 +161,7 @@ set WLCUT_SCATT='5'
 
 #Select SILICATE opacities and abundances----------------
 #give number of silicate compounds, the total abundace of silicates
-#and the fractional abundance of each compound. Files with the 
+#and the fractional abundance of each compound. Files with the
 #silicate opacities are in directory SIL/compound
 
 set DIRCOMs=$MAINPOL/SIL
@@ -206,7 +189,7 @@ echo forsterite: ls $FILEFORSTERITE
 echo enstatite: ls $FILEENSTATITE
 
 #end label for output file label to identify case. Check which is the last you run.
-#all the properties of the model will be written in file log$labelend and it will 
+#all the properties of the model will be written in file log$labelend and it will
 #add to the logfile everytime the script is run for a given case.
 set labelend='test_001'
 
@@ -223,25 +206,25 @@ set IPHOT='1'
 #do it once, files are identified by CASE number in labelend and labelcom
 set ISILCOM='1'
 #----------------------------------------
-#calculate mean opacities? (0=n,1=y) 
+#calculate mean opacities? (0=n,1=y)
 #This is only dependent on Tstar, EPS (b&s), and amax (b&s)
-#so if you change something else (alpha) you don't 
+#so if you change something else (alpha) you don't
 #have to re-run this after you do it once.
 set IOPA='1'
 #------------------------
-#run viscoso? (0=n,1=y) 
-#This calculation depends on  the output of IOPA, tstar, 
+#run viscoso? (0=n,1=y)
+#This calculation depends on  the output of IOPA, tstar,
 #rstar, mstar, mdot, rmag, rdmaxau, and alpha.
 set IVIS='1'
 #------------------------
-#run irr? (0=n,1=y) 
-#This depends on IOPA output, tstar, rstar, 
-#mstar, rmagm, eps (b&s), ztran(which is fixed below in script), 
+#run irr? (0=n,1=y)
+#This depends on IOPA output, tstar, rstar,
+#mstar, rmagm, eps (b&s), ztran(which is fixed below in script),
 #amax (b&s), and IVIS output
 set IIRR='1'
 #------------------------
-#calculate table with disk properties? (0=n,1=y)  
-set IPROP='1'  
+#calculate table with disk properties? (0=n,1=y)
+set IPROP='1'
 #------------------------
 #determine dust destruction radius and wall emission (0=n,1=y)
 #always run before SED calculations. Sets RIN consistently and
@@ -251,11 +234,11 @@ set IPROP='1'
 set IWALLDUST='1'
 #-------------------------
 #run sed_angle (thermal emission)? (0=n,1=y)
-#This depends on IIRR output, eps (s), extinction files, 
+#This depends on IIRR output, eps (s), extinction files,
 #filelongan, isub (fixed below), rstar, rin, rdisk, tstar, mui
 set ISEDT='1'
 #------------------------
-#run sed_scatter (scattered emission)? (0=n,1=y) 
+#run sed_scatter (scattered emission)? (0=n,1=y)
 #has same dependencies as sed_angle
 set ISEDS='0'
 #------------------------
@@ -264,7 +247,7 @@ set ISEDS='0'
 set ICOLLATE='1'
 
 ##########################################################
-#DO NOT CHANGE ANYTHING BELOW... 
+#DO NOT CHANGE ANYTHING BELOW...
 #UNLESS YOU KNOW WHAT YOU ARE DOING!
 ##########################################################
 #abundances of graphite and ice
@@ -289,14 +272,10 @@ set DIRCOM=$MAINCODE/COMUN
 set DIROPA=$MAINCODE/OPACIDADES
 set DIRPRO=$MAINCODE/PROGRAMAS
 
-#this sets size of grains in midplane to 1mm--------------
-set AMAXB='1000'
-set lamaxb='amax1mm'
-
 #parameters for structure,etc. -------------------------------------
-set ZTRAN=0.1 #height of transition between big and small (in scale height)
 set labtstar=ts$TSTAR
 set labcom=$labelend
+set epsilonbig='1.0' # Do not change unless you know what you are doing
 set Rmag='3' #in stellar radii; this is the magnetospheric radius
 set Rmagm='2.7' #in stellar radii; must be slightly smaller than Rmagm
 set RDMAXAU='400' #input for viscoso, leave big
@@ -428,7 +407,7 @@ set FILESILB=$MAINPOL/SIL/mgfe/sil.p3p5.$lamaxb.g.ab$labelsilab.extinc
 set FILEGRAFB=$MAINPOL/GRAF/graf.p3p5.$lamaxb.g.ab$labgrafab.extinc
 set FILEICEB=$MAINPOL/H2OICE/h2oice.p3p5.$lamaxb.g.ab$labiceab.extinc.wb08
 
-#copy output from combina to silicate file for small grains 
+#copy output from combina to silicate file for small grains
 #(crystal in upper levels)
 set  FILESILS=$FILESILSALIDA
 set FILEGRAFS=$MAINPOL/GRAF/graf.p3p5.$lamaxs.g.ab$labgrafab.extinc
@@ -590,9 +569,9 @@ if  ($IIRR == 1) then
 set labelepsilon=$labeps
 set labelamax=$lamaxs
 set FILEPLANCKMEANS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
-set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat 
+set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
 set FILEPLANCKMEANSTS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
-set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat 
+set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 set FILEPLANCKMEANSTOT=plancktot.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 set labelepsilon=$labepb
 set labelamax=$lamaxb
@@ -603,7 +582,7 @@ set FILEROSSMEANBTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$lab
 set FILEPLANCKMEANBTOT=plancktot.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 
 rm -f $FILESALIRR
-echo calculating irradiated disk 
+echo calculating irradiated disk
 $IRR_DOSAMAX << EOD
 $TSTAR $RSTAR $MSTAR $Rmagm
 $MDOTSTAR
@@ -617,7 +596,7 @@ $FILEPLANCKMEANS
 $FILEROSSMEANSTS
 $FILEPLANCKMEANSTS
 $FILEPLANCKMEANSTOT
-$epsilonbig $EPS
+$EPS
 $ZTRAN
 $AMAXB $AMAXS
 $FILESALVIS
@@ -643,9 +622,9 @@ EOD
 set labelepsilon=$labeps
 set labelamax=$lamaxs
 set FILEPLANCKMEANS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
-set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat 
+set FILEROSSMEANS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.dat
 set FILEPLANCKMEANSTS=planck.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
-set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat 
+set FILEROSSMEANSTS=rosseland.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 set FILEPLANCKMEANSTOT=plancktot.$labcom\_ts14ng.$labelepsilon.p3p5.$labelamax.$labtstar.dat
 set labelepsilon=$labepb
 set labelamax=$lamaxb
@@ -724,7 +703,7 @@ endif
 #recover RIN from wall calculation
 set RIN=`cat $FILERIN`
 echo RIN $RIN >> $LOGFILE
-echo RIN $RIN 
+echo RIN $RIN
 
 #begin SEDT-----------------------------------------
 set salidasedt=angle.mu$MUI.rd$RDISK.rin$RIN.$extension
@@ -732,7 +711,7 @@ set salidasedt=angle.mu$MUI.rd$RDISK.rin$RIN.$extension
 if ($ISEDT == 1) then
 echo calculating thermal emission
 echo Calculation of thermal emission $fecha cosi $MUI >> $LOGFILE
-rm -f $salida
+rm -f $salidasedt
 $SEDANGLE << EOD
 $salidasedt
 $FILESALIRR
@@ -774,7 +753,6 @@ $OPAMOL5
 $OPAMOL6
 $WLCUT_ANGLE
 EOD
-echo $salida
 endif
 #end SED------------------------
 
@@ -786,7 +764,7 @@ set salidaseds=scatt.mu$MUI.rd$RDISK.rin$RIN.$extension
 if ($ISEDS == 1) then
 echo calculating scattered emission
 echo Calculation of scattered emission $fecha cosi $MUI >> $LOGFILE
-rm -f $salida
+rm -f $salidaseds
 $SEDSCATT<< EOD
 $salidaseds
 $FILESALIRR
@@ -827,7 +805,6 @@ $OPAMOL5
 $OPAMOL6
 $WLCUT_SCATT
 EOD
-echo $salida
 endif
 #end scatter-------------------------------
 
@@ -857,5 +834,3 @@ endif
 
 
 exit
-
-
