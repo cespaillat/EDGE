@@ -4,6 +4,7 @@
 #---------------------------------------------IMPORT RELEVANT MODULES--------------------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from astropy.io import fits
 import os
 import itertools
@@ -12,6 +13,8 @@ import _pickle as cPickle
 import pdb
 import copy
 from glob import glob
+from scipy.interpolate import griddata
+import matplotlib.ticker as ticker
 import util
 #----------------------------------------------PLOTTING PARAMETERS-----------------------------------------------
 # Regularizes the plotting parameters like tick sizes, legends, etc.
@@ -137,12 +140,12 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
             plt.plot(model.data['wl'], model.data['idisk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Inner Disk')
 
         if model.components['owall'] and diskcomb == 0: # outer wall for PTD model
-            plt.plot(model.data['wl'], model.data['owall']*model.owallH, ls='--', c='#E9B021', linewidth=2.0, label='Outer Wall')
+            plt.plot(model.data['wl'], model.data['owall']*model.owallH/model.altinh, ls='--', c='#E9B021', linewidth=2.0, label='Outer Wall')
 
         if model.components['odisk']: # outer disk for PTD model
             if diskcomb:
                 try:
-                    diskflux = model.data['owall']*model.owallH + model.data['odisk']
+                    diskflux = model.data['owall']*model.owallH/model.altinh + model.data['odisk']
                 except KeyError:
                     print('LOOK: Error, tried to combine outer wall and disk components but one component is missing!')
                 else:
@@ -1417,6 +1420,15 @@ class TTS_Model(object):
     filters: Filters used to calculate synthetic fluxes.
     synthFlux: Wavelengths and syntethic fluxes.
 
+    Structure of disk model. Arrays [nz,nrad]:
+    radii_struc: Radii in au.
+    z_struc: heights in au.
+    T_struc: Temperature in K.
+    p_struc: pressure in cgs.
+    rho_struc: density in g/cm3
+    epsbig_struc: epsbig
+    eps_struc: eps
+
     METHODS
     __init__: Initializes an instance of the class, and loads in the relevant metadata.
     dataInit: Loads in the data to the object.
@@ -1480,6 +1492,17 @@ class TTS_Model(object):
             self.mdotstar = header['MDOTSTAR']
         except KeyError:
             self.mdotstar = self.mdot
+
+        # Load structure of the disk
+        # If there are more than 2 extensions, then the structure must be in the fits file
+        if header['EXTS'] >= 2:
+            self.radii_struc = HDUlist[header['RAD_EXT']-1].data
+            self.z_struc = HDUlist[header['Z_EXT']-1].data
+            self.T_struc = HDUlist[header['T_EXT']-1].data
+            self.p_struc = HDUlist[header['P_EXT']-1].data
+            self.rho_struc = HDUlist[header['RHO_EXT']-1].data
+            self.epsbig_struc = HDUlist[header['EPSB_EXT']-1].data
+            self.eps_struc = HDUlist[header['EPS_EXT']-1].data
 
         HDUlist.close()
         return
@@ -1903,6 +1926,196 @@ class TTS_Model(object):
         self.data['total'][WTTS_ind] += self.data['phot'][WTTS_ind]
 
         self.components['shock'] = 1
+
+        return
+
+    def struc_plot(self, temp = True, rho = True, eps = False, epsbig = False, pres = False, logscale = True,
+    xlim=[], ylim=[], temp_levels=None, rho_levels=None, eps_levels=None, epsbig_levels=None, pres_levels=None,
+    snowlines=True, plothscale = True, label=None):
+        '''
+        Makes plots of 2D structure (temperature, density, pressure, epsilon,
+        and epsilonbig) of the disk model.
+
+        OPTIONAL INPUTS:
+        - temp, rho, eps, epsbig, pres: set to True if you want to plot the temperature, density,
+          epsilon, epsilonbig, and pressure, respectively. DEFAULT: just temp and rho.
+        - ***_levels: Contour levels for the plots.
+        - snowlines: If True, it will plot the contours for the water, CO, and N2 snowlines in
+          the temperature plots.
+        - xlim, ylim: Lists containing the lower and upper x-axis and y-axis limits, respectively.
+          DEFAULT: minimum and maximum values of array to be plotted.
+        - logscale: If True, plots will be in log-log scale. DEFAULT: True.
+        - label: Label to be used in the output file of the plots
+        '''
+        cmap = cm.nipy_spectral
+        if label == None:
+            label = str(self.jobn)
+
+        npoints = self.z_struc.size
+
+        # Create the grid of points
+        if logscale:
+            radii_grid = np.log10(self.radii_struc.reshape(npoints,1))
+            z_grid = np.log10(self.z_struc.reshape(npoints,1))
+        else:
+            radii_grid = self.radii_struc.reshape(npoints,1)
+            z_grid = self.z_struc.reshape(npoints,1)
+        points = np.concatenate((radii_grid,z_grid),axis = 1)
+
+        # Limits of the plots
+        if xlim:
+            rmin = xlim[0]
+            rmax = xlim[1]
+        else:
+            rmin = np.min(self.radii_struc)
+            rmax = np.max(self.radii_struc)
+
+        if ylim:
+            zmin = ylim[0]
+            zmax = ylim[1]
+        else:
+            zmin = np.min(self.z_struc)
+            zmax = np.max(self.z_struc)
+
+        if logscale:
+            rmin = np.log10(rmin)
+            rmax = np.log10(rmax)
+            zmin = np.log10(zmin)
+            zmax = np.log10(zmax)
+
+        if logscale:
+            aspectratio = 1.
+        else:
+            aspectratio = (rmax - rmin) / zmax
+
+        grid_x, grid_y = np.mgrid[rmin:rmax:500j, zmin:zmax:500j]
+
+        # Paremeters to plot
+        params = {}
+        labels = {}
+        titles = {}
+        levels = {}
+        vmins = {}
+        vmaxs = {}
+        if temp:
+            params['temp'] = self.T_struc # Values to plot
+            labels['temp'] = '_temp' # String to include in name of output file
+            titles['temp'] = 'Temperature (K)' # Title of plot
+            if temp_levels == None: # Define default contour levels
+                temp_levels = [10,20,40,100,300,600,1400]
+                # Define default minimum and maximum values
+                temp_vmin = np.min(self.T_struc)
+                temp_vmax = np.max(self.T_struc)
+            else:
+                temp_vmin = np.min(temp_levels)
+                temp_vmax = np.max(temp_levels)
+            levels['temp'] = temp_levels
+            vmins['temp'] = np.log10(temp_vmin)
+            vmaxs['temp'] = np.log10(temp_vmax)
+        if rho:
+            params['rho'] = self.rho_struc
+            labels['rho'] = '_rho'
+            titles['rho'] = r'Density (g cm$^{-3}$)'
+            if rho_levels == None:
+                rho_levels = [1e-16,1e-14,1e-12,1e-10,1e-8]
+                rho_vmin = np.min(self.rho_struc)
+                rho_vmax = np.max(self.rho_struc)
+            else:
+                rho_vmin = np.min(rho_levels)
+                rho_vmax = np.max(rho_levels)
+            levels['rho'] = rho_levels
+            vmins['rho'] = np.log10(rho_vmin)
+            vmaxs['rho'] = np.log10(rho_vmax)
+        if pres:
+            params['pres'] = self.p_struc
+            labels['pres'] = '_pressure'
+            titles['pres'] = 'Pressure (cgs)'
+            if pres_levels == None:
+                pres_levels = [1e-7,1e-4,1e-1,1e2,1e4]
+                pres_vmin = np.min(self.p_struc)
+                pres_vmax = np.max(self.p_struc)
+            else:
+                pres_vmin = np.min(pres_levels)
+                pres_vmax = np.max(pres_levels)
+            levels['pres'] = pres_levels
+            vmins['pres'] = np.log10(pres_vmin)
+            vmaxs['pres'] = np.log10(pres_vmax)
+        if eps:
+            params['eps'] = self.eps_struc + 1e-8 # To avoid 0 and infs
+            labels['eps'] = '_eps'
+            titles['eps'] = 'Epsilon (small grains)'
+            if eps_levels == None:
+                eps_levels = [np.max(self.eps_struc)]
+            levels['eps'] = eps_levels
+            eps_vmin = np.max(self.eps_struc)/10.
+            eps_vmax = np.max(self.eps_struc)
+            vmins['eps'] = np.log10(eps_vmin)
+            vmaxs['eps'] = np.log10(eps_vmax)
+        if epsbig:
+            params['epsbig'] = self.epsbig_struc + 1e-8 # To avoid 0 and infs
+            labels['epsbig'] = '_epsbig'
+            titles['epsbig'] = 'Epsilon (large grains)'
+            if epsbig_levels == None:
+                epsbig_levels = [np.max(self.epsbig_struc)]
+            levels['epsbig'] = epsbig_levels
+            epsbig_vmin = np.max(self.epsbig_struc)/10.
+            epsbig_vmax = np.max(self.epsbig_struc)
+            vmins['epsbig'] = np.log10(epsbig_vmin)
+            vmaxs['epsbig'] = np.log10(epsbig_vmax)
+
+        # Plots of each parameter
+        for param in params.keys():
+            name = label + labels[param]
+            values = (np.log10(params[param])).reshape(npoints)
+            grid_z1 = griddata(points,values,(grid_x, grid_y),method = 'linear')
+            fig = plt.figure()
+            ax1 = fig.add_subplot(1,1,1)
+            # Plot of contours
+            CS1 = ax1.contour(grid_x, grid_y, grid_z1, np.log10(levels[param]),linestyles='solid',colors=('black'))
+            # Labels of contours
+            fmt = {}
+            for l,s in zip(CS1.levels,map(str,levels[param])):
+                fmt[l] = s
+            plt.clabel(CS1,inline=1,inline_spacing=15, fmt=fmt, fontsize=11,linewidths=2)
+            # Plot snowlines if we are interested
+            if (param == 'temp') & snowlines: # Plot important snowlines
+                CSH2O = ax1.contour(grid_x, grid_y, grid_z1, np.log10([150.]),linestyles='dashed',colors=('red'))
+                plt.clabel(CSH2O,inline=1,inline_spacing=15, fmt=r'H$_2$O (180 K)', colors=('red'), fontsize=11,linewidths=2)
+                CSCO = ax1.contour(grid_x, grid_y, grid_z1, np.log10([26.]),linestyles='dashed',colors=('yellow'))
+                plt.clabel(CSCO,inline=1,inline_spacing=15, fmt=r'CO (26 K)', colors=('yellow'), fontsize=11,linewidths=2)
+                CSN2 = ax1.contour(grid_x, grid_y, grid_z1, np.log10([22.]),linestyles='dashed',colors=('green'))
+                plt.clabel(CSN2,inline=1,inline_spacing=15, fmt=r'N$_2$ (22 K)', colors=('green'), fontsize=11,linewidths=2)
+            plt.tick_params(axis='y', labelsize=11)
+            plt.tick_params(axis='x', labelsize=11)
+            ax1.set_xlabel('R (au)',fontsize=11)
+            ax1.set_ylabel('z (au)',fontsize=11)
+            ax1.set_title(titles[param],fontsize=11)
+            # Tick marks
+            if logscale:
+                thickplaces=[np.log10(i*j) for i in [0.01,0.1,1.0,10.0,100.0] for j in [1,2,3,4,5,6,7,8,9] ]
+                thickmarks=[]
+                for i in thickplaces:
+                    if (math.fabs(math.fmod(i,1.0))==0.0):
+                        thickmarks.append(str(10**i))
+                    else:
+                        thickmarks.append('')
+                plt.xticks(thickplaces,thickmarks)
+                plt.yticks(thickplaces,thickmarks)
+                name = name +'_log'
+            else:
+                ax1.xaxis.set_minor_locator(ticker.MultipleLocator(10))
+                ax1.yaxis.set_minor_locator(ticker.MultipleLocator(1))
+            # Image
+            im1 = ax1.imshow(grid_z1.T, extent=(rmin,rmax,zmin,zmax), aspect=aspectratio,origin='lower',vmin=vmins[param],vmax=vmaxs[param],cmap=cmap)
+            fig.subplots_adjust(left=0.2)
+            # Color bar
+            cbar=fig.colorbar(im1,label='log('+titles[param]+')')
+
+            plt.savefig('struc_'+name+'.pdf', dpi=300, facecolor='w', edgecolor='w',
+                          orientation='landscape', papertype=None, format=None,
+                          transparent=False, bbox_inches='tight', pad_inches=0.01,
+                          frameon=None)
+            plt.close(fig)
 
         return
 
