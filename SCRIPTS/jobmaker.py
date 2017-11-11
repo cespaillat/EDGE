@@ -73,19 +73,19 @@ amaxs   = [0.25] #Maximum grain size in the upper layers of the disk NOTE: Only 
 epsilon = [0.1] #Settling parameter
 ztran   = [0.1] #height of transition between big and small grains, in hydrostatic scale heights
 alpha   = [1e-2] # Viscosity in the disk
-rdisk   = [30] #Outer radius of the disk
+rdisk   = [200] #Outer radius of the disk
 
 temp    = [1400] #Sublimation temperature of the grains
 altinh  = [1] #Height of the disk in scale heights. Often better to leave as 1 and scale it later
 
-lamaxb  = ['500'] #Maximum grain size in the midplane NOTE: Only accepts certain values
+lamaxb  = ['1mm'] #Maximum grain size in the midplane NOTE: Only accepts certain values
 mui     = [0.5] #Cosine of the inclination of the disk.
 tshock  = [8000] #Temperature of the shock. Usually left at 8000K
 
-fracolive = [.65] #Fraction of olivines
-fracpyrox = [.3] #Fraction of pyroxine
-fracforst = [0] #Fraction of fosterite
-fracent   = [0.05] #Fraction of enstatite
+fracolive = [1.0] #Fraction of olivines
+fracpyrox = [0.0] #Fraction of pyroxine
+fracforst = [0.0] #Fraction of fosterite
+fracent   = [0.0] #Fraction of enstatite
 
 d2g = [0.0065] #Dust to gas mass ratio.
 

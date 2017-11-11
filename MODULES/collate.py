@@ -7,7 +7,54 @@ import os
 from glob import glob
 from scipy import interpolate
 
-def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin=0, clob=0, fill=3, noextinct = 1, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, notemp = 0, shock = 0):
+#########################
+## Read struc function ##
+#########################
+
+def readstruc(infile):
+    '''
+    Function that reads the temperature and density structure
+    of the disk from the file fort14.*.irr.*.dat
+    '''
+    f = open(infile,'r')
+
+    # We define the string to parse the file
+    string = "irad,err,error="
+    lines = f.readlines()
+    indexes = [] # position of starting line for each radius
+    for i,line in enumerate(lines):
+        if string in line:
+            indexes.append(i) # We save the line where the string was found
+    rstar = float(lines[indexes[0]+1].split()[4])/1.5e13 #in au
+    nrad = len(indexes)
+    nz = indexes[1] - indexes[0] - 4 # there are four "dummy" lines for each radii
+    table = []
+    radii = []
+    for ind in indexes:
+        params = []
+        #the radii
+        radii.append(float(lines[ind+1].split()[0])*rstar) # in au
+        #the values
+        for j in range(nz):
+            params.append(lines[ind+4+j].split())
+        table.append(params) #size of table: [nrad][nz][number of parameters]
+    table = np.array(table).astype(np.float)
+
+    radii = np.array(radii).astype(np.float) # radii in au
+    z = table[:,:,0]*rstar # heights (in au)
+    p = table[:,:,1]       # pressure (in cgs)
+    t = table[:,:,2]       # temperature (in K)
+    rho = table[:,:,3]     # density (in g cm-3)
+    epsbig = table[:,:,4]  # epsilon big
+    eps    = table[:,:,5]  # epsilon
+
+    return radii, z, p, t, rho, epsbig, eps
+
+#########################
+#### collate function ###
+#########################
+
+def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin=0, clob=0, fill=3, noextinct = 1, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, notemp = 0, struc = 1, shock = 0):
     """
      collate.py
 
@@ -56,6 +103,8 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             noscatt: !!!!! NOTE: THIS IS SET TO 1 BY DEFAULT !!!!!
                      Set this value to 1 (or True) if you do NOT want to include the scattered light file.
                      Set this value to 0 (or False) if you DO want to include the scattered light file
+            notemp: Set this to 1 if you do NOT want to include the radial distribution of temperatures
+            struc: Set this to 1 if you DO want to include the 2D structure of the disk.
      EXAMPLES:
             To collate a single model run for the object 'myobject' under the
             job number '001', use the following commands:
@@ -566,9 +615,9 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             propfile = list_files[['prop' in element for element in list_files]][0]
             try:
                 size = os.path.getsize(propfile)
+                miss = 0
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING PROP (PROPERTIES) FILE, ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
-                notemp =1
                 failed = True
                 miss = 1
                 hdu.header.set('NOTEMP', 1)
@@ -576,62 +625,103 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             if miss != 1 and size != 0:
                 try:
                     propdatatable = ascii.read(propfile, data_start = 1)
-                except IndexError:
-                    print("COLLATE: WARNING IN JOB "+jobnum+": PROP FILE FOUND, BUT APPEARS TO HAVE FAILED. ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
-                    notemp = 1
-                    failed = True
-                    miss = 1
-                    hdu.header.set('NOTEMP', 1)
-
-            if miss != 1 and size != 0:
-                #Replace 'D' in the table with 'e' and convert into a numpy array the terrible brute force way
-                try:
                     propdata = np.zeros([len(propdatatable[0]),len(propdatatable)])
+                    #Replace 'D' in the table with 'e' and convert into a numpy array the terrible brute force way
+                    for i, column in enumerate(propdatatable):
+                        for j, value in enumerate(column):
+                            propdata[j,i] = np.float(str.replace(value, 'D', 'e'))
+
+                    #Start making a new array that contains structural data
+                    sdata = 10**(np.vstack([propdata[0,:], propdata[1,:], propdata[2,:], propdata[4,:], propdata[5,:], propdata[11,:], propdata[12,:]]))
+                    saxisnames = ['RADIUS', 'TEFF', 'TIRR', 'TZEQ0', 'TZEQZMAX', 'TZEQZS', 'TZTAUS']
+
+                    #Add a separate fits extension to contain structural data
+                    saxiscounter = 0
+                    shdu = fits.ImageHDU(sdata)
+
+                    for saxis in saxisnames:
+                        shdu.header.set(saxis, saxiscounter)
+                        saxiscounter +=1
+
                 except IndexError:
                     print("COLLATE: WARNING IN JOB "+jobnum+": PROP FILE FOUND, BUT APPEARS TO HAVE FAILED. ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
-                    notemp =1
                     failed = True
-                    miss = 1
                     hdu.header.set('NOTEMP', 1)
-
-            if miss !=1 and size !=0:
-                for i, column in enumerate(propdatatable):
-                    for j, value in enumerate(column):
-                        propdata[j,i] = np.float(str.replace(value, 'D', 'e'))
-
-                #Start making a new array that contains structural data
-                sdata = 10**(np.vstack([propdata[0,:], propdata[1,:], propdata[2,:], propdata[4,:], propdata[5,:], propdata[11,:], propdata[12,:]]))
-                saxisnames = ['RADIUS', 'TEFF', 'TIRR', 'TZEQ0', 'TZEQZMAX', 'TZEQZS', 'TZTAUS']
-
-                #Add a separate fits extension to contain structural data
-                saxiscounter = 0
-                shdu = fits.ImageHDU(sdata)
-
-                for saxis in saxisnames:
-                    shdu.header.set(saxis, saxiscounter)
-                    saxiscounter +=1
-
             elif miss !=1 and size ==0:
                 print("WARNING IN JOB "+jobnum+": PROP (PROPERTIES) FILE EMPTY, ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
                 failed = True
                 nowall = 1
                 hdu.header.set('NOTEMP', 1)
-
-        if notemp != 1 and notemp != 0:
+        elif notemp == 1:
+            hdu.header.set('NOTEMP', 1)
+        elif notemp != 1 and notemp != 0:
             raise IOError('COLLATE: INVALID INPUT FOR NOTEMP KEYWORD, SHOULD BE 1 OR 0')
 
         #Add FAILED tag to header if any of the model elements were not found
         if failed == 1:
             hdu.header.set('FAILED', 1)
 
-        #If the structural data is included in the header, add it here.
-        if notemp == 0:
-            hdu = fits.HDUList([hdu, shdu])
-        elif notemp == 1:
-            hdu.header.set('NOTEMP', 1)
+        ##### Structure of disk #####
+        if struc == 1:
+            # In order to avoid opening the fort14.vis..., we do this in two steps
+            strucfiles = list_files[['fort14' in element for element in list_files]]
+            strucfile = strucfiles[['irr' in element for element in strucfiles]][0]
+            radii, z, p, t, rho, epsbig, eps = readstruc(strucfile) # arrays as [nrad,nz]
 
-        #Write header to fits file
-        hdu.writeto(destination+name+'_'+jobnum+'.fits', clobber = clob)
+            # We save them in different fits extensions as [nz,nrad]
+            radii_hdu = fits.ImageHDU(np.meshgrid(radii,z[0,:])[0])
+            radii_hdu.header.set('COMMENT','Radii (au)')
+            z_hdu = fits.ImageHDU(z.T)
+            z_hdu.header.set('COMMENT','Z (au)')
+            p_hdu = fits.ImageHDU(p.T)
+            p_hdu.header.set('COMMENT','Pressure (cgs)')
+            t_hdu = fits.ImageHDU(t.T)
+            t_hdu.header.set('COMMENT','Temperature (K)')
+            rho_hdu = fits.ImageHDU(rho.T)
+            rho_hdu.header.set('COMMENT','Density (g cm-2)')
+            epsbig_hdu = fits.ImageHDU(epsbig.T)
+            epsbig_hdu.header.set('COMMENT','Epsbig')
+            eps_hdu = fits.ImageHDU(eps.T)
+            eps_hdu.header.set('COMMENT','Eps')
+
+        #We add the different fits extensions
+        if struc == 1:
+            if notemp == 0:
+                hdu.header.set('EXTS',9)
+                hdu.header.set('SED',1)
+                hdu.header.set('RADSTRUC',2)
+                hdu.header.set('RAD_EXT',3)
+                hdu.header.set('Z_EXT',4)
+                hdu.header.set('P_EXT',5)
+                hdu.header.set('T_EXT',6)
+                hdu.header.set('RHO_EXT',7)
+                hdu.header.set('EPSB_EXT',8)
+                hdu.header.set('EPS_EXT',9)
+                hdu_list = fits.HDUList([hdu,shdu,radii_hdu,z_hdu,p_hdu,t_hdu,rho_hdu,epsbig_hdu,eps_hdu])
+            else:
+                hdu.header.set('EXTS',8)
+                hdu.header.set('SED',1)
+                hdu.header.set('RAD_EXT',2)
+                hdu.header.set('Z_EXT',3)
+                hdu.header.set('P_EXT',4)
+                hdu.header.set('T_EXT',5)
+                hdu.header.set('RHO_EXT',6)
+                hdu.header.set('EPSB_EXT',7)
+                hdu.header.set('EPS_EXT',8)
+                hdu_list = fits.HDUList([hdu,radii_hdu,z_hdu,p_hdu,t_hdu,rho_hdu,epsbig_hdu,eps_hdu])
+        else:
+            if notemp == 0:
+                hdu.header.set('EXTS',2)
+                hdu.header.set('SED',1)
+                hdu.header.set('RADSTRUC',2)
+                hdu_list = fits.HDUList([hdu,shdu])
+            else:
+                hdu.header.set('EXTS',1)
+                hdu.header.set('SED',1)
+                hdu_list = hdu
+
+        #Write fits file
+        hdu_list.writeto(destination+name+'_'+jobnum+'.fits', clobber = clob)
 
     #Now handle the shock file case
     elif shock == True and optthin == False:
