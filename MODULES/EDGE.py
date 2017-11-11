@@ -4,6 +4,7 @@
 #---------------------------------------------IMPORT RELEVANT MODULES--------------------------------------------
 import numpy as np
 import matplotlib.pyplot as plt
+import matplotlib.cm as cm
 from astropy.io import fits
 import os
 import itertools
@@ -12,6 +13,8 @@ import _pickle as cPickle
 import pdb
 import copy
 from glob import glob
+from scipy.interpolate import griddata
+import matplotlib.ticker as ticker
 import util
 #----------------------------------------------PLOTTING PARAMETERS-----------------------------------------------
 # Regularizes the plotting parameters like tick sizes, legends, etc.
@@ -51,7 +54,8 @@ def keyErrHandle(func):
 
 #----------------------------------------------DEPENDENT FUNCTIONS-----------------------------------------------
 # A function is considered dependent if it utilizes either the above independent functions, or the classes below.
-def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, diskcomb=0, msize=7.0, xlim=[2e-1, 2e3], ylim=[1e-15, 1e-9], params=1, leg=1, odustonly = 0):
+def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, diskcomb=0,
+msize=7.0, xlim=[2e-1, 2e3], ylim=[1e-15, 1e-9], params=1, leg=1, odustonly = 0):
     """
     Creates a plot of a model and the observations for a given target.
 
@@ -125,7 +129,7 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
             plt.plot(model.data['wl'], model.data['dust'], ls='--', c='#F80303', linewidth=2.0, label='Opt. Thin Dust')
 
         if model.components['wall']: # wall for TTS model
-            plt.plot(model.data['wl'], model.data['iwall']*model.wallH/model.altinh, ls='--', c='#53EB3B', linewidth=2.0, label='Wall')
+            plt.plot(model.data['wl'], model.data['wall']*model.wallH/model.altinh, ls='--', c='#53EB3B', linewidth=2.0, label='Wall')
 
         if model.components['disk']: # disk for TTS model (full or transitional disk)
             plt.plot(model.data['wl'], model.data['disk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Disk')
@@ -137,7 +141,7 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
             plt.plot(model.data['wl'], model.data['idisk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Inner Disk')
 
         if model.components['owall'] and diskcomb == 0: # outer wall for PTD model
-            plt.plot(model.data['wl'], model.data['owall']*model.owallH, ls='--', c='#E9B021', linewidth=2.0, label='Outer Wall')
+            plt.plot(model.data['wl'], model.data['owall']*model.owallH/model.altinh, ls='--', c='#E9B021', linewidth=2.0, label='Outer Wall')
 
         if model.components['odisk']: # outer disk for PTD model
             if diskcomb:
@@ -1373,7 +1377,6 @@ def temp_structure(model, figure_path=None, bw=False,xlim=[],ylim=[]):
 
     return
 
-
 #---------------------------------------------------CLASSES------------------------------------------------------
 class TTS_Model(object):
     """
@@ -1412,10 +1415,19 @@ class TTS_Model(object):
     data: The data for each component inside the model.
     extcorr: The self-extinction correction. If not carried out, saved as None.
     new: Whether or not the model was made with the newer version of collate.py.
-    newIWall: The flux of an inner wall with a higher/lower altinh value.
+    newwall: The flux of an inner wall with a higher/lower altinh value.
     wallH: The inner wall height used by the look() function in plotting.
     filters: Filters used to calculate synthetic fluxes.
     synthFlux: Wavelengths and syntethic fluxes.
+
+    Structure of disk model. Arrays [nz,nrad]:
+    radii_struc: Radii in au.
+    z_struc: heights in au.
+    T_struc: Temperature in K.
+    p_struc: pressure in cgs.
+    rho_struc: density in g/cm3
+    epsbig_struc: epsbig
+    eps_struc: eps
 
     METHODS
     __init__: Initializes an instance of the class, and loads in the relevant metadata.
@@ -1424,15 +1436,25 @@ class TTS_Model(object):
                 the data attribute under the key 'total'.
     """
 
-    def __init__(self, name, jobn, dpath=datapath, fill=3):
+    def __init__(self, name, jobn, dpath=datapath, fill=3, verbose=False):
         """
         Initializes instances of this class and loads the relevant data into attributes.
+
+        Also initializs data attributes using nested dictionaries:
+        - wl is the wavelength (corresponding to all three flux arrays).
+        - Phot is the stellar photosphere emission.
+        - wall is the flux from the inner wall.
+        - Disk is the emission from the angle file.
+        - Scatt is the scattered light emission.
+        - Loads in self-extinction array if available.
+        - Loads structure of disk.
 
         INPUTS
         name: Name of the object being modeled. Must match naming convention used for models.
         jobn: Job number corresponding to the model being loaded into the object. Again, must match convention.
         full_trans: BOOLEAN -- if 1 (True) will load data as a full or transitional disk. If 0 (False), as a pre-trans. disk.
         fill: How many numbers the input model file has (jobXXX vs. jobXXXX, etc.)
+        verbose: BOOLEAN -- if 1 (True), will print out warnings about missing components.
         """
 
         # Read in the fits file:
@@ -1481,25 +1503,8 @@ class TTS_Model(object):
         except KeyError:
             self.mdotstar = self.mdot
 
-        HDUlist.close()
-        return
 
-    def dataInit(self, verbose=1):
-        """
-        Initialize data attributes for this object using nested dictionaries:
-        wl is the wavelength (corresponding to all three flux arrays). Phot is the stellar photosphere emission.
-        iWall is the flux from the inner wall. Disk is the emission from the angle file. Scatt is the scattered
-        light emission. Loads in self-extinction array if available.
-
-        INPUTS:
-        verbose: BOOLEAN -- if 1 (True), will print out warnings about missing components.
-        """
-
-        stringnum    = str(self.jobn).zfill(self.fill)
-        fitsname     = self.dpath + self.name + '_' + stringnum + '.fits'
-        HDUdata      = fits.open(fitsname)
-        header       = HDUdata[0].header
-
+        # Load SED in nested dictionaries
         # The new Python version of collate flips array indices, so must identify which collate.py was used:
         if 'EXTAXIS' in header.keys() or 'NOEXT' in header.keys():
             self.new = 1
@@ -1509,37 +1514,56 @@ class TTS_Model(object):
         if self.new:
             # We will load in the components piecemeal based on the axes present in the header.
             # First though, we initialize with the wavelength array, since it's always present:
-            self.data = {'wl': HDUdata[0].data[header['WLAXIS'],:]}
+            self.data = {'wl': HDUlist[0].data[header['WLAXIS'],:]}
 
             # Now we can loop through the remaining possibilities:
             if 'PHOTAXIS' in header.keys():
-                self.data['phot'] = HDUdata[0].data[header['PHOTAXIS'],:]
+                self.data['phot'] = HDUlist[0].data[header['PHOTAXIS'],:]
             else:
                 if verbose:
                     print('DATAINIT: Warning: No photosphere data found for ' + self.name)
             if 'WALLAXIS' in header.keys():
-                self.data['iwall'] = HDUdata[0].data[header['WALLAXIS'],:]
+                self.data['wall'] = HDUlist[0].data[header['WALLAXIS'],:]
             else:
                 if verbose:
                     print('DATAINIT: Warning: No outer wall data found for ' + self.name)
             if 'ANGAXIS' in header.keys():
-                self.data['disk'] = HDUdata[0].data[header['ANGAXIS'],:]
+                self.data['disk'] = HDUlist[0].data[header['ANGAXIS'],:]
             else:
                 if verbose:
                     print('DATAINIT: Warning: No outer disk data found for ' + self.name)
             # Remaining components are not always (or almost always) present, so no warning given if missing!
             if 'SCATAXIS' in header.keys():
-                self.data['scatt'] = HDUdata[0].data[header['SCATAXIS'],:]
+                self.data['scatt'] = HDUlist[0].data[header['SCATAXIS'],:]
                 negScatt = np.where(self.data['scatt'] < 0.0)[0]
                 if len(negScatt) > 0:
                     print('DATAINIT: WARNING: Some of your scattered light values are negative!')
             if 'EXTAXIS' in header.keys():
-                self.extcorr       = HDUdata[0].data[header['EXTAXIS'],:]
+                self.extcorr       = HDUlist[0].data[header['EXTAXIS'],:]
         else:
-            self.data = {'wl': HDUdata[0].data[:,0], 'phot': HDUdata[0].data[:,1], 'iwall': HDUdata[0].data[:,2], \
-                         'disk': HDUdata[0].data[:,3]}
+            self.data = {'wl': HDUlist[0].data[:,0], 'phot': HDUlist[0].data[:,1], 'wall': HDUlist[0].data[:,2], \
+                         'disk': HDUlist[0].data[:,3]}
 
-        HDUdata.close()
+
+        # Load structure of the disk
+        # If there are more than 2 extensions, then the structure must be in the fits file
+        if header['EXTS'] >= 2:
+            self.radii_struc = HDUlist[header['RAD_EXT']-1].data
+            self.z_struc = HDUlist[header['Z_EXT']-1].data
+            self.T_struc = HDUlist[header['T_EXT']-1].data
+            self.p_struc = HDUlist[header['P_EXT']-1].data
+            self.rho_struc = HDUlist[header['RHO_EXT']-1].data
+            self.epsbig_struc = HDUlist[header['EPSB_EXT']-1].data
+            self.eps_struc = HDUlist[header['EPS_EXT']-1].data
+
+        HDUlist.close()
+        return
+
+    def dataInit(self, verbose=1):
+        """
+        DEPRECATED. Done automatically by __init__
+        """
+        print('WARNING: This is now done automatically when initializing the object. This method will disappear in the future.')
         return
 
     @keyErrHandle
@@ -1574,19 +1598,20 @@ class TTS_Model(object):
                 print('CALC_TOTAL: Adding photosphere component to the total flux.')
             totFlux     = totFlux + self.data['phot']
             componentNumber += 1
+
         if wall:
             if verbose:
                 print('CALC_TOTAL: Adding inner wall component to the total flux.')
             if altinh != None:
-                self.newIWall = self.data['iwall'] * altinh
-                totFlux       = totFlux + self.newIWall     # Note: if save=1, will save iwall w/ the original altinh.
+                self.newwall = self.data['wall'] * altinh
+                totFlux       = totFlux + self.newwall     # Note: if save=1, will save wall w/ the original altinh.
                 self.wallH    = self.altinh * altinh
             else:
-                totFlux       = totFlux + self.data['iwall']
+                totFlux       = totFlux + self.data['wall']
                 self.wallH    = self.altinh                 # Redundancy for plotting purposes.
-                # If we tried changing altinh but want to now plot original, deleting the "newIWall" attribute from before.
+                # If we tried changing altinh but want to now plot original, deleting the "newwall" attribute from before.
                 try:
-                    del self.newIWall
+                    del self.newwall
                 except AttributeError:
                     pass
             componentNumber += 1
@@ -1643,7 +1668,7 @@ class TTS_Model(object):
                 colNum += 1
             if wall:
                 headerStr += 'Inner Wall, '
-                outputTable[:, colNum] = self.data['iwall']
+                outputTable[:, colNum] = self.data['wall']
                 colNum += 1
             if disk:
                 headerStr += 'Outer Disk, '
@@ -1885,7 +1910,7 @@ class TTS_Model(object):
             else:
                 self.data[key] = np.interp(self.data['wl'], oldWavelength, self.data[key])
         try:
-            self.newIWall = np.interp(self.data['wl'], oldWavelength, self.newIWall)
+            self.newwall = np.interp(self.data['wl'], oldWavelength, self.newwall)
         except AttributeError:
             pass
         try:
@@ -1905,6 +1930,194 @@ class TTS_Model(object):
         self.components['shock'] = 1
 
         return
+
+    def struc_plot(self, temp = True, rho = True, eps = False, epsbig = False, pres = False, logscale = True,
+    xlim=[], ylim=[], temp_levels=None, rho_levels=None, eps_levels=None, epsbig_levels=None, pres_levels=None,
+    snowlines=True, plothscale = True, label=None):
+        '''
+        Makes plots of 2D structure (temperature, density, pressure, epsilon,
+        and epsilonbig) of the disk model.
+
+        OPTIONAL INPUTS:
+        - temp, rho, eps, epsbig, pres: set to True if you want to plot the temperature, density,
+          epsilon, epsilonbig, and pressure, respectively. DEFAULT: just temp and rho.
+        - ***_levels: Contour levels for the plots.
+        - snowlines: If True, it will plot the contours for the water, CO, and N2 snowlines in
+          the temperature plots.
+        - xlim, ylim: Lists containing the lower and upper x-axis and y-axis limits, respectively.
+          DEFAULT: minimum and maximum values of array to be plotted.
+        - logscale: If True, plots will be in log-log scale. DEFAULT: True.
+        - label: Label to be used in the output file of the plots
+        '''
+        cmap = cm.nipy_spectral
+        if label == None:
+            label = str(self.jobn)
+
+        npoints = self.z_struc.size
+
+        # Create the grid of points
+        if logscale:
+            radii_grid = np.log10(self.radii_struc.reshape(npoints,1))
+            z_grid = np.log10(self.z_struc.reshape(npoints,1))
+        else:
+            radii_grid = self.radii_struc.reshape(npoints,1)
+            z_grid = self.z_struc.reshape(npoints,1)
+        points = np.concatenate((radii_grid,z_grid),axis = 1)
+
+        # Limits of the plots
+        if xlim:
+            rmin = xlim[0]
+            rmax = xlim[1]
+        else:
+            rmin = np.min(self.radii_struc)
+            rmax = np.max(self.radii_struc)
+
+        if ylim:
+            zmin = ylim[0]
+            zmax = ylim[1]
+        else:
+            zmin = np.min(self.z_struc)
+            zmax = np.max(self.z_struc)
+
+        if logscale:
+            rmin = np.log10(rmin)
+            rmax = np.log10(rmax)
+            zmin = np.log10(zmin)
+            zmax = np.log10(zmax)
+
+        if logscale:
+            aspectratio = 1.
+        else:
+            aspectratio = (rmax - rmin) / zmax
+
+        grid_x, grid_y = np.mgrid[rmin:rmax:500j, zmin:zmax:500j]
+
+        # Paremeters to plot
+        params = {}
+        labels = {}
+        titles = {}
+        levels = {}
+        vmins = {}
+        vmaxs = {}
+        if temp:
+            params['temp'] = self.T_struc # Values to plot
+            labels['temp'] = '_temp' # String to include in name of output file
+            titles['temp'] = 'Temperature (K)' # Title of plot
+            if temp_levels == None: # Define default contour levels
+                temp_levels = [10,20,40,100,300,600,1400]
+                # Define default minimum and maximum values
+                temp_vmin = np.min(self.T_struc)
+                temp_vmax = np.max(self.T_struc)
+            else:
+                temp_vmin = np.min(temp_levels)
+                temp_vmax = np.max(temp_levels)
+            levels['temp'] = temp_levels
+            vmins['temp'] = np.log10(temp_vmin)
+            vmaxs['temp'] = np.log10(temp_vmax)
+        if rho:
+            params['rho'] = self.rho_struc
+            labels['rho'] = '_rho'
+            titles['rho'] = r'Density (g cm$^{-3}$)'
+            if rho_levels == None:
+                rho_levels = [1e-16,1e-14,1e-12,1e-10,1e-8]
+                rho_vmin = np.min(self.rho_struc)
+                rho_vmax = np.max(self.rho_struc)
+            else:
+                rho_vmin = np.min(rho_levels)
+                rho_vmax = np.max(rho_levels)
+            levels['rho'] = rho_levels
+            vmins['rho'] = np.log10(rho_vmin)
+            vmaxs['rho'] = np.log10(rho_vmax)
+        if pres:
+            params['pres'] = self.p_struc
+            labels['pres'] = '_pressure'
+            titles['pres'] = 'Pressure (cgs)'
+            if pres_levels == None:
+                pres_levels = [1e-7,1e-4,1e-1,1e2,1e4]
+                pres_vmin = np.min(self.p_struc)
+                pres_vmax = np.max(self.p_struc)
+            else:
+                pres_vmin = np.min(pres_levels)
+                pres_vmax = np.max(pres_levels)
+            levels['pres'] = pres_levels
+            vmins['pres'] = np.log10(pres_vmin)
+            vmaxs['pres'] = np.log10(pres_vmax)
+        if eps:
+            params['eps'] = self.eps_struc + 1e-8 # To avoid 0 and infs
+            labels['eps'] = '_eps'
+            titles['eps'] = 'Epsilon (small grains)'
+            if eps_levels == None:
+                eps_levels = [np.max(self.eps_struc)]
+            levels['eps'] = eps_levels
+            eps_vmin = np.max(self.eps_struc)/10.
+            eps_vmax = np.max(self.eps_struc)
+            vmins['eps'] = np.log10(eps_vmin)
+            vmaxs['eps'] = np.log10(eps_vmax)
+        if epsbig:
+            params['epsbig'] = self.epsbig_struc + 1e-8 # To avoid 0 and infs
+            labels['epsbig'] = '_epsbig'
+            titles['epsbig'] = 'Epsilon (large grains)'
+            if epsbig_levels == None:
+                epsbig_levels = [np.max(self.epsbig_struc)]
+            levels['epsbig'] = epsbig_levels
+            epsbig_vmin = np.max(self.epsbig_struc)/10.
+            epsbig_vmax = np.max(self.epsbig_struc)
+            vmins['epsbig'] = np.log10(epsbig_vmin)
+            vmaxs['epsbig'] = np.log10(epsbig_vmax)
+
+        # Plots of each parameter
+        for param in params.keys():
+            name = label + labels[param]
+            values = (np.log10(params[param])).reshape(npoints)
+            grid_z1 = griddata(points,values,(grid_x, grid_y),method = 'linear')
+            fig = plt.figure()
+            ax1 = fig.add_subplot(1,1,1)
+            # Plot of contours
+            CS1 = ax1.contour(grid_x, grid_y, grid_z1, np.log10(levels[param]),linestyles='solid',colors=('black'))
+            # Labels of contours
+            fmt = {}
+            for l,s in zip(CS1.levels,map(str,levels[param])):
+                fmt[l] = s
+            plt.clabel(CS1,inline=1,inline_spacing=15, fmt=fmt, fontsize=11,linewidths=2)
+            # Plot snowlines if we are interested
+            if (param == 'temp') & snowlines: # Plot important snowlines
+                CSH2O = ax1.contour(grid_x, grid_y, grid_z1, np.log10([150.]),linestyles='dashed',colors=('red'))
+                plt.clabel(CSH2O,inline=1,inline_spacing=15, fmt=r'H$_2$O (180 K)', colors=('red'), fontsize=11,linewidths=2)
+                CSCO = ax1.contour(grid_x, grid_y, grid_z1, np.log10([26.]),linestyles='dashed',colors=('yellow'))
+                plt.clabel(CSCO,inline=1,inline_spacing=15, fmt=r'CO (26 K)', colors=('yellow'), fontsize=11,linewidths=2)
+                CSN2 = ax1.contour(grid_x, grid_y, grid_z1, np.log10([22.]),linestyles='dashed',colors=('green'))
+                plt.clabel(CSN2,inline=1,inline_spacing=15, fmt=r'N$_2$ (22 K)', colors=('green'), fontsize=11,linewidths=2)
+            plt.tick_params(axis='y', labelsize=11)
+            plt.tick_params(axis='x', labelsize=11)
+            ax1.set_xlabel('R (au)',fontsize=11)
+            ax1.set_ylabel('z (au)',fontsize=11)
+            ax1.set_title(titles[param],fontsize=11)
+            # Tick marks
+            if logscale:
+                thickplaces=[np.log10(i*j) for i in [0.01,0.1,1.0,10.0,100.0] for j in [1,2,3,4,5,6,7,8,9] ]
+                thickmarks=[]
+                for i in thickplaces:
+                    if (math.fabs(math.fmod(i,1.0))==0.0):
+                        thickmarks.append(str(10**i))
+                    else:
+                        thickmarks.append('')
+                plt.xticks(thickplaces,thickmarks)
+                plt.yticks(thickplaces,thickmarks)
+                name = name +'_log'
+            else:
+                ax1.xaxis.set_minor_locator(ticker.MultipleLocator(10))
+                ax1.yaxis.set_minor_locator(ticker.MultipleLocator(1))
+            # Image
+            im1 = ax1.imshow(grid_z1.T, extent=(rmin,rmax,zmin,zmax), aspect=aspectratio,origin='lower',vmin=vmins[param],vmax=vmaxs[param],cmap=cmap)
+            fig.subplots_adjust(left=0.2)
+            # Color bar
+            cbar=fig.colorbar(im1,label='log('+titles[param]+')')
+
+            plt.savefig('struc_'+name+'.pdf', dpi=300, facecolor='w', edgecolor='w',
+                          orientation='landscape', papertype=None, format=None,
+                          transparent=False, bbox_inches='tight', pad_inches=0.01,
+                          frameon=None)
+            plt.close(fig)
 
 class PTD_Model(TTS_Model):
     """
@@ -1954,12 +2167,14 @@ class PTD_Model(TTS_Model):
                 the data attribute under the key 'total'. This also differs from TTS_Model.
     """
 
-    def dataInit(self, altname=None, jobw=None, fillWall=3, wallpath = '', verbose =1, **searchKwargs):
+    def dataInit(self, altname=None, jobw=None, fillWall=3, wallpath = None, verbose =1, **searchKwargs):
         """
-        Initialize data attributes for this object using nested dictionaries:
-        wl is the wavelength (corresponding to all three flux arrays). Phot is the stellar photosphere emission.
-        iwall is the flux from the inner wall. Disk is the emission from the angle file. owall is the flux from
-        the outer wall. Scatt is the scattered light emission. Also adds self-extinction array if available.
+        Initializes data attributes for inner wall and inner disk,
+        and renames outer wall and outer disk:
+        - iwall is the flux from the inner wall.
+        - idisk is the emission from the inner disk.
+        - owall is the flux from the outer wall.
+        - odisk is the emission from the outer wall.
 
         You should either supply the job number of the inner wall file, or the kwargs used to find it via a
         search. Jobw
@@ -1977,189 +2192,83 @@ class PTD_Model(TTS_Model):
             Added ability to have an inner disk along with an inner wall
 
         """
+        if altname == None:
+            altname = self.name
+        if wallpath == None:
+            wallpath  = self.dpath
 
         if jobw == None and len(searchKwargs) == 0:
             raise IOError('DATAINIT: You must enter either a job number or kwargs to match or search for an inner wall.')
 
         if jobw != None:
             # If jobw is an integer, make into a string:
-            jobw          = str(jobw).zfill(fillWall)
-
+            jobw = str(jobw).zfill(fillWall)
             # The case in which you supplied the job number of the inner wall:
-            if altname == None:
-                if wallpath == None:
-                    fitsname  = self.dpath + self.name + '_' + jobw + '.fits'
-                if wallpath != None:
-                    fitsname  = wallpath + self.name + '_' + jobw + '.fits'
-
-                HDUwall   = fits.open(fitsname)
-            else:
-                if wallpath == None:
-                    fitsname  = self.dpath + altname + '_' + jobw + '.fits'
-                if wallpath != None:
-                    fitsname  = wallpath + altname + '_' + jobw + '.fits'
-
-                HDUwall   = fits.open(fitsname)
-
-            # Make sure the inner wall job you supplied is, in fact, an inner wall.
-            if verbose:
-                if 'NOEXT' not in HDUwall[0].header.keys():
-                    #raise IOError('DATAINIT: Job you supplied is not an inner wall or needs to be collated again!')
-                    print('DATAINIT: Job you supplied is not ONLY an inner wall and may need to be collated again!')
-
-
-            # Now, load in the disk data:
-            stringNum     = str(self.jobn).zfill(self.fill)
-            HDUdata       = fits.open(self.dpath + self.name + '_' + stringNum + '.fits')
-            header        = HDUdata[0].header
-
-            # Check if it's an old version or a new version:
-            if 'EXTAXIS' in header.keys() or 'NOEXT' in header.keys():
-                self.new  = 1
-            else:
-                self.new  = 0
-
-            # Define the inner wall height.
-            self.iwallH   = HDUwall[0].header['ALTINH']
-            self.itemp    = HDUwall[0].header['TEMP']
-            self.ijobn    = HDUwall[0].header['JOBNUM']
-
-
-
-
-            # Depending on old or new version is how we will load in the data. We require the wall be "new":
-            if self.new:
-                # Correct for self extinction:
-                try:
-                    iwallFcorr= HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]*np.exp(-1*HDUdata[0].data[header['EXTAXIS'],:])
-                except KeyError:
-                    print('DATAINIT: WARNING! No extinction correction can be made for job ' + str(self.jobn)+'!')
-
-                    iwallFcorr= HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]
-
-                # We will load in the components piecemeal based on the axes present in the header.
-                # First though, we initialize with the wavelength and wall, since they're always present.
-
-                #If there is an inner disk, add that as well.
-                if 'NOEXT' not in HDUwall[0].header.keys():
-                    try:
-                        idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]*np.exp(-1*HDUdata[0].data[header['EXTAXIS'],:])
-                    except KeyError:
-                        idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]
-
-                    self.data = {'wl': HDUdata[0].data[header['WLAXIS'],:], 'iwall': iwallFcorr, 'idisk': idiskFcorr}
-
-                    #Add information about the disk
-                    self.ialpha      = HDUwall[0].header['ALPHA']
-                    self.irdisk      = HDUwall[0].header['RDISK']
-                    self.iamax       = HDUwall[0].header['AMAXS']
-                    self.ieps        = HDUwall[0].header['EPS']
-                    self.insilcomp   = HDUwall[0].header['NSILCOMP']
-                    self.isiltotab   = HDUwall[0].header['SILTOTAB']
-                    self.iamorf_ol   = HDUwall[0].header['AMORF_OL']
-                    self.iamorf_py   = HDUwall[0].header['AMORF_PY']
-                    self.iforsteri   = HDUwall[0].header['FORSTERI']
-                    self.ienstatit   = HDUwall[0].header['ENSTATIT']
-                    self.irin        = HDUwall[0].header['RIN']
-
-                else:
-                    self.data = {'wl': HDUdata[0].data[header['WLAXIS'],:], 'iwall': iwallFcorr}
-
-                # Now we can loop through the remaining possibilities:
-                if 'PHOTAXIS' in header.keys():
-                    self.data['phot'] = HDUdata[0].data[header['PHOTAXIS'],:]
-                else:
-                    print('DATAINIT: Warning: No photosphere data found for ' + self.name)
-                if 'WALLAXIS' in header.keys():
-                    self.data['owall']= HDUdata[0].data[header['WALLAXIS'],:]
-                else:
-                    print('DATAINIT: Warning: No outer wall data found for ' + self.name)
-                if 'ANGAXIS' in header.keys():
-                    self.data['odisk'] = HDUdata[0].data[header['ANGAXIS'],:]
-                else:
-                    print('DATAINIT: Warning: No outer disk data found for ' + self.name)
-                # Remaining components are not always (or almost always) present, so no warning given if missing!
-                if 'SCATAXIS' in header.keys():
-                    self.data['scatt']= HDUdata[0].data[header['SCATAXIS'],:]
-                    negScatt = np.where(self.data['scatt'] < 0.0)[0]
-                    if len(negScatt) > 0:
-                        print('DATAINIT: WARNING: Some of your scattered light values are negative!')
-                if 'EXTAXIS' in header.keys():
-                    self.extcorr      = HDUdata[0].data[header['EXTAXIS'],:]
-            else:
-                self.data = ({'wl': HDUdata[0].data[:,0], 'phot': HDUdata[0].data[:,1], 'owall': HDUdata[0].data[:,2],
-                              'disk': HDUdata[0].data[:,3], 'iwall': HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]})
-
+            fitsname  = wallpath + altname + '_' + jobw + '.fits'
+            HDUwall   = fits.open(fitsname)
         else:
             # When doing the searchJobs() call, use **searchKwargs to pass that as the keyword arguments to searchJobs!
-            if altname == None:
-                match = searchJobs(self.name, dpath=self.dpath, **searchKwargs)
-            else:
-                match = searchJobs(altname, dpath=self.dpath, **searchKwargs)
+            match = searchJobs(altname, dpath=wallpath, **searchKwargs)
             if len(match) == 0:
                 raise IOError('DATAINIT: No inner wall model matches these parameters!')
             elif len(match) > 1:
                 raise IOError('DATAINIT: Multiple inner wall models match. Do not know which one to pick.')
+            fitsname = wallpath + altname + '_' + match[0] + '.fits'
+            HDUwall  = fits.open(fitsname)
+
+        # Make sure the inner wall job you supplied is, in fact, an inner wall.
+        if 'WALLAXIS' not in HDUwall[0].header.keys():
+            raise IOError('DATAINIT: Job you supplied for inner wall does not have a wall!')
+
+        stringNum     = str(self.jobn).zfill(self.fill)
+
+        # Define the inner wall height.
+        self.iwallH   = HDUwall[0].header['ALTINH']
+        self.itemp    = HDUwall[0].header['TEMP']
+        self.ijobn    = HDUwall[0].header['JOBNUM']
+
+        # Inner wall
+        # Correct for self extinction:
+        if self.extcorr != None:
+            iwallFcorr= HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]*np.exp(-1*self.extcorr)
+        else:
+            print('DATAINIT: WARNING! No extinction correction can be made for job ' + str(self.jobn)+'!')
+            iwallFcorr= HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]
+        self.data['iwall'] = iwallFcorr
+
+        #If there is an inner disk, add that as well.
+        if 'ANGAXIS' in HDUwall[0].header.keys():
+            if 'EXTAXIS' in HDUwall[0].header.keys():
+                idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]*np.exp(-1*HDUdata[0].data[header['EXTAXIS'],:])
             else:
-                if altname == None:
-                    fitsname = self.dpath + self.name + '_' + match[0] + '.fits'
-                else:
-                    fitsname = self.dpath + altname + '_' + match[0] + '.fits'
-                HDUwall  = fits.open(fitsname)
+                idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]
+            self.data['idisk'] = idiskFcorr
+            #Add information about the disk
+            self.ialpha      = HDUwall[0].header['ALPHA']
+            self.irdisk      = HDUwall[0].header['RDISK']
+            self.iamax       = HDUwall[0].header['AMAXS']
+            self.ieps        = HDUwall[0].header['EPS']
+            self.insilcomp   = HDUwall[0].header['NSILCOMP']
+            self.isiltotab   = HDUwall[0].header['SILTOTAB']
+            self.iamorf_ol   = HDUwall[0].header['AMORF_OL']
+            self.iamorf_py   = HDUwall[0].header['AMORF_PY']
+            self.iforsteri   = HDUwall[0].header['FORSTERI']
+            self.ienstatit   = HDUwall[0].header['ENSTATIT']
+            self.irin        = HDUwall[0].header['RIN']
 
-                # Make sure the inner wall job you supplied is, in fact, an inner wall.
-                if 'NOEXT' not in HDUwall[0].header.keys():
-                    raise IOError('DATAINIT: Job found is not an inner wall or needs to be collated again!')
+        # We change the keys for the outer wall and outer disk
+        # Outer wall
+        if 'wall' in self.data.keys():
+            self.data['owall'] = self.data['wall']
+        else:
+            print('DATAINIT: Warning: No outer wall data found for ' + self.name)
+        # Outer disk
+        if 'disk' in self.data.keys():
+            self.data['odisk'] = self.data['disk']
+        else:
+            print('DATAINIT: Warning: No outer disk data found for ' + self.name)
 
-                # Now, load in the disk data:
-                stringNum    = str(self.jobn).zfill(self.fill)
-                HDUdata      = fits.open(self.dpath + self.name + '_' + stringNum + '.fits')
-                header       = HDUdata[0].header
-
-                # Check if it's an old version or a new version:
-                if 'EXTAXIS' in header.keys() or 'NOEXT' in header.keys():
-                    self.new = 1
-                else:
-                    self.new = 0
-
-                # Define the inner wall height:
-                self.iwallH  = HDUwall[0].header['ALTINH']
-                self.itemp   = HDUwall[0].header['TEMP']
-
-                # Depending on old or new version is how we will load in the data. We require the wall be "new":
-                if self.new:
-                    # Correct for self extinction:
-                    iwallFcorr = HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]*np.exp(-1*HDUdata[0].data[header['EXTAXIS'],:])
-
-                    # We will load in the components piecemeal based on the axes present in the header.
-                    # First though, we initialize with the wavelength and wall, since they're always present:
-                    self.data  = {'wl': HDUdata[0].data[header['WLAXIS'],:], 'iwall': iwallFcorr}
-
-                    # Now we can loop through the remaining possibilities:
-                    if 'PHOTAXIS' in header.keys():
-                        self.data['phot'] = HDUdata[0].data[header['PHOTAXIS'],:]
-                    else:
-                        print('DATAINIT: Warning: No photosphere data found for ' + self.name)
-                    if 'WALLAXIS' in header.keys():
-                        self.data['owall']= HDUdata[0].data[header['WALLAXIS'],:]
-                    else:
-                        print('DATAINIT: Warning: No outer wall data found for ' + self.name)
-                    if 'ANGAXIS' in header.keys():
-                        self.data['disk'] = HDUdata[0].data[header['ANGAXIS'],:]
-                    else:
-                        print('DATAINIT: Warning: No outer disk data found for ' + self.name)
-                    # Remaining components are not always (or almost always) present, so no warning given if missing!
-                    if 'SCATAXIS' in header.keys():
-                        self.data['scatt']= HDUdata[0].data[header['SCATAXIS'],:]
-                        negScatt = np.where(self.data['scatt'] < 0.0)[0]
-                        if len(negScatt) > 0:
-                            print('DATAINIT: WARNING: Some of your scattered light values are negative!')
-                    if 'EXTAXIS' in header.keys():
-                        self.extcorr      = HDUdata[0].data[header['EXTAXIS'],:]
-                else:
-                    self.data = ({'wl': HDUdata[0].data[:,0], 'phot': HDUdata[0].data[:,1], 'owall': HDUdata[0].data[:,2],
-                                  'disk': HDUdata[0].data[:,3], 'iwall': HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]})
-        HDUdata.close()
+        HDUwall.close()
         return
 
     @keyErrHandle
