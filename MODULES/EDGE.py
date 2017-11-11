@@ -128,7 +128,7 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
             plt.plot(model.data['wl'], model.data['dust'], ls='--', c='#F80303', linewidth=2.0, label='Opt. Thin Dust')
 
         if model.components['wall']: # wall for TTS model
-            plt.plot(model.data['wl'], model.data['iwall']*model.wallH/model.altinh, ls='--', c='#53EB3B', linewidth=2.0, label='Wall')
+            plt.plot(model.data['wl'], model.data['wall']*model.wallH/model.altinh, ls='--', c='#53EB3B', linewidth=2.0, label='Wall')
 
         if model.components['disk']: # disk for TTS model (full or transitional disk)
             plt.plot(model.data['wl'], model.data['disk'], ls ='--', c = '#f8522c', linewidth = 2.0, label = 'Disk')
@@ -1415,7 +1415,7 @@ class TTS_Model(object):
     data: The data for each component inside the model.
     extcorr: The self-extinction correction. If not carried out, saved as None.
     new: Whether or not the model was made with the newer version of collate.py.
-    newIWall: The flux of an inner wall with a higher/lower altinh value.
+    newwall: The flux of an inner wall with a higher/lower altinh value.
     wallH: The inner wall height used by the look() function in plotting.
     filters: Filters used to calculate synthetic fluxes.
     synthFlux: Wavelengths and syntethic fluxes.
@@ -1431,20 +1431,30 @@ class TTS_Model(object):
 
     METHODS
     __init__: Initializes an instance of the class, and loads in the relevant metadata.
-    dataInit: Loads in the data to the object.
+    dataInit: DEPRECATED.
     calc_total: Calculates the "total" (combined) flux based on which components you want, then loads it into
                 the data attribute under the key 'total'.
     """
 
-    def __init__(self, name, jobn, dpath=datapath, fill=3):
+    def __init__(self, name, jobn, dpath=datapath, fill=3, verbose=False):
         """
         Initializes instances of this class and loads the relevant data into attributes.
+
+        Also initializs data attributes using nested dictionaries:
+        - wl is the wavelength (corresponding to all three flux arrays).
+        - Phot is the stellar photosphere emission.
+        - wall is the flux from the inner wall.
+        - Disk is the emission from the angle file.
+        - Scatt is the scattered light emission.
+        - Loads in self-extinction array if available.
+        - Loads structure of disk.
 
         INPUTS
         name: Name of the object being modeled. Must match naming convention used for models.
         jobn: Job number corresponding to the model being loaded into the object. Again, must match convention.
         full_trans: BOOLEAN -- if 1 (True) will load data as a full or transitional disk. If 0 (False), as a pre-trans. disk.
         fill: How many numbers the input model file has (jobXXX vs. jobXXXX, etc.)
+        verbose: BOOLEAN -- if 1 (True), will print out warnings about missing components.
         """
 
         # Read in the fits file:
@@ -1493,6 +1503,48 @@ class TTS_Model(object):
         except KeyError:
             self.mdotstar = self.mdot
 
+
+        # Load SED in nested dictionaries
+        # The new Python version of collate flips array indices, so must identify which collate.py was used:
+        if 'EXTAXIS' in header.keys() or 'NOEXT' in header.keys():
+            self.new = 1
+        else:
+            self.new = 0
+
+        if self.new:
+            # We will load in the components piecemeal based on the axes present in the header.
+            # First though, we initialize with the wavelength array, since it's always present:
+            self.data = {'wl': HDUlist[0].data[header['WLAXIS'],:]}
+
+            # Now we can loop through the remaining possibilities:
+            if 'PHOTAXIS' in header.keys():
+                self.data['phot'] = HDUlist[0].data[header['PHOTAXIS'],:]
+            else:
+                if verbose:
+                    print('DATAINIT: Warning: No photosphere data found for ' + self.name)
+            if 'WALLAXIS' in header.keys():
+                self.data['wall'] = HDUlist[0].data[header['WALLAXIS'],:]
+            else:
+                if verbose:
+                    print('DATAINIT: Warning: No outer wall data found for ' + self.name)
+            if 'ANGAXIS' in header.keys():
+                self.data['disk'] = HDUlist[0].data[header['ANGAXIS'],:]
+            else:
+                if verbose:
+                    print('DATAINIT: Warning: No outer disk data found for ' + self.name)
+            # Remaining components are not always (or almost always) present, so no warning given if missing!
+            if 'SCATAXIS' in header.keys():
+                self.data['scatt'] = HDUlist[0].data[header['SCATAXIS'],:]
+                negScatt = np.where(self.data['scatt'] < 0.0)[0]
+                if len(negScatt) > 0:
+                    print('DATAINIT: WARNING: Some of your scattered light values are negative!')
+            if 'EXTAXIS' in header.keys():
+                self.extcorr       = HDUlist[0].data[header['EXTAXIS'],:]
+        else:
+            self.data = {'wl': HDUlist[0].data[:,0], 'phot': HDUlist[0].data[:,1], 'wall': HDUlist[0].data[:,2], \
+                         'disk': HDUlist[0].data[:,3]}
+
+
         # Load structure of the disk
         # If there are more than 2 extensions, then the structure must be in the fits file
         if header['EXTS'] >= 2:
@@ -1509,60 +1561,9 @@ class TTS_Model(object):
 
     def dataInit(self, verbose=1):
         """
-        Initialize data attributes for this object using nested dictionaries:
-        wl is the wavelength (corresponding to all three flux arrays). Phot is the stellar photosphere emission.
-        iWall is the flux from the inner wall. Disk is the emission from the angle file. Scatt is the scattered
-        light emission. Loads in self-extinction array if available.
-
-        INPUTS:
-        verbose: BOOLEAN -- if 1 (True), will print out warnings about missing components.
+        DEPRECATED. Done automatically by __init__
         """
-
-        stringnum    = str(self.jobn).zfill(self.fill)
-        fitsname     = self.dpath + self.name + '_' + stringnum + '.fits'
-        HDUdata      = fits.open(fitsname)
-        header       = HDUdata[0].header
-
-        # The new Python version of collate flips array indices, so must identify which collate.py was used:
-        if 'EXTAXIS' in header.keys() or 'NOEXT' in header.keys():
-            self.new = 1
-        else:
-            self.new = 0
-
-        if self.new:
-            # We will load in the components piecemeal based on the axes present in the header.
-            # First though, we initialize with the wavelength array, since it's always present:
-            self.data = {'wl': HDUdata[0].data[header['WLAXIS'],:]}
-
-            # Now we can loop through the remaining possibilities:
-            if 'PHOTAXIS' in header.keys():
-                self.data['phot'] = HDUdata[0].data[header['PHOTAXIS'],:]
-            else:
-                if verbose:
-                    print('DATAINIT: Warning: No photosphere data found for ' + self.name)
-            if 'WALLAXIS' in header.keys():
-                self.data['iwall'] = HDUdata[0].data[header['WALLAXIS'],:]
-            else:
-                if verbose:
-                    print('DATAINIT: Warning: No outer wall data found for ' + self.name)
-            if 'ANGAXIS' in header.keys():
-                self.data['disk'] = HDUdata[0].data[header['ANGAXIS'],:]
-            else:
-                if verbose:
-                    print('DATAINIT: Warning: No outer disk data found for ' + self.name)
-            # Remaining components are not always (or almost always) present, so no warning given if missing!
-            if 'SCATAXIS' in header.keys():
-                self.data['scatt'] = HDUdata[0].data[header['SCATAXIS'],:]
-                negScatt = np.where(self.data['scatt'] < 0.0)[0]
-                if len(negScatt) > 0:
-                    print('DATAINIT: WARNING: Some of your scattered light values are negative!')
-            if 'EXTAXIS' in header.keys():
-                self.extcorr       = HDUdata[0].data[header['EXTAXIS'],:]
-        else:
-            self.data = {'wl': HDUdata[0].data[:,0], 'phot': HDUdata[0].data[:,1], 'iwall': HDUdata[0].data[:,2], \
-                         'disk': HDUdata[0].data[:,3]}
-
-        HDUdata.close()
+        print('WARNING: This is now done automatically when initializing the object. This method will disappear in the future.')
         return
 
     @keyErrHandle
@@ -1601,15 +1602,15 @@ class TTS_Model(object):
             if verbose:
                 print('CALC_TOTAL: Adding inner wall component to the total flux.')
             if altinh != None:
-                self.newIWall = self.data['iwall'] * altinh
-                totFlux       = totFlux + self.newIWall     # Note: if save=1, will save iwall w/ the original altinh.
+                self.newwall = self.data['wall'] * altinh
+                totFlux       = totFlux + self.newwall     # Note: if save=1, will save wall w/ the original altinh.
                 self.wallH    = self.altinh * altinh
             else:
-                totFlux       = totFlux + self.data['iwall']
+                totFlux       = totFlux + self.data['wall']
                 self.wallH    = self.altinh                 # Redundancy for plotting purposes.
-                # If we tried changing altinh but want to now plot original, deleting the "newIWall" attribute from before.
+                # If we tried changing altinh but want to now plot original, deleting the "newwall" attribute from before.
                 try:
-                    del self.newIWall
+                    del self.newwall
                 except AttributeError:
                     pass
             componentNumber += 1
@@ -1666,7 +1667,7 @@ class TTS_Model(object):
                 colNum += 1
             if wall:
                 headerStr += 'Inner Wall, '
-                outputTable[:, colNum] = self.data['iwall']
+                outputTable[:, colNum] = self.data['wall']
                 colNum += 1
             if disk:
                 headerStr += 'Outer Disk, '
@@ -1908,7 +1909,7 @@ class TTS_Model(object):
             else:
                 self.data[key] = np.interp(self.data['wl'], oldWavelength, self.data[key])
         try:
-            self.newIWall = np.interp(self.data['wl'], oldWavelength, self.newIWall)
+            self.newwall = np.interp(self.data['wl'], oldWavelength, self.newwall)
         except AttributeError:
             pass
         try:
@@ -2167,12 +2168,14 @@ class PTD_Model(TTS_Model):
                 the data attribute under the key 'total'. This also differs from TTS_Model.
     """
 
-    def dataInit(self, altname=None, jobw=None, fillWall=3, wallpath = '', verbose =1, **searchKwargs):
+    def dataInit(self, altname=None, jobw=None, fillWall=3, wallpath = None, verbose =1, **searchKwargs):
         """
-        Initialize data attributes for this object using nested dictionaries:
-        wl is the wavelength (corresponding to all three flux arrays). Phot is the stellar photosphere emission.
-        iwall is the flux from the inner wall. Disk is the emission from the angle file. owall is the flux from
-        the outer wall. Scatt is the scattered light emission. Also adds self-extinction array if available.
+        Initializes data attributes for inner wall and inner disk,
+        and renames outer wall and outer disk:
+        - iwall is the flux from the inner wall.
+        - idisk is the emission from the inner disk.
+        - owall is the flux from the outer wall.
+        - odisk is the emission from the outer wall.
 
         You should either supply the job number of the inner wall file, or the kwargs used to find it via a
         search. Jobw
@@ -2190,189 +2193,83 @@ class PTD_Model(TTS_Model):
             Added ability to have an inner disk along with an inner wall
 
         """
+        if altname == None:
+            altname = self.name
+        if wallpath == None:
+            wallpath  = self.dpath
 
         if jobw == None and len(searchKwargs) == 0:
             raise IOError('DATAINIT: You must enter either a job number or kwargs to match or search for an inner wall.')
 
         if jobw != None:
             # If jobw is an integer, make into a string:
-            jobw          = str(jobw).zfill(fillWall)
-
+            jobw = str(jobw).zfill(fillWall)
             # The case in which you supplied the job number of the inner wall:
-            if altname == None:
-                if wallpath == None:
-                    fitsname  = self.dpath + self.name + '_' + jobw + '.fits'
-                if wallpath != None:
-                    fitsname  = wallpath + self.name + '_' + jobw + '.fits'
-
-                HDUwall   = fits.open(fitsname)
-            else:
-                if wallpath == None:
-                    fitsname  = self.dpath + altname + '_' + jobw + '.fits'
-                if wallpath != None:
-                    fitsname  = wallpath + altname + '_' + jobw + '.fits'
-
-                HDUwall   = fits.open(fitsname)
-
-            # Make sure the inner wall job you supplied is, in fact, an inner wall.
-            if verbose:
-                if 'NOEXT' not in HDUwall[0].header.keys():
-                    #raise IOError('DATAINIT: Job you supplied is not an inner wall or needs to be collated again!')
-                    print('DATAINIT: Job you supplied is not ONLY an inner wall and may need to be collated again!')
-
-
-            # Now, load in the disk data:
-            stringNum     = str(self.jobn).zfill(self.fill)
-            HDUdata       = fits.open(self.dpath + self.name + '_' + stringNum + '.fits')
-            header        = HDUdata[0].header
-
-            # Check if it's an old version or a new version:
-            if 'EXTAXIS' in header.keys() or 'NOEXT' in header.keys():
-                self.new  = 1
-            else:
-                self.new  = 0
-
-            # Define the inner wall height.
-            self.iwallH   = HDUwall[0].header['ALTINH']
-            self.itemp    = HDUwall[0].header['TEMP']
-            self.ijobn    = HDUwall[0].header['JOBNUM']
-
-
-
-
-            # Depending on old or new version is how we will load in the data. We require the wall be "new":
-            if self.new:
-                # Correct for self extinction:
-                try:
-                    iwallFcorr= HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]*np.exp(-1*HDUdata[0].data[header['EXTAXIS'],:])
-                except KeyError:
-                    print('DATAINIT: WARNING! No extinction correction can be made for job ' + str(self.jobn)+'!')
-
-                    iwallFcorr= HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]
-
-                # We will load in the components piecemeal based on the axes present in the header.
-                # First though, we initialize with the wavelength and wall, since they're always present.
-
-                #If there is an inner disk, add that as well.
-                if 'NOEXT' not in HDUwall[0].header.keys():
-                    try:
-                        idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]*np.exp(-1*HDUdata[0].data[header['EXTAXIS'],:])
-                    except KeyError:
-                        idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]
-
-                    self.data = {'wl': HDUdata[0].data[header['WLAXIS'],:], 'iwall': iwallFcorr, 'idisk': idiskFcorr}
-
-                    #Add information about the disk
-                    self.ialpha      = HDUwall[0].header['ALPHA']
-                    self.irdisk      = HDUwall[0].header['RDISK']
-                    self.iamax       = HDUwall[0].header['AMAXS']
-                    self.ieps        = HDUwall[0].header['EPS']
-                    self.insilcomp   = HDUwall[0].header['NSILCOMP']
-                    self.isiltotab   = HDUwall[0].header['SILTOTAB']
-                    self.iamorf_ol   = HDUwall[0].header['AMORF_OL']
-                    self.iamorf_py   = HDUwall[0].header['AMORF_PY']
-                    self.iforsteri   = HDUwall[0].header['FORSTERI']
-                    self.ienstatit   = HDUwall[0].header['ENSTATIT']
-                    self.irin        = HDUwall[0].header['RIN']
-
-                else:
-                    self.data = {'wl': HDUdata[0].data[header['WLAXIS'],:], 'iwall': iwallFcorr}
-
-                # Now we can loop through the remaining possibilities:
-                if 'PHOTAXIS' in header.keys():
-                    self.data['phot'] = HDUdata[0].data[header['PHOTAXIS'],:]
-                else:
-                    print('DATAINIT: Warning: No photosphere data found for ' + self.name)
-                if 'WALLAXIS' in header.keys():
-                    self.data['owall']= HDUdata[0].data[header['WALLAXIS'],:]
-                else:
-                    print('DATAINIT: Warning: No outer wall data found for ' + self.name)
-                if 'ANGAXIS' in header.keys():
-                    self.data['odisk'] = HDUdata[0].data[header['ANGAXIS'],:]
-                else:
-                    print('DATAINIT: Warning: No outer disk data found for ' + self.name)
-                # Remaining components are not always (or almost always) present, so no warning given if missing!
-                if 'SCATAXIS' in header.keys():
-                    self.data['scatt']= HDUdata[0].data[header['SCATAXIS'],:]
-                    negScatt = np.where(self.data['scatt'] < 0.0)[0]
-                    if len(negScatt) > 0:
-                        print('DATAINIT: WARNING: Some of your scattered light values are negative!')
-                if 'EXTAXIS' in header.keys():
-                    self.extcorr      = HDUdata[0].data[header['EXTAXIS'],:]
-            else:
-                self.data = ({'wl': HDUdata[0].data[:,0], 'phot': HDUdata[0].data[:,1], 'owall': HDUdata[0].data[:,2],
-                              'disk': HDUdata[0].data[:,3], 'iwall': HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]})
-
+            fitsname  = wallpath + altname + '_' + jobw + '.fits'
+            HDUwall   = fits.open(fitsname)
         else:
             # When doing the searchJobs() call, use **searchKwargs to pass that as the keyword arguments to searchJobs!
-            if altname == None:
-                match = searchJobs(self.name, dpath=self.dpath, **searchKwargs)
-            else:
-                match = searchJobs(altname, dpath=self.dpath, **searchKwargs)
+            match = searchJobs(altname, dpath=wallpath, **searchKwargs)
             if len(match) == 0:
                 raise IOError('DATAINIT: No inner wall model matches these parameters!')
             elif len(match) > 1:
                 raise IOError('DATAINIT: Multiple inner wall models match. Do not know which one to pick.')
+            fitsname = wallpath + altname + '_' + match[0] + '.fits'
+            HDUwall  = fits.open(fitsname)
+
+        # Make sure the inner wall job you supplied is, in fact, an inner wall.
+        if 'WALLAXIS' not in HDUwall[0].header.keys():
+            raise IOError('DATAINIT: Job you supplied for inner wall does not have a wall!')
+
+        stringNum     = str(self.jobn).zfill(self.fill)
+
+        # Define the inner wall height.
+        self.iwallH   = HDUwall[0].header['ALTINH']
+        self.itemp    = HDUwall[0].header['TEMP']
+        self.ijobn    = HDUwall[0].header['JOBNUM']
+
+        # Inner wall
+        # Correct for self extinction:
+        if self.extcorr != None:
+            iwallFcorr= HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]*np.exp(-1*self.extcorr)
+        else:
+            print('DATAINIT: WARNING! No extinction correction can be made for job ' + str(self.jobn)+'!')
+            iwallFcorr= HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]
+        self.data['iwall'] = iwallFcorr
+
+        #If there is an inner disk, add that as well.
+        if 'ANGAXIS' in HDUwall[0].header.keys():
+            if 'EXTAXIS' in HDUwall[0].header.keys():
+                idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]*np.exp(-1*HDUdata[0].data[header['EXTAXIS'],:])
             else:
-                if altname == None:
-                    fitsname = self.dpath + self.name + '_' + match[0] + '.fits'
-                else:
-                    fitsname = self.dpath + altname + '_' + match[0] + '.fits'
-                HDUwall  = fits.open(fitsname)
+                idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]
+            self.data['idisk'] = idiskFcorr
+            #Add information about the disk
+            self.ialpha      = HDUwall[0].header['ALPHA']
+            self.irdisk      = HDUwall[0].header['RDISK']
+            self.iamax       = HDUwall[0].header['AMAXS']
+            self.ieps        = HDUwall[0].header['EPS']
+            self.insilcomp   = HDUwall[0].header['NSILCOMP']
+            self.isiltotab   = HDUwall[0].header['SILTOTAB']
+            self.iamorf_ol   = HDUwall[0].header['AMORF_OL']
+            self.iamorf_py   = HDUwall[0].header['AMORF_PY']
+            self.iforsteri   = HDUwall[0].header['FORSTERI']
+            self.ienstatit   = HDUwall[0].header['ENSTATIT']
+            self.irin        = HDUwall[0].header['RIN']
 
-                # Make sure the inner wall job you supplied is, in fact, an inner wall.
-                if 'NOEXT' not in HDUwall[0].header.keys():
-                    raise IOError('DATAINIT: Job found is not an inner wall or needs to be collated again!')
+        # We change the keys for the outer wall and outer disk
+        # Outer wall
+        if 'wall' in self.data.keys():
+            self.data['owall'] = self.data['wall']
+        else:
+            print('DATAINIT: Warning: No outer wall data found for ' + self.name)
+        # Outer disk
+        if 'disk' in self.data.keys():
+            self.data['odisk'] = self.data['disk']
+        else:
+            print('DATAINIT: Warning: No outer disk data found for ' + self.name)
 
-                # Now, load in the disk data:
-                stringNum    = str(self.jobn).zfill(self.fill)
-                HDUdata      = fits.open(self.dpath + self.name + '_' + stringNum + '.fits')
-                header       = HDUdata[0].header
-
-                # Check if it's an old version or a new version:
-                if 'EXTAXIS' in header.keys() or 'NOEXT' in header.keys():
-                    self.new = 1
-                else:
-                    self.new = 0
-
-                # Define the inner wall height:
-                self.iwallH  = HDUwall[0].header['ALTINH']
-                self.itemp   = HDUwall[0].header['TEMP']
-
-                # Depending on old or new version is how we will load in the data. We require the wall be "new":
-                if self.new:
-                    # Correct for self extinction:
-                    iwallFcorr = HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]*np.exp(-1*HDUdata[0].data[header['EXTAXIS'],:])
-
-                    # We will load in the components piecemeal based on the axes present in the header.
-                    # First though, we initialize with the wavelength and wall, since they're always present:
-                    self.data  = {'wl': HDUdata[0].data[header['WLAXIS'],:], 'iwall': iwallFcorr}
-
-                    # Now we can loop through the remaining possibilities:
-                    if 'PHOTAXIS' in header.keys():
-                        self.data['phot'] = HDUdata[0].data[header['PHOTAXIS'],:]
-                    else:
-                        print('DATAINIT: Warning: No photosphere data found for ' + self.name)
-                    if 'WALLAXIS' in header.keys():
-                        self.data['owall']= HDUdata[0].data[header['WALLAXIS'],:]
-                    else:
-                        print('DATAINIT: Warning: No outer wall data found for ' + self.name)
-                    if 'ANGAXIS' in header.keys():
-                        self.data['disk'] = HDUdata[0].data[header['ANGAXIS'],:]
-                    else:
-                        print('DATAINIT: Warning: No outer disk data found for ' + self.name)
-                    # Remaining components are not always (or almost always) present, so no warning given if missing!
-                    if 'SCATAXIS' in header.keys():
-                        self.data['scatt']= HDUdata[0].data[header['SCATAXIS'],:]
-                        negScatt = np.where(self.data['scatt'] < 0.0)[0]
-                        if len(negScatt) > 0:
-                            print('DATAINIT: WARNING: Some of your scattered light values are negative!')
-                    if 'EXTAXIS' in header.keys():
-                        self.extcorr      = HDUdata[0].data[header['EXTAXIS'],:]
-                else:
-                    self.data = ({'wl': HDUdata[0].data[:,0], 'phot': HDUdata[0].data[:,1], 'owall': HDUdata[0].data[:,2],
-                                  'disk': HDUdata[0].data[:,3], 'iwall': HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]})
-        HDUdata.close()
+        HDUwall.close()
         return
 
     @keyErrHandle
