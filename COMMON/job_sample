@@ -811,7 +811,11 @@ endif
 #collate the model
 if ($ICOLLATE == 1) then
 module load anaconda3 # necessary to run python3 in BU cluster
+if ($?PYTHONPATH) then # Create PYTHONPATH or append EDGE's path to it
 setenv PYTHONPATH $PYTHONPATH\:$MAINEDGE
+else
+setenv PYTHONPATH $MAINEDGE
+endif
 set fileoutput=$labelend'_outputs'
 echo $FILEPHOT > $fileoutput
 echo $FILERIN >> $fileoutput
