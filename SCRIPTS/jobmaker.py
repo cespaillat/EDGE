@@ -75,6 +75,9 @@ ztran   = [0.1] #height of transition between big and small grains, in hydrostat
 alpha   = [1e-2] # Viscosity in the disk
 rdisk   = [200] #Outer radius of the disk
 
+rc      = [2000.] #Critial radius of tapered edge. If 2000, it will not have any effect.
+gamma   = [2.0] #Exponent of tapered edge.
+
 temp    = [1400] #Sublimation temperature of the grains
 altinh  = [1] #Height of the disk in scale heights. Often better to leave as 1 and scale it later
 
@@ -89,6 +92,16 @@ fracent   = [0.0] #Fraction of enstatite
 
 d2g = [0.0065] #Dust to gas mass ratio.
 
+#Gap creator:
+imod = False # If True, the disk structure will be modified as chosen with the following parameters.
+#NOTE: these are python lists, so should be written to the jobfile as "[XX]"
+#All used deltas need to have the same length as inter_r, so be careful with the combinations.
+inter_r = ['[]']
+rho_deltas = ['[]']
+temp_deltas = ['[]']
+epsbig_deltas = ['[]']
+eps_deltas = ['[]']
+
 #OPTIONAL PARAMETERS:
 #If you want them to be the same as their associated parameters (amaxs, mdot) then set them to [None]
 #Don't forget the brackets.
@@ -101,15 +114,21 @@ iwall = False #Set this to True if you want ONLY walls. (i.e., turns off the dis
 
 
 #***********************************************
-#Unlikly you need to change anything below here.
+#Unlikely you need to change anything below here.
 #***********************************************
 
 #Open up a file and print the parameter names
 f = open(gridpath+paramfiletag+'job_params.txt', 'w')
-f.writelines('Job Number, amaxs, amaxw, epsilon, ztran, mstar, tstar, rstar, dist, mdot, mdotstar, tshock, alpha, mui, rdisk, temp, altinh, fracolive, fracpyrox, fracforst, fracent, lamaxb, d2g \n')
+f.writelines('Job Number, amaxs, amaxw, epsilon, ztran, mstar, tstar, rstar, \
+dist, mdot, mdotstar, tshock, alpha, mui, rdisk, rc, gamma, temp, altinh, \
+fracolive, fracpyrox, fracforst, fracent, lamaxb, d2g, inter_r, rho_deltas, \
+temp_deltas, epsbig_deltas, eps_deltas \n')
 
 #Write each iteration as a row in the table
-for ind, values in enumerate(itertools.product(amaxs, amaxw, epsilon, ztran, mstar, tstar, rstar, dist, mdot, mdotstar, tshock, alpha, mui, rdisk, temp, altinh, fracolive, fracpyrox, fracforst, fracent, lamaxb, d2g)):
+for ind, values in enumerate(itertools.product(amaxs, amaxw, epsilon, ztran,
+mstar, tstar, rstar, dist, mdot, mdotstar, tshock, alpha, mui, rdisk, rc,
+gamma, temp, altinh, fracolive, fracpyrox, fracforst, fracent, lamaxb, d2g,
+inter_r, rho_deltas, temp_deltas, epsbig_deltas, eps_deltas)):
 
     #Handle the cases of mdotstar and amaxw which are optional parameters
     #NOTE: DO NOT CHANGE THE PARAMETERS BEFORE MDOTSTAR OR THIS WILL BREAK! YOU HAVE BEEN WARNED
@@ -140,9 +159,23 @@ if len(table) > 1000:
 for i in range(len(table)):
     label = labelend+'_'+str(i+jobnumstart).zfill(fill)
 
+    # Remove the apostrophes
+    if "'" in table['lamaxb'][i]:
+        table['lamaxb'][i] = table['lamaxb'][i].split("'")[1]
+    if "'" in table['inter_r'][i]:
+        table['inter_r'][i] = table['inter_r'][i].split("'")[1]
+    if "'" in table['rho_deltas'][i]:
+        table['rho_deltas'][i] = table['rho_deltas'][i].split("'")[1]
+    if "'" in table['temp_deltas'][i]:
+        table['temp_deltas'][i] = table['temp_deltas'][i].split("'")[1]
+    if "'" in table['epsbig_deltas'][i]:
+        table['epsbig_deltas'][i] = table['epsbig_deltas'][i].split("'")[1]
+    if "'" in table['eps_deltas'][i]:
+        table['eps_deltas'][i] = table['eps_deltas'][i].split("'")[1]
+
     edge.job_file_create(i+jobnumstart, gridpath, \
     amaxs     = table['amaxs'][i],\
-    eps   = table['epsilon'][i],\
+    eps       = table['epsilon'][i],\
     ztran     = table['ztran'][i],\
     mstar     = table['mstar'][i], \
     tstar     = table['tstar'][i], \
@@ -154,6 +187,8 @@ for i in range(len(table)):
     alpha     = table['alpha'][i], \
     mui       = table['mui'][i], \
     rdisk     = table['rdisk'][i], \
+    rc        = table['rc'][i], \
+    gamma     = table['gamma'][i], \
     temp      = table['temp'][i], \
     altinh    = table['altinh'][i],\
     fracolive = table['fracolive'][i], \
@@ -161,10 +196,16 @@ for i in range(len(table)):
     fracforst = table['fracforst'][i], \
     fracent   = table['fracent'][i], \
     amaxw     = table['amaxw'][i],\
-    lamaxb    = table['lamaxb'][i].split("'")[1],\
+    lamaxb    = table['lamaxb'][i],\
     d2g       = table['d2g'][i],\
+    inter_r   = table['inter_r'][i],\
+    rho_deltas= table['rho_deltas'][i],\
+    temp_deltas= table['temp_deltas'][i],\
+    epsbig_deltas= table['epsbig_deltas'][i],\
+    eps_deltas= table['eps_deltas'][i],\
     fill      = fill,\
     iwall     = iwall,\
+    imod      = imod,\
     labelend  = label)
 
 #Make a run all file for the jobs you just created

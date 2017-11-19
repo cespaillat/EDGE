@@ -1,5 +1,7 @@
 #!/bin/csh
 # HISTORY:
+# Nov17: Quique: New tappered edge to the surface density as exp(-(r/rc)^gamma)
+# Two new parameters: rc and gamma. If rc>>rdmax then a normal disk is recovered.
 # Nov17 Quique: epsilonbig is now calculated inside irradiado, so eps and ztran
 # can be given any value. Also some changes to paths and naming of files.
 # Sep17 Quique: Models can now be automatically collated after running.
@@ -50,9 +52,12 @@ set MDOTSTAR=$MDOT #in Msun/yr. Mass accretion rate onto the star. Note that
 set TSHOCK=8000.  #in K
 
 #outer disk parameters ------------------------------------
-set ALPHA='0.01'
 set MUI='0.5'  #cosine of inclination angle
+set ALPHA='0.01'
 set RDISK='30'  #outer radius of disk in AU
+# tappered edge: exp((r/rc)**(gamma)) ----------------
+set RC='2000'  # radius of disk tappered edge
+set GAMMA='2.0'
 
 #dust-to-gas mass ratio -------------------------------
 set D2G='0.0065'
@@ -140,6 +145,14 @@ set lamaxw=$lamaxs
 #set lamaxw='amax100'
 #------------------------
 
+# Create gap and modify disk structure
+# If INTER_R is empty, the structure will not be modified.
+set INTER_R='[]'
+set RHO_DELTAS='[]'
+set TEMP_DELTAS='[]'
+set EPSBIG_DELTAS='[]'
+set EPS_DELTAS='[]'
+
 #WAVELENGTHS----------------------------
 #this sets the wavelength resolution
 #note: you can create your own files of varying wavelength coverage
@@ -222,6 +235,9 @@ set IVIS='1'
 #mstar, rmagm, eps (b&s), ztran(which is fixed below in script),
 #amax (b&s), and IVIS output
 set IIRR='1'
+#------------------------
+#Modify disk structure? (0=n,1=y)
+set IMOD='0'
 #------------------------
 #calculate table with disk properties? (0=n,1=y)
 set IPROP='1'
@@ -553,6 +569,7 @@ $MSTAR
 $MDOT
 $Rmag
 $RDMAXAU
+$RC $GAMMA
 $ALPHA
 $VISFILEPMM
 $VISFILEGAD
@@ -606,6 +623,26 @@ $VISFILEGAD
 EOD
 endif
 #end IRR---------------------------------------
+
+#begin gap creation----------------------
+if ($IMOD == 1) then
+echo creating disk gaps and modifying structure
+set FILEIRRMOD=fort14.a$ALPHA.mod.$labcom.$labeps.$lamaxs\_$lamaxb.dat
+rm -f $FILEIRRMOD
+module load anaconda3 # necessary to run python3 in BU cluster
+if ($?PYTHONPATH) then # Create PYTHONPATH or append EDGE's path to it
+setenv PYTHONPATH $PYTHONPATH\:$MAINEDGE
+else
+setenv PYTHONPATH $MAINEDGE
+endif
+
+python -c "from mod_struc import gap_creator; gap_creator(labelend='$labelend',inter_r=$INTER_R,rho_deltas=$RHO_DELTAS,temp_deltas=$TEMP_DELTAS,epsbig_deltas=$EPSBIG_DELTAS,eps_deltas=$EPS_DELTAS)"
+
+mv $FILESALIRR fort14.a$ALPHA.irr_ori.$labcom.$labeps.$lamaxs\_$lamaxb.dat
+mv $FILEIRRMOD $FILESALIRR
+endif
+
+#end gaps--------------------------------
 
 #begin disk properties calculation--------------
 set FILEOUT=fort15.$extension

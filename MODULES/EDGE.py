@@ -396,7 +396,7 @@ def loadObs(name, datapath = datapath):
 
     return obj
 
-def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = False, **kwargs):
+def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path = None, image = False, **kwargs):
     """
     Creates a new job file that is used by the D'Alessio Model.
 
@@ -405,6 +405,7 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
     path: The path containing the sample job file (if sample_path is not used), and ultimately, the output.
     fill: Pads the output file such that the name will be jobXXX if 3, jobXXXX if 4, etc.
     iwall: BOOLEAN -- if True (1), output will turn off switches so we just run as inner wall.
+    imod: BBOOLEAN -- if True, it will run gap_creator to modify the structure of the disk.
     image: BOOLEAN -- if True, it will create a job_file for an image instead of an SED.
     sample_path: The path containing the sample job file. If not set, the job_sample will be searched in path.
     **kwargs: The keywords arguments used to make changes to the sample file. Available
@@ -432,6 +433,11 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
         lamaxb - string for maximum grain size in the disk midplane (currently accepts '1mm' and '1cm')
         amaxw - maximum grain size in the wall. If not supplied, code will assume that it is the same as the the grain size in the disk
         d2g - Dust to gas mass ratio
+        inter_r - intervals of radius in which the disk structure will be modified
+        rho_deltas - deltas by which the density will be multiplied in the radius intervals provided.
+        temp_deltas - deltas for temperature
+        epsbig_deltas - deltas for epsilon big
+        eps_deltas - deltas for epsilon
 
               kwargs used only for the image (if image is True):
         wavelength - wavelength (in microns) at which the image will be calculated
@@ -624,6 +630,8 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
             elif param == 'FRACENT':
                 param = 'ENSTATITE_FRAC'
 
+            if "set "+param+"='" not in text:
+                raise IOError('JOB_FILE_CREATE: parameter '+param+' not found. You might be using an old jobsample.')
             start = text.find('set '+param+"='") + len('set '+param+"='")
             end = start + len(text[start:].split("'")[0])
 
@@ -631,13 +639,19 @@ def job_file_create(jobnum, path, fill=3, iwall=0, sample_path = None, image = F
             text = text[:start]+paramstr+text[end:]
 
     if iwall:
-
         turnoff = ['IPHOT', 'IOPA', 'IVIS', 'IIRR', 'IPROP', 'ISEDT']
 
         for switch in turnoff:
             start = text.find('set '+switch+"='") + len('set '+switch+"='")
             end = start + len(text[start:].split("'")[0])
             text = text[:start] + '0' + text[end:]
+
+    if imod:
+        # Turn on gap_creator to modify disk structure
+        start = text.find("set IMOD='") + len("set IMOD='")
+        end = start + len(text[start:].split("'")[0])
+        text = text[:start] + '1' + text[end:]
+
 
     outtext = [s + '\n' for s in text.split('\n')]
 
