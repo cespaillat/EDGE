@@ -534,26 +534,53 @@ def round_to_significant(value, uncertainty):
         Sierra Grant, October 10th, 2017
     '''
     
+    if (np.isfinite(value) * np.isfinite(uncertainty)) == 0 or value == 0 or uncertainty  == 0:
+        return 'nan', 'nan'
+    
     value, uncertainty = np.float(value), np.float(uncertainty)
     sd = significant_digit(uncertainty)
-    sd_val = float( ('{:1.'+str(int(np.abs(sd)+5))+'f}').format(uncertainty)[str(uncertainty).index(".")-sd])
+    
+    #Handle the weird case with numbers smaller than 10.
+    if sd == 0:
+        if uncertainty > 0:
+            sd_val = float(str(uncertainty)[0])
+        if uncertainty < 0:
+            sd_val = float(str(uncertainty)[1])
+    else:
+        sd_str = ('{:1.'+str(int(np.abs(sd)+5))+'f}').format(uncertainty)
+        sd_val = float(sd_str[sd_str.index(".")-sd])
+    
+    #Handle numbers that round to 1 digit
     if sd_val>2.0:
         #print(uncertainty,sd,sd_val,'I AM GREATER THAN 2')
         # round value and uncertainty (we used -1 in front of sd to change the behaviour of round)
-        value = np.round(value, -1 * sd)
-        uncertainty = np.round(uncertainty, -1 * sd)
-        # if uncertainty >= 1, make it int
-        if uncertainty >= 1:
-            value, uncertainty = int(value), int(uncertainty)
-        return ("{:."+str(-1*sd)+"f}").format(value),("{:."+str(-1*sd)+"f}").format(uncertainty)
-    if sd_val<=2.0:
-        #print(uncertainty,sd,sd_val,'I AM LESS THAN 2')
-        value = np.round(value, -1 * sd + 1)
-        uncertainty = np.round(uncertainty, -1 * sd + 1)
-        if ('{:1.'+str(int(np.abs(sd)+5))+'f}').format(uncertainty)[('{:1.'+str(int(np.abs(sd)+5))+'f}').format(uncertainty).index(".")-sd] == '3':
-            return ("{:."+str(-1*sd)+"f}").format(value),("{:."+str(-1*sd)+"f}").format(uncertainty)
+        outval = np.round(value, -1 * sd)
+        outunc = np.round(uncertainty, -1 * sd)
+        
+        #Handle errors greater than 1
+        if sd >= 0:
+            return ("{:.0f}").format(outval),("{:.0f}").format(outunc)
         else:
-            return ("{:."+str(-1*sd+1)+"f}").format(value),("{:."+str(-1*sd+1)+"f}").format(uncertainty)
+            return ("{:."+str(-1*sd)+"f}").format(outval),("{:."+str(-1*sd)+"f}").format(outunc)
+    
+    #Handle numbers that round to 2 digits
+    if sd_val<=2.0:
+        outval = np.round(value, -1 * sd + 1)
+        outunc = np.round(uncertainty, -1 * sd + 1)
+        
+        #Handle errors greater than 10
+        if sd >=1:
+            return ("{:.0f}").format(outval),("{:.0f}").format(outunc)
+        
+        #Handles the one weird case with rounding to 3.0 exactly
+        if outunc == 3.0:
+            return ("{:."+str(-1*sd)+"f}").format(outval),("{:."+str(-1*sd)+"f}").format(outunc)
+        
+        #Fix the issue where 3 is rounded
+        if ('{:1.'+str(int(np.abs(sd)+5))+'f}').format(outunc)[('{:1.'+str(int(np.abs(sd)+5))+'f}').format(outunc).index(".")-sd] == '3':
+            return ("{:."+str(-1*sd)+"f}").format(outval),("{:."+str(-1*sd)+"f}").format(outunc)
+        else:
+            return ("{:."+str(-1*sd+1)+"f}").format(outval),("{:."+str(-1*sd+1)+"f}").format(outunc)
 
 def linearInterp(x0, x1, x2, y1, y2, y1err, y2err):
     """
