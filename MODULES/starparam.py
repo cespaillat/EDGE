@@ -34,8 +34,8 @@ msun=1.989e33
 rsun=6.9599e10
 lsun=3.826e33
 
-# stores bands, wavelengths, and zeropoints (erg/cm2/s/Hz) from 
-# Bessell 1979, Johson66(Jsystem),Bessell&Brett 1988, Spitzer webpage 
+# stores bands, wavelengths, and zeropoints (erg/cm2/s/Hz) from
+# Bessell 1979, Johson66(Jsystem),Bessell&Brett 1988, Spitzer webpage
 # 0:U,1:b,2:V,3:Rc,4:Ic,5:J,6:H,7:K,8:L,9:M,
 # 10:irac[3.6],11:irac[4.5],12:irac[5.8],13:irac[8],14:mips[24]
 band='U','B','V','Rc','Ic','J','H','K','L','M','[3.6]','[4.5]','[5.8]','[8]','[24]'
@@ -92,7 +92,7 @@ if table == 'kh95':
 	imj0c=vmjkh[sptkh == sptin]-vmickh[sptkh == sptin]
 	teff=tefkh[sptkh == sptin]
 	bc=bckh[sptkh == sptin]
-	
+
 else:
 
 # read in Pecaut & Mamajek 2013 (PM13) table
@@ -140,7 +140,7 @@ f = open(outputfile, 'w')
 #f.write('{}\t{:.2}\n'.format('Av =', avin))
 
 # Av from V-R
-wlmic_Rband=0.64 
+wlmic_Rband=0.64
 if law == 'mathis':
 	#print 'Using Mathis law'
 	f.write('{}\n'.format('Using Mathis law'))
@@ -171,7 +171,7 @@ if law == 'mcclure':
 		else:
 			#print 'with mcclure_avlt8_rv5p0'
 			f.write('{}\n'.format('with mcclure_avlt8_rv5p0'))
-			ar=util.reddmcclureavlt8rv5p0(av1,wlmic_Rband,commonpath)			
+			ar=util.reddmcclureavlt8rv5p0(av1,wlmic_Rband,commonpath)
 	else:
 		if avin>8:
 			#print 'with mcclure_avgt8_rv3p1'
@@ -180,7 +180,7 @@ if law == 'mcclure':
 		else:
 			#print 'with mcclure_avlt8_rv3p1'
 			f.write('{}\n'.format('with mcclure_avlt8_rv3p1'))
-			ar=util.reddmcclureavlt8rv3p1(av1,wlmic_Rband,commonpath)	
+			ar=util.reddmcclureavlt8rv3p1(av1,wlmic_Rband,commonpath)
 avvmrc=(1/(1.-ar))*(vmr-vmr0c)
 #print 'Av(V-R)', avvmrc[0]
 f.write('{}\t{:.2}\n'.format('Av(V-R)=', avvmrc[0]))
@@ -201,12 +201,12 @@ if law == 'mcclure':
 		if avin>8:
 			ai=util.reddmcclureavgt8rv5p0(av1,wlmic_Iband,commonpath)
 		else:
-			ai=util.reddmcclureavlt8rv5p0(av1,wlmic_Iband,commonpath)			
+			ai=util.reddmcclureavlt8rv5p0(av1,wlmic_Iband,commonpath)
 	else:
 		if avin>8:
 			ai=util.reddmcclureavgt8rv3p1(av1,wlmic_Iband,commonpath)
 		else:
-			ai=util.reddmcclureavlt8rv3p1(av1,wlmic_Iband,commonpath)	
+			ai=util.reddmcclureavlt8rv3p1(av1,wlmic_Iband,commonpath)
 avvmic=(1/(1.-ai))*(vmi-vmi0c)
 #print 'Av(V-I)', avvmic[0]
 f.write('{}\t{:.2}\n'.format('Av(V-I)=', avvmic[0]))
@@ -224,7 +224,7 @@ if law == 'mathis':
 	else:
 		aj=util.redd(av1,wlmic_Jband,commonpath)
 if law == 'HD29647':
-	aj=util.reddhd(av1,wlmic_Jband,commonpath)		
+	aj=util.reddhd(av1,wlmic_Jband,commonpath)
 if law == 'CCM89':
 	aj=util.reddccm89(wlmic_Jband,r,commonpath)
 if law == 'mcclure':
@@ -232,12 +232,12 @@ if law == 'mcclure':
 		if avin>8:
 			aj=util.reddmcclureavgt8rv5p0(av1,wlmic_Jband,commonpath)
 		else:
-			aj=util.reddmcclureavlt8rv5p0(av1,wlmic_Jband,commonpath)			
+			aj=util.reddmcclureavlt8rv5p0(av1,wlmic_Jband,commonpath)
 	else:
 		if avin>8:
 			aj=util.reddmcclureavgt8rv3p1(av1,wlmic_Jband,commonpath)
 		else:
-			aj=util.reddmcclureavlt8rv3p1(av1,wlmic_Jband,commonpath)	
+			aj=util.reddmcclureavlt8rv3p1(av1,wlmic_Jband,commonpath)
 avicmj=(1/(ai-aj))*(imj-imj0c)
 #print 'Av(I-J)',avicmj[0]
 f.write('{}\t{:.2}\n'.format('Av(I-J)=', avicmj[0]))
@@ -269,21 +269,21 @@ for i in range(0,15):
 			if avin>8:
 				dered=util.reddmcclureavgt8rv5p0(av1,wlmic,commonpath)*avin
 			else:
-				dered=util.reddmcclureavlt8rv5p0(av1,wlmic,commonpath)*avin		
+				dered=util.reddmcclureavlt8rv5p0(av1,wlmic,commonpath)*avin
 		else:
 			if avin>8:
 				dered=util.reddmcclureavgt8rv3p1(av1,wlmic,commonpath)*avin
 			else:
 				dered=util.reddmcclureavlt8rv3p1(av1,wlmic,commonpath)*avin
-	dpro=pro[i]-dered	
+	dpro=pro[i]-dered
 	# store de-reddened V, I, and J-band
 	if i==2:
-		dproV=pro[i]-dered		
+		dproV=pro[i]-dered
 	if i==4:
 		dproIc=pro[i]-dered
 	if i==5:
 		dproJ=pro[i]-dered
-			
+
 	#print band[i], redmag, dpro
 	#f.write('{}\t{:.3}\t{:.3}\n'.format(band[i], redmag, dpro))
 	fnu=zp[i]*10.**(-dpro/2.5)
@@ -294,7 +294,7 @@ for i in range(0,15):
 	nufnuobs=np.log10(nu*fnuobs)
 	fl=nu*fnu/wangs
 	# store V-band derived flux
-	if i==0: 
+	if i==0:
 		flux=fl
 	#print wef[i], nufnuobs,nufnu
 	f.write('{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\n'.format(band[i], wef[i], redmag, dpro, nufnuobs,nufnu))
@@ -307,7 +307,7 @@ mbolv=bc+(dproV-dmodulus)
 lum=(4.75-mbol)/2.5
 lum=10.**lum
 lumv=(4.75-mbolv)/2.5
-lumv=10.**lumv	
+lumv=10.**lumv
 #print 'dmodulus,xmj,vmkstand,mbol,lum'
 #print dmodulus,xmj,vmkstand[0],mbol[0],lum[0]
 #print 'L(J), L(V)',lum[0], lumv[0]
@@ -315,10 +315,10 @@ lumv=10.**lumv
 #f.write('{:.2}\t{:.2}\t{:.2}\t{:.2}\t{:.2}\n'.format(dmodulus,xmj,vmkstand[0],mbol[0],lum[0]))
 #f.write('{}\t{:.2}\t{:.2}\n'.format('L(J), L(V)',lum[0], lumv[0]))
 
-# for Teff < G5 in Table 5 of KH95 
+# for Teff < G5 in Table 5 of KH95
 # adopts L with Mbol from J following KH95
 # for higher from V
-if table=='kh95': 
+if table=='kh95':
 	if teff < 5770: #temp of KH95 G5
 		luminosity=lum[0]
 		radius=np.sqrt(luminosity)/(teff/5770.)**2
@@ -498,7 +498,7 @@ if calcphot=='yes' and table=='pm13':
 	xmo=[xmo1,xmo2,xmo3,xmo4,xmo5,xmo6,xmo7,xmo8,xmo9,xmo10,xmo11,xmo12]
 	xwef=[0.36,0.44,0.55,0.64,0.79,1.22,1.63,2.19,3.35,4.60,11.56,22.09]
 	# zero points - erg/cm2/s/Hz
-	# from Bessell 1979,BB88 nir, Jarrett et al. 2011 WISE 
+	# from Bessell 1979,BB88 nir, Jarrett et al. 2011 WISE
 	# for Jarrett convert Fnu (Jy) using 1Jy=1e-23 erg/s/cm2/Hz
 	xzp=[1.81e-20,4.26e-20,3.64e-20,3.08e-20,2.55e-20,1.57e-20,1.02e-20, \
 	6.36e-21,3.10e-21,1.72e-21,3.17e-22,8.36e-23]

@@ -1492,7 +1492,10 @@ class TTS_Model(object):
         self.amaxb      = header['AMAXB']
         self.amaxw      = header['AMAXW']
         self.eps        = header['EPS']
-        self.ztran      = header['ZTRAN']
+        try:
+            self.ztran      = header['ZTRAN']
+        except:
+            print('WARNING: ZTRAN not found. This is probably an old collated model.')
         self.tshock     = header['TSHOCK']
         self.temp       = header['TEMP']
         self.altinh     = header['ALTINH']
@@ -1561,15 +1564,17 @@ class TTS_Model(object):
 
         # Load structure of the disk
         # If there are more than 2 extensions, then the structure must be in the fits file
-        if header['EXTS'] >= 2:
-            self.radii_struc = HDUlist[header['RAD_EXT']-1].data
-            self.z_struc = HDUlist[header['Z_EXT']-1].data
-            self.T_struc = HDUlist[header['T_EXT']-1].data
-            self.p_struc = HDUlist[header['P_EXT']-1].data
-            self.rho_struc = HDUlist[header['RHO_EXT']-1].data
-            self.epsbig_struc = HDUlist[header['EPSB_EXT']-1].data
-            self.eps_struc = HDUlist[header['EPS_EXT']-1].data
-
+        try:
+            if header['EXTS'] >= 2:
+                self.radii_struc = HDUlist[header['RAD_EXT']-1].data
+                self.z_struc = HDUlist[header['Z_EXT']-1].data
+                self.T_struc = HDUlist[header['T_EXT']-1].data
+                self.p_struc = HDUlist[header['P_EXT']-1].data
+                self.rho_struc = HDUlist[header['RHO_EXT']-1].data
+                self.epsbig_struc = HDUlist[header['EPSB_EXT']-1].data
+                self.eps_struc = HDUlist[header['EPS_EXT']-1].data
+        except:
+            print('WARNING: Structure not found, this is probably an old model.')
         HDUlist.close()
         return
 
