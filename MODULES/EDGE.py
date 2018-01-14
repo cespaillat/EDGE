@@ -928,6 +928,8 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
                 model_flux = model.synthFlux[obsKey]['lFl'][l]
                 try:
                     obs_err = obj.photometry[obsKey]['err'][ind]
+                    # We set nans as 10%
+                    obs_err[np.isnan(obs_err)] = 0.1 * obs_flux[np.isnan(obs_err)]
                     chiSF.append((obs_flux - model_flux)/ obs_err)
                 except:
                     # If there is no value for the error or it is 0, assume 10%
