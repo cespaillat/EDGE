@@ -434,6 +434,11 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                 miss = 1
 
             if miss != 1 and size != 0:
+                # Lok for the height of the wall
+                f = open(wallfile)
+                zwall = float(f.readlines()[7])
+                f.close()
+                # Read SED of wall
                 wall  =  ascii.read(wallfile, data_start = 9)
                 axis['WALLAXIS'] = axis_count
                 #If the photosphere was not run, then grab wavelength information from wall file
@@ -576,6 +581,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
 
         if nowall != 1:
             try:
+                hdu.header.set('ZWALL',zwall)
                 hdu.header.set('RIN', float(np.loadtxt(list_files[['rin.t' in element for element in list_files]][0])))
             except:
                 raise IOError('COLLATE: ERROR WITH rin file.')

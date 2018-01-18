@@ -1411,12 +1411,14 @@ class TTS_Model(object):
     alpha: Alpha parameter (from the viscous alpha disk model).
     mui: Inclination of the system.
     rdisk: The outer radius of the disk.
+    d2g: dust to gas mass ratio of the disk.
     amax: The "maximum" grain size in the disk. (or just suspended in the photosphere of the disk?)
     eps: The epsilon parameter, i.e., the amount of dust settling in the disk.
-    ztran: height of transition between big and small grains, in hydrostatic scale heights
+    ztran: height of transition between big and small grains, in hydrostatic scale heights.
     tshock: The temperature of the shock at the stellar photosphere.
     temp: The temperature at the inner wall (1400 K maximum).
     altinh: Scale heights of extent of the inner wall.
+    zwall: Height of the wall in au.
     wlcut_an:
     wlcut_sc:
     nsilcomp: Number of silicate compounds.
@@ -1494,10 +1496,6 @@ class TTS_Model(object):
         self.amaxb      = header['AMAXB']
         self.amaxw      = header['AMAXW']
         self.eps        = header['EPS']
-        try:
-            self.ztran      = header['ZTRAN']
-        except:
-            print('WARNING: ZTRAN not found. This is probably an old collated model.')
         self.tshock     = header['TSHOCK']
         self.temp       = header['TEMP']
         self.altinh     = header['ALTINH']
@@ -1510,7 +1508,6 @@ class TTS_Model(object):
         self.forsteri   = header['FORSTERI']
         self.enstatit   = header['ENSTATIT']
         self.rin        = header['RIN']
-        self.d2g        = header['D2G']
         self.diskmass   = header['DISKMASS']
         self.dpath      = dpath
         self.fill       = fill
@@ -1521,7 +1518,20 @@ class TTS_Model(object):
             self.mdotstar = header['MDOTSTAR']
         except KeyError:
             self.mdotstar = self.mdot
-
+        try:
+            self.ztran      = header['ZTRAN']
+        except:
+            print('WARNING: ZTRAN not found. This is probably an old collated model.')
+        try:
+            self.zwall      = header['ZWALL']
+        except:
+            print('WARNING: ZWALL not found. This is probably an old collated model.')
+        try:
+            self.d2g      = header['D2G']
+        except:
+            print('WARNING: D2G not found. This is probably an old collated \
+            model. Setting it to NaN.')
+            self.d2g = np.nan
 
         # Load SED in nested dictionaries
         # The new Python version of collate flips array indices, so must identify which collate.py was used:
@@ -2157,12 +2167,15 @@ class PTD_Model(TTS_Model):
     alpha: Alpha parameter (from the viscous alpha disk model).
     mui: Inclination of the system.
     rdisk: The outer radius of the disk.
+    d2g: dust to gas mass ratio of the disk.
     amax: The "maximum" grain size in the disk. (or just suspended in the photosphere of the disk?)
     eps: The epsilon parameter, i.e., the amount of dust settling in the disk.
+    ztran: height of transition between big and small grains, in hydrostatic scale heights.
     tshock: The temperature of the shock at the stellar photosphere.
     temp: The temperature at the outer wall component of the model.
     itemp: The temperature of the inner wall component of the model.
     altinh: Scale heights of extent of the inner wall.
+    zwall: Height of the wall in au.
     wlcut_an:
     wlcut_sc:
     nsilcomp: Number of silicate compounds.
@@ -2248,6 +2261,11 @@ class PTD_Model(TTS_Model):
         self.iwallH   = HDUwall[0].header['ALTINH']
         self.itemp    = HDUwall[0].header['TEMP']
         self.ijobn    = HDUwall[0].header['JOBNUM']
+        try:
+            self.izwall = HDUwall[0].header['ZWALL']
+        except:
+            print('WARNING: IZWALL not found. This is probably an old collated model.')
+
 
         # Inner wall
         # Correct for self extinction:
