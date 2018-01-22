@@ -411,7 +411,7 @@ def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path =
     **kwargs: The keywords arguments used to make changes to the sample file. Available
               kwargs include:
         amaxs - maximum grain size in disk
-        epsilon - settling parameter
+        eps - settling parameter
         ztran - height of transition between big and small grains
         mstar - mass of protostar
         tstar - effective temperature of protostar
@@ -473,82 +473,7 @@ def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path =
     if len(fullText) == 0:
         raise ValueError('JOB_FILE_CREATE: job_sample file missing/empty!')
 
-    #First change alpha is present in kwargs
-    if 'amaxs' in kwargs:
-        #Break grain size into something parsable
-        amaxVal = kwargs['amaxs']
-        if amaxVal != 10 and amaxVal != 100:
-            amaxStr = str(amaxVal)
-        elif amaxVal == 10:
-            amaxStr = '10'
-        elif amaxVal == 100:
-            amaxStr = '100'
-
-        #Add a # to the one that was missing one
-        start = text.find('\nset AMAXS=')
-        text = text[:start+1]+'#'+text[start+1:]
-
-        start = text[start:].find('\nset lamaxs') + start
-        text = text[:start+1]+'#'+text[start+1:]
-
-        #Now remove the # for the selected grain size
-        start = text.find("#set AMAXS='"+amaxStr)
-        text = text[:start] + text[start+1:]
-
-        start = text[start:].find('#set lamaxs=') + start
-        text = text[:start] + text[start+1:]
-
-        del kwargs['amaxs']
-
-
-    #Now handle the case of the wall having different grain sizes.
-    if 'amaxw' in kwargs:
-        #Break grain size into something parsable
-        amaxwVal = kwargs['amaxw']
-
-
-        if amaxwVal != 10 and amaxwVal != 100:
-            amaxwStr = str(amaxwVal)
-        elif int(amaxwVal) == 10:
-            amaxwStr = '10'
-        elif amaxwVal == 100:
-            amaxwStr = '100'
-
-        #Add a # to the one that was missing one
-        start = text.find('\nset AMAXW=')
-        text = text[:start+1]+'#'+text[start+1:]
-
-        start = text[start:].find('\nset lamaxw') + start
-        text = text[:start+1]+'#'+text[start+1:]
-
-        #Now remove the # for the selected grain size
-        start = text.find("#set AMAXW='"+amaxwStr)
-        text = text[:start] + text[start+1:]
-
-        start = text[start:].find('#set lamaxw=') + start
-        text = text[:start] + text[start+1:]
-
-        del kwargs['amaxw']
-
-
-    #Handles the case where amaxw is not supplied by assuming making it the same as amax
-    else:
-        #Add a # to the one that was missing one
-        start = text.find('\nset AMAXW=')
-        text = text[:start+1]+'#'+text[start+1:]
-
-        start = text[start:].find('\nset lamaxw') + start
-        text = text[:start+1]+'#'+text[start+1:]
-
-        #Now remove the # for the selected grain size
-        start = text.find("#set AMAXW=$AMAXS")
-        text = text[:start] + text[start+1:]
-
-        start = text[start:].find('#set lamaxw=') + start
-        text = text[:start] + text[start+1:]
-
-
-    #Now go through the rest of the parameters
+    #Now go through the parameters
     dummykwargs = copy.deepcopy(kwargs)
     for param in dummykwargs:
 
@@ -557,23 +482,62 @@ def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path =
 
         #Set up the parameter
         paramstr = str(dummykwargs[param])
-        if param != 'labelend' and param != 'lamaxb':
+        if param != 'labelend':
             param  = param.upper()
         if param == 'DIST':
             param = 'DISTANCIA'
 
         #Fix the special case of lamaxb
-        if param == 'lamaxb':
-            amaxdict={'500':'500', '1mm':'1000', '2mm':'2000', '5mm':'5000', '1cm':'10000','2cm':'20000'}
+        if param == 'LAMAXB':
+            amaxdict={'500':'500', '600':'600', '700':'700', '800':'800',\
+            '900':'900', '1mm':'1000', '2mm':'2000', '3mm':'3000', '4mm':'4000',\
+            '5mm':'5000', '6mm':'6000', '7mm':'7000', '8mm':'8000', '9mm':'9000',\
+            '1cm':'10000', '1p1cm':'11000', '1p2cm':'12000', '1p3cm':'13000',\
+            '1p4cm':'14000', '1p5cm':'15000', '1p6cm':'16000', '1p7cm':'17000',\
+            '1p8cm':'18000', '1p9cm':'19000', '2cm':'20000', '2p1cm':'21000',\
+            '2p2cm':'22000', '2p3cm':'23000', '2p4cm':'24000', '2p5cm':'25000'}
             paramstr = amaxdict[dummykwargs[param]]
 
-            start = text.find('set '+param+"='") + len('set '+param+"='")
+            start = text.find("set lamaxb='") + len("set lamaxb='")
             end = start + len(text[start:].split("'")[0])
             text = text[:start]+'amax'+dummykwargs[param]+text[end:]
 
             start = text.find("set AMAXB='") + len("set AMAXB='")
             end = start + len(text[start:].split("'")[0])
             text = text[:start]+paramstr +text[end:]
+
+        #Fix the special case of amaxs
+        elif param == 'AMAXS':
+            amaxdict={'0.05':'0p05', '0.1':'0p1', '0.25':'0p25', '0.5':'0p5',\
+            '0.75':'0p75', '1.0':'1p0', '1.25':'1p25', '1.5':'1p5',\
+            '1.75':'1p75', '2.0':'2p0', '2.25':'2p25', '2.5':'2p5',\
+            '3.0':'3p0', '4.0':'4p0', '5.0':'5p0', '10.0':'10', '100.0':'100'}
+            paramstr = amaxdict[str(dummykwargs[param])]
+
+            start = text.find("set lamaxs='") + len("set lamaxs='")
+            end = start + len(text[start:].split("'")[0])
+            text = text[:start]+'amax'+paramstr+text[end:]
+
+            start = text.find("set AMAXS='") + len("set AMAXS='")
+            end = start + len(text[start:].split("'")[0])
+            text = text[:start]+str(dummykwargs[param]) +text[end:]
+
+        #Fix the special case of amaxw
+        elif param == 'AMAXW':
+            amaxdict={'0.05':'0p05', '0.1':'0p1', '0.25':'0p25', '0.5':'0p5',\
+            '0.75':'0p75', '1.0':'1p0', '1.25':'1p25', '1.5':'1p5',\
+            '1.75':'1p75', '2.0':'2p0', '2.25':'2p25', '2.5':'2p5',\
+            '3.0':'3p0', '4.0':'4p0', '5.0':'5p0', '10.0':'10', '100.0':'100'}
+            paramstr = amaxdict[str(dummykwargs[param])]
+
+            start = text.find("set lamaxw=") + len("set lamaxw=")
+            end = start + len(text[start:].split("\n")[0])
+            text = text[:start]+"'amax"+paramstr+"'"+text[end:]
+
+            start = text.find("set AMAXW=") + len("set AMAXW=")
+            end = start + len(text[start:].split("\n")[0])
+            text = text[:start]+"'"+str(dummykwargs[param])+"'"+text[end:]
+
 
         #Fix the special case of temp + Tshock
         elif param == 'TEMP':
@@ -1422,11 +1386,14 @@ class TTS_Model(object):
     wlcut_an:
     wlcut_sc:
     nsilcomp: Number of silicate compounds.
-    siltotab: Total silicate abundance.
+    siltotab: Total silicate abundance. (DEPRECATED)
     amorf_ol:
     amorf_py:
     forsteri: Forsterite Fractional abundance.
     enstatit: Enstatite Fractional abundance.
+    silab: Abundance of silicates.
+    grafab: Abundance of graphite.
+    iceab: Abundance of water ice.
     rin: The inner radius in AU.
     dpath: Path where the data files are located.
     fill: How many numbers used in the model files (4 = name_XXXX.fits).
@@ -1502,7 +1469,7 @@ class TTS_Model(object):
         self.wlcut_an   = header['WLCUT_AN']
         self.wlcut_sc   = header['WLCUT_SC']
         self.nsilcomp   = header['NSILCOMP']
-        self.siltotab   = header['SILTOTAB']
+        #self.siltotab   = header['SILTOTAB']
         self.amorf_ol   = header['AMORF_OL']
         self.amorf_py   = header['AMORF_PY']
         self.forsteri   = header['FORSTERI']
@@ -1519,19 +1486,29 @@ class TTS_Model(object):
         except KeyError:
             self.mdotstar = self.mdot
         try:
-            self.ztran      = header['ZTRAN']
+            self.ztran = header['ZTRAN']
         except:
             print('WARNING: ZTRAN not found. This is probably an old collated model.')
         try:
-            self.zwall      = header['ZWALL']
+            self.zwall = header['ZWALL']
         except:
             print('WARNING: ZWALL not found. This is probably an old collated model.')
         try:
-            self.d2g      = header['D2G']
+            self.d2g = header['D2G']
         except:
             print('WARNING: D2G not found. This is probably an old collated \
             model. Setting it to NaN.')
             self.d2g = np.nan
+        try:
+            self.silab = header['SILAB']
+            self.grafab = header['GRAFAB']
+            self.iceab = header['ICEAB']
+        except:
+            print('WARNING: SILAB, GRAFAB, and ICEAB not found. This is probably\
+             an old collated model. Setting them to NaN.')
+            self.silab = np.nan
+            self.grafab = np.nan
+            self.iceab = np.nan
 
         # Load SED in nested dictionaries
         # The new Python version of collate flips array indices, so must identify which collate.py was used:

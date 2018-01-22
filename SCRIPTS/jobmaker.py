@@ -35,8 +35,14 @@ OPTIONAL PARAMETERS:
 NOTES:
     'amaxs', 'amaxw', and lamaxb only accept certain values. 'amaxw' accepts the same values as 'amaxs'
     Here are the possible values:
-        amaxs/amaxw: [0.1, 0.25, 1.0, 2.0, 3.0, 4.0, 5.0, 10, 100]
-        lamaxb: ['500', '1mm', '2mm', '5mm', '1cm', '2cm']
+        amaxs/amaxw: ['0.05', '0.1', '0.25', '0.5', '0.75', '1.0', '1.25',
+        '1.5', '1.75', '2.0', '2.25', '2.5', '3.0', '4.0', '5.0', '10.0',
+        '100.0']
+
+        lamaxb: ['500', '600', '700', '800',' 900', '1mm', '2mm', '3mm', '4mm',
+        '5mm', '6mm', '7mm', '8mm', '9mm', '1cm', '1p1cm', '1p2cm', '1p3cm',
+        '1p4cm', '1p5cm', '1p6cm', '1p7cm', '1p8cm', '1p9cm', '2cm', '2p1cm',
+        '2p2cm', '2p3cm', '2p4cm', '2p5cm']
 
 MODIFICATION HISTORY
     Jun 16th, 2017 - Updated for mdotstar + amaxw by Connor Robinson
@@ -69,7 +75,7 @@ rstar   = [1.6] #Radius of the star in solar radii
 dist    = [140] #Distance to the star in pc
 mdot    = [3.3e-9] #Mass accretion rate in the disk in solar masses per year
 
-amaxs   = [0.25] #Maximum grain size in the upper layers of the disk NOTE: Only acceptss certain values, see the docstring above
+amaxs   = ['0.25'] #Maximum grain size in the upper layers of the disk NOTE: Only acceptss certain values, see the docstring above
 epsilon = [0.1] #Settling parameter
 ztran   = [0.1] #height of transition between big and small grains, in hydrostatic scale heights
 alpha   = [1e-2] # Viscosity in the disk

@@ -310,61 +310,78 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             return
 
         #Define what variables to record
-        sparam = (['MSTAR', 'TSTAR', 'RSTAR', 'DISTANCIA','MDOT', 'MDOTSTAR','ALPHA', 'MUI', 'RDISK',
-                   'AMAXS', 'EPS', 'ZTRAN', 'WLCUT_ANGLE', 'WLCUT_SCATT', 'NSILCOMPOUNDS', 'SILTOTABUN',
-                   'AMORPFRAC_OLIVINE', 'AMORPFRAC_PYROXENE', 'FORSTERITE_FRAC', 'ENSTATITE_FRAC',
-                   'TEMP', 'ALTINH', 'TSHOCK', 'AMAXW', 'AMAXB','D2G','RC','GAMMA'])
+        sparam = ['MSTAR', 'TSTAR', 'RSTAR', 'DISTANCIA', 'MDOT', 'MDOTSTAR',
+        'ALPHA', 'MUI', 'RDISK', 'AMAXS', 'EPS', 'ZTRAN', 'WLCUT_ANGLE',
+        'WLCUT_SCATT', 'NSILCOMPOUNDS', 'AMORPFRAC_OLIVINE', 'AMORPFRAC_PYROXENE',
+        'FORSTERITE_FRAC', 'ENSTATITE_FRAC', 'TEMP', 'ALTINH', 'TSHOCK',
+        'AMAXW', 'AMAXB', 'D2G', 'RC', 'GAMMA', 'SILAB', 'GRAFAB', 'ICEAB']
+
+        comments = ['Stellar mass (Msun)', 'Stellar temperature (K)', 'Stellar radius (Rsun)',
+        'Distance (pc)', 'Mass accretion rate in the disk (Msun/yr)',
+        'Mass accretion rate onto the star (Msun/yr)', 'Viscosity coefficient',
+        'Cosine of inclination', 'Disk radius (au)',
+        'Maximum grain size of dust in atmosphere (microns)',
+        'Epsilon, degree of settling',
+        'Transition height between dust populations (in H)',
+        'Cut in wavelengths for thermal SED (microns)',
+        'Cut in wavelengths for scattering (microns)',
+        'Number of silicate compounds',
+        'Fractional abundance of olivine in silicates',
+        'Fractional abundance of pyroxene in silicates',
+        'Fractional abundance of forsterite in silicates',
+        'Fractional abundance of enstatite in silicates', 'Wall temperature (K)',
+        'Height of wall (in H)', 'Temperature of accretion shock (K)',
+        'Maximum grain size of dust in wall (microns)',
+        'Maximum grain size of dust in midplane (microns)', 'Dust to gas mass ratio',
+        'Critial radius for tapered edge (au)', 'Index of tapered edge',
+        'Abundance of silicates', 'Abundance of graphite', 'Abundance of water ice']
         dparam = np.zeros(len(sparam), dtype = float)
 
         #Parse variables according to convention in the job file
         for ind, param in enumerate(sparam):
-            if param == 'AMAXS':
-                for split_amaxs in jobf.split("AMAXS='")[1:]:
-                    if split_amaxs.split("\n")[1][0] == '#':
-                        continue
-                    elif split_amaxs.split("\n")[1][0] == 's':
-                        dparam[ind] = float(split_amaxs.split("'")[0])
-                    else:
-                        raise IOError('COLLATE: FAILED ON AMAXS VALUE. FIX JOB FILE '+jobnum)
-
-            elif param == 'AMAXW':
-                for split_amaxw in jobf.split("AMAXW='")[1:]:
-                    if split_amaxw.split("\n")[1][0] == '#':
-                        continue
-                    elif split_amaxw.split("\n")[1][0] == 's':
-                        #Check if the wall has a different value than AMAXS. If not, assign it the value of AMAXS
-                        if len(jobf.split("\nset AMAXW=$AMAXS")) > 1:
-                            dparam[ind] = dparam[np.array(sparam) == 'AMAXS']
-                        else:
-                            dparam[ind] = float(split_amaxw.split("'")[0])
-                    else:
-                        raise IOError('COLLATE: FAILED ON AMAXW VALUE. FIX JOB FILE '+jobnum)
-
+            if param == 'AMAXW':
+                #AMAXW is often set to $AMAXS, but could also be set to a number
+                #If it is the same as AMAXS/not there, grab the value of AMAXS
+                if "\nset AMAXW=$AMAXS" in jobf:
+                    dparam[ind] = dparam[sparam.index('AMAXS')]
+                elif "\nset AMAXW='" in jobf:
+                    dparam[ind] = float(jobf.split("\nset AMAXW='")[1].split("'")[0])
+                else:
+                    print('COLLATE: Warning, AMAXW not found in jobfile. You \
+                    might be using an old jobfile. Assuming it is AMAXS. \n')
+                    dparam[ind] = dparam[sparam.index('AMAXS')]
             elif param == 'TEMP' or param == 'TSHOCK':
                 try:
                     dparam[ind] = float(jobf.split(param+"=")[1].split(".")[0])
                 except ValueError:
                     raise ValueError('COLLATE: MISSING . AFTER '+param+' VALUE, GO FIX IN JOB FILE ' +jobnum)
-
             elif param == 'MDOTSTAR':
-                #MDOTSTAR is set often set to $MDOT, but could also be set to a number
+                #MDOTSTAR is often set to $MDOT, but could also be set to a number
                 #If it is the same as MDOT/not there, grab the value of MDOT
-                try:
-                    #Parse by " MDOTSTAR=' ", if it's a value will pick it out, if it's not there/$MDOT will throw value error.
-                    dparam[ind] = float(jobf.split(param+"='")[1].split("'")[0])
-
-                except IndexError:
-                    dparam[ind] = dparam[sparam.index("MDOT")]
-                    try:
-                        nomdotstar = jobf.split(param+"=")[1]
-                    except IndexError:
-                        print('COLLATE: WARNING IN JOB '+jobnum+ ': NO VALUE FOR MDOTSTAR IN JOBFILE, ASSUMING MDOTSTAR = MDOT')
-
+                if "\nset MDOTSTAR=$MDOT" in jobf:
+                    dparam[ind] = dparam[sparam.index('MDOT')]
+                elif "\nset MDOTSTAR='" in jobf:
+                    dparam[ind] = float(jobf.split("\nset MDOTSTAR='")[1].split("'")[0])
+                else:
+                    print('COLLATE: Warning, MDOTSTAR not found in jobfile. You\
+                     might be using an old jobfile. Assuming it is MDOT. \n')
+                    dparam[ind] = dparam[sparam.index('MDOT')]
+            elif param == 'SILAB' or param == 'GRAFAB' or param == 'ICEAB':
+                param = param.lower()
+                dparam[ind] = float(jobf.split('\nset '+param+"=")[1].split("\n")[0])
             else:
-                if "set "+param+"='" not in jobf:
+                if "\nset "+param+"='" not in jobf:
                     raise IOError('COLLATE: parameter '+param+' not found. You \
                 might be using an old jobfile or old version of collate.')
-                dparam[ind] = float(jobf.split('set '+param+"='")[1].split("'")[0])
+                dparam[ind] = float(jobf.split('\nset '+param+"='")[1].split("'")[0])
+
+        # We fix SILAB, GRAFAB and ICEAB in case the numbers in the jobfile do
+        # not amount the total D2G
+        totalabun = dparam[sparam.index('SILAB')] + dparam[sparam.index('GRAFAB')] +\
+        dparam[sparam.index('ICEAB')]
+        dparam[sparam.index('SILAB')] *= (dparam[sparam.index('D2G')] / totalabun)
+        dparam[sparam.index('GRAFAB')] *= (dparam[sparam.index('D2G')] / totalabun)
+        dparam[sparam.index('ICEAB')] *= (dparam[sparam.index('D2G')] / totalabun)
 
         #Rename header labels that are too long
         sparam[sparam.index('AMORPFRAC_OLIVINE')]  = 'AMORF_OL'
@@ -372,7 +389,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         sparam[sparam.index('WLCUT_ANGLE')] = 'WLCUT_AN'
         sparam[sparam.index('WLCUT_SCATT')] = 'WLCUT_SC'
         sparam[sparam.index('NSILCOMPOUNDS')] = 'NSILCOMP'
-        sparam[sparam.index('SILTOTABUN')] = 'SILTOTAB'
+        #sparam[sparam.index('SILTOTABUN')] = 'SILTOTAB'
         sparam[sparam.index('FORSTERITE_FRAC')] = 'FORSTERI'
         sparam[sparam.index('ENSTATITE_FRAC')] = 'ENSTATIT'
 
@@ -577,12 +594,13 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         hdu.header.set('JOBNUM', jobnum)
 
         for i, param in enumerate(sparam):
-            hdu.header.set(param, dparam[i])
+            hdu.header.set(param, dparam[i],comment=comments[i])
 
         if nowall != 1:
             try:
-                hdu.header.set('ZWALL',zwall)
-                hdu.header.set('RIN', float(np.loadtxt(list_files[['rin.t' in element for element in list_files]][0])))
+                hdu.header.set('ZWALL', zwall, comment='Height of the wall (au)')
+                hdu.header.set('RIN', float(np.loadtxt(list_files[['rin.t' in
+                element for element in list_files]][0])), comment='Inner radius (au)')
             except:
                 raise IOError('COLLATE: ERROR WITH rin file.')
 
@@ -594,16 +612,18 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                 diskmassvals = massfile[:,10]
                 massfit = interpolate.interp1d(diskmassrad, diskmassvals)
                 if nowall != 1:
-                    hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK']))-float(massfit(hdu.header['RIN'])))
+                    hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK']))
+                    -float(massfit(hdu.header['RIN'])), comment='Disk mass (Msun)')
                 else:
                     print("COLLATE:WARNING IN JOB "+jobnum+": nowall = 1, SO THE DISK MASS WILL ALSO HAVE THE MASS INSIDE THE CAVITY.")
-                    hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK'])))
+                    hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK'])),
+                    comment='Disk mass (Msun)')
 
             except:
                 print("COLLATE:WARNING IN JOB "+jobnum+": DISK MASS CALCULATION FAILED.")
-                hdu.header.set('DISKMASS','FAILED')
+                hdu.header.set('DISKMASS', 'FAILED', comment='Disk mass (Msun)')
         else:
-            hdu.header.set('DISKMASS','FAILED')
+            hdu.header.set('DISKMASS', 'FAILED', comment='Disk mass (Msun)')
 
         #Create tags in the header that match up each column to the data enclosed]
         for naxis in axis:
@@ -652,11 +672,12 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                 except IndexError:
                     print("COLLATE: WARNING IN JOB "+jobnum+": PROP FILE FOUND, BUT APPEARS TO HAVE FAILED. ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
                     failed = True
+                    notemp = 1
                     hdu.header.set('NOTEMP', 1)
             elif miss !=1 and size ==0:
                 print("WARNING IN JOB "+jobnum+": PROP (PROPERTIES) FILE EMPTY, ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
                 failed = True
-                nowall = 1
+                notemp = 1
                 hdu.header.set('NOTEMP', 1)
         elif notemp == 1:
             hdu.header.set('NOTEMP', 1)
