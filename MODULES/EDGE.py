@@ -1366,35 +1366,38 @@ class TTS_Model(object):
     ATTRIBUTES
     name: Name of the object (e.g., CVSO109, V410Xray-2, ZZ_Tau, etc.).
     jobn: The job number corresponding to this model.
-    mstar: Star's mass.
-    tstar: Star's effective temperature, based on Kenyon and Hartmann 1995.
-    rstar: Star's radius.
-    dist: Distance to the star.
-    mdot: Mass accretion rate.
+    mstar: Star's mass (Msun).
+    tstar: Star's effective temperature (K).
+    rstar: Star's radius (Rsun).
+    dist: Distance to the star (pc).
+    mdot: Mass accretion rate (Msun/yr).
     mdotstar: Mass accretion rate onto the star. Usually same as mdot but not necessarily.
     alpha: Alpha parameter (from the viscous alpha disk model).
     mui: Inclination of the system.
-    rdisk: The outer radius of the disk.
+    rdisk: The outer radius of the disk (au).
     d2g: dust to gas mass ratio of the disk.
-    amax: The "maximum" grain size in the disk. (or just suspended in the photosphere of the disk?)
+    amax: Maximum grain size in the disk atmoshpere (microns).
+    amaxw: Maximum grain size in the wall (microns).
     eps: The epsilon parameter, i.e., the amount of dust settling in the disk.
-    ztran: height of transition between big and small grains, in hydrostatic scale heights.
-    tshock: The temperature of the shock at the stellar photosphere.
-    temp: The temperature at the inner wall (1400 K maximum).
-    altinh: Scale heights of extent of the inner wall.
-    zwall: Height of the wall in au.
-    wlcut_an:
-    wlcut_sc:
+    ztran: height of transition between big and small grains (in hydrostatic scale heights).
+    tshock: The temperature of the shock at the stellar photosphere (K).
+    temp: The temperature at the inner wall (K).
+    altinh: Height of the wall (in hydrostatic scale heights).
+    zwall: Height of the wall (au).
+    wlcut_an: Cut in wavelengths for thermal SED (microns)
+    wlcut_sc: Cut in wavelengths for scattering (microns)
     nsilcomp: Number of silicate compounds.
     siltotab: Total silicate abundance. (DEPRECATED)
-    amorf_ol:
-    amorf_py:
-    forsteri: Forsterite Fractional abundance.
-    enstatit: Enstatite Fractional abundance.
+    amorf_ol: Olivine fractional abundance.
+    amorf_py: Pyroxene fractional abundance.
+    forsteri: Forsterite fractional abundance.
+    enstatit: Enstatite fractional abundance.
     silab: Abundance of silicates.
     grafab: Abundance of graphite.
     iceab: Abundance of water ice.
-    rin: The inner radius in AU.
+    rin: Inner radius (au).
+    rc: Critial radius for tapered edge (au).
+    gamma: Index of tapered edge.
     dpath: Path where the data files are located.
     fill: How many numbers used in the model files (4 = name_XXXX.fits).
     data: The data for each component inside the model.
@@ -1419,6 +1422,9 @@ class TTS_Model(object):
     dataInit: DEPRECATED.
     calc_total: Calculates the "total" (combined) flux based on which components you want, then loads it into
                 the data attribute under the key 'total'.
+    calc_filters: Calculates synthetic fluxes for different instruments.
+    blueExcessModel:
+    struc_plot: Makes plots of 2D structure of the disk model.
     """
 
     def __init__(self, name, jobn, dpath=datapath, fill=3, verbose=False):
@@ -1461,7 +1467,6 @@ class TTS_Model(object):
         self.rdisk      = header['RDISK']
         self.amax       = header['AMAXS']
         self.amaxb      = header['AMAXB']
-        self.amaxw      = header['AMAXW']
         self.eps        = header['EPS']
         self.tshock     = header['TSHOCK']
         self.temp       = header['TEMP']
@@ -1481,10 +1486,17 @@ class TTS_Model(object):
         self.extcorr    = None
         self.filters    = {}
         self.synthFlux= {}
+        # Try retrieving newer parameters, for backwards compatibility
         try:
             self.mdotstar = header['MDOTSTAR']
         except KeyError:
             self.mdotstar = self.mdot
+        try:
+            self.amaxw = header['AMAXW']
+        except:
+            print('WARNING: AMAXW not found. This is probably an old collated \
+model. Setting it to AMAXS')
+            self.amaxw = header['AMAXS']
         try:
             self.ztran = header['ZTRAN']
         except:
@@ -1497,8 +1509,14 @@ class TTS_Model(object):
             self.d2g = header['D2G']
         except:
             print('WARNING: D2G not found. This is probably an old collated \
-            model. Setting it to NaN.')
+model. Setting it to NaN.')
             self.d2g = np.nan
+        try:
+            self.rc = header['RC']
+            self.gamma = header['GAMMA']
+        except:
+            print('WARNING: RC and GAMMA not found. This is probably an old \
+collated model.')
         try:
             self.silab = header['SILAB']
             self.grafab = header['GRAFAB']
@@ -2136,32 +2154,39 @@ class PTD_Model(TTS_Model):
     ATTRIBUTES
     name: Name of the object (e.g., CVSO109, V410Xray-2, ZZ_Tau, etc.).
     jobn: The job number corresponding to this model.
-    mstar: Star's mass.
-    tstar: Star's effective temperature, based on Kenyon and Hartmann 1995.
-    rstar: Star's radius.
-    dist: Distance to the star.
-    mdot: Mass accretion rate.
+    mstar: Star's mass (Msun).
+    tstar: Star's effective temperature (K).
+    rstar: Star's radius (Rsun).
+    dist: Distance to the star (pc).
+    mdot: Mass accretion rate (Msun/yr).
+    mdotstar: Mass accretion rate onto the star. Usually same as mdot but not necessarily.
     alpha: Alpha parameter (from the viscous alpha disk model).
     mui: Inclination of the system.
-    rdisk: The outer radius of the disk.
+    rdisk: The outer radius of the disk (au).
     d2g: dust to gas mass ratio of the disk.
-    amax: The "maximum" grain size in the disk. (or just suspended in the photosphere of the disk?)
+    amax: Maximum grain size in the disk atmoshpere (microns).
+    amaxw: Maximum grain size in the wall (microns).
     eps: The epsilon parameter, i.e., the amount of dust settling in the disk.
-    ztran: height of transition between big and small grains, in hydrostatic scale heights.
-    tshock: The temperature of the shock at the stellar photosphere.
-    temp: The temperature at the outer wall component of the model.
+    ztran: height of transition between big and small grains (in hydrostatic scale heights).
+    tshock: The temperature of the shock at the stellar photosphere (K).
+    temp: The temperature at the inner wall (K).
     itemp: The temperature of the inner wall component of the model.
-    altinh: Scale heights of extent of the inner wall.
-    zwall: Height of the wall in au.
-    wlcut_an:
-    wlcut_sc:
+    altinh: Height of the wall (in hydrostatic scale heights).
+    zwall: Height of the wall (au).
+    wlcut_an: Cut in wavelengths for thermal SED (microns)
+    wlcut_sc: Cut in wavelengths for scattering (microns)
     nsilcomp: Number of silicate compounds.
-    siltotab: Total silicate abundance.
-    amorf_ol:
-    amorf_py:
-    forsteri: Forsterite Fractional abundance.
-    enstatit: Enstatite Fractional abundance.
-    rin: The inner radius in AU.
+    siltotab: Total silicate abundance. (DEPRECATED)
+    amorf_ol: Olivine fractional abundance.
+    amorf_py: Pyroxene fractional abundance.
+    forsteri: Forsterite fractional abundance.
+    enstatit: Enstatite fractional abundance.
+    silab: Abundance of silicates.
+    grafab: Abundance of graphite.
+    iceab: Abundance of water ice.
+    rin: Inner radius (au).
+    rc: Critial radius for tapered edge (au).
+    gamma: Index of tapered edge.
     dpath: Path where the data files are located.
     fill: How many numbers used in the model files (4 = name_XXXX.fits).
     data: The data for each component inside the model.
@@ -2177,6 +2202,9 @@ class PTD_Model(TTS_Model):
     dataInit: Loads in the relevant data to the object. This differs from that of TTS_Model.
     calc_total: Calculates the "total" (combined) flux based on which components you want, then loads it into
                 the data attribute under the key 'total'. This also differs from TTS_Model.
+    calc_filters: Calculates synthetic fluxes for different instruments.
+    blueExcessModel:
+    struc_plot: Makes plots of 2D structure of the disk model.
     """
 
     def dataInit(self, altname=None, jobw=None, fillWall=3, wallpath = None, verbose =1, **searchKwargs):
