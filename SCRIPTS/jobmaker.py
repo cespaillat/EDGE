@@ -75,7 +75,7 @@ rstar   = [1.6] #Radius of the star in solar radii
 dist    = [140] #Distance to the star in pc
 mdot    = [3.3e-9] #Mass accretion rate in the disk in solar masses per year
 
-amaxs   = ['0.25'] #Maximum grain size in the upper layers of the disk NOTE: Only acceptss certain values, see the docstring above
+amaxs   = [0.25] #Maximum grain size in the upper layers of the disk NOTE: Only acceptss certain values, see the docstring above
 epsilon = [0.1] #Settling parameter
 ztran   = [0.1] #height of transition between big and small grains, in hydrostatic scale heights
 alpha   = [1e-2] # Viscosity in the disk

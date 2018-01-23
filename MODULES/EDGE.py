@@ -496,15 +496,15 @@ def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path =
             '1p4cm':'14000', '1p5cm':'15000', '1p6cm':'16000', '1p7cm':'17000',\
             '1p8cm':'18000', '1p9cm':'19000', '2cm':'20000', '2p1cm':'21000',\
             '2p2cm':'22000', '2p3cm':'23000', '2p4cm':'24000', '2p5cm':'25000'}
-            paramstr = amaxdict[dummykwargs[param]]
+            paramstr2 = amaxdict[paramstr]
 
             start = text.find("set lamaxb='") + len("set lamaxb='")
             end = start + len(text[start:].split("'")[0])
-            text = text[:start]+'amax'+dummykwargs[param]+text[end:]
+            text = text[:start] + 'amax' + paramstr + text[end:]
 
             start = text.find("set AMAXB='") + len("set AMAXB='")
             end = start + len(text[start:].split("'")[0])
-            text = text[:start]+paramstr +text[end:]
+            text = text[:start] + paramstr2 + text[end:]
 
         #Fix the special case of amaxs
         elif param == 'AMAXS':
@@ -512,15 +512,15 @@ def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path =
             '0.75':'0p75', '1.0':'1p0', '1.25':'1p25', '1.5':'1p5',\
             '1.75':'1p75', '2.0':'2p0', '2.25':'2p25', '2.5':'2p5',\
             '3.0':'3p0', '4.0':'4p0', '5.0':'5p0', '10.0':'10', '100.0':'100'}
-            paramstr = amaxdict[str(dummykwargs[param])]
+            paramstr2 = amaxdict[paramstr]
 
             start = text.find("set lamaxs='") + len("set lamaxs='")
             end = start + len(text[start:].split("'")[0])
-            text = text[:start]+'amax'+paramstr+text[end:]
+            text = text[:start] + 'amax' + paramstr2 + text[end:]
 
             start = text.find("set AMAXS='") + len("set AMAXS='")
             end = start + len(text[start:].split("'")[0])
-            text = text[:start]+str(dummykwargs[param]) +text[end:]
+            text = text[:start] + paramstr + text[end:]
 
         #Fix the special case of amaxw
         elif param == 'AMAXW':
@@ -528,15 +528,15 @@ def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path =
             '0.75':'0p75', '1.0':'1p0', '1.25':'1p25', '1.5':'1p5',\
             '1.75':'1p75', '2.0':'2p0', '2.25':'2p25', '2.5':'2p5',\
             '3.0':'3p0', '4.0':'4p0', '5.0':'5p0', '10.0':'10', '100.0':'100'}
-            paramstr = amaxdict[str(dummykwargs[param])]
+            paramstr2 = amaxdict[paramstr]
 
             start = text.find("set lamaxw=") + len("set lamaxw=")
             end = start + len(text[start:].split("\n")[0])
-            text = text[:start]+"'amax"+paramstr+"'"+text[end:]
+            text = text[:start] + "'amax" + paramstr2 + "'" + text[end:]
 
             start = text.find("set AMAXW=") + len("set AMAXW=")
             end = start + len(text[start:].split("\n")[0])
-            text = text[:start]+"'"+str(dummykwargs[param])+"'"+text[end:]
+            text = text[:start] + "'" + paramstr + "'" + text[end:]
 
 
         #Fix the special case of temp + Tshock
@@ -3172,7 +3172,7 @@ class Red_Obs(TTS_Obs):
                 fits.Column(name='lFl', format='E'),\
                 fits.Column(name='err', format='E'),\
                 fits.Column(name='instrument', format='A20')])
-        
+
         #Denote which extension is which
         photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
         specHDU.header.set('FITS_EXT', 'SPECTRA')
