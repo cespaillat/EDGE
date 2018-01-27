@@ -2500,7 +2500,7 @@ class TTS_Obs(object):
         self.spec_dens = {}
         self.phot_dens = 0.0
 
-    def add_spectra(self, scope, wlarr, fluxarr, errors=None, py2 = False):
+    def add_spectra(self, scope, wlarr, fluxarr, errors=None, py2 = False, clob = 1):
         """
         Adds an entry to the spectra attribute.
 
@@ -2512,7 +2512,7 @@ class TTS_Obs(object):
         """
 
         # Check if the telescope data already exists in the data file:
-        if scope in self.spectra.keys():
+        if scope in self.spectra.keys() and clob == False:
             print('ADD_SPECTRA: Warning! This will overwrite current entry!')
             tries               = 1
             while tries <= 5:                                           # Give user 5 chances to choose if overwrite data or not
@@ -2967,6 +2967,7 @@ class Red_Obs(TTS_Obs):
             if 'err' in self.spectra[specKey].keys():
                 spec_unc    = np.float64(spec_flux*np.sqrt(((self.spectra[specKey]['err']/self.spectra[specKey]['lFl'])\
                                          **2.) + (((0.4*math.log(10)*extInterpolated*Av_unc)/(AvoAj))**2.)) )
+                                         
             else:
                 spec_unc    = None
 
