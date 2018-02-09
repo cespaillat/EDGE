@@ -2005,15 +2005,13 @@ collated model.')
             zmax = np.max(self.z_struc)
 
         if logscale:
+            zmin = 0.01
             rmin = np.log10(rmin)
             rmax = np.log10(rmax)
             zmin = np.log10(zmin)
             zmax = np.log10(zmax)
 
-        if logscale:
-            aspectratio = 1.
-        else:
-            aspectratio = (rmax - rmin) / zmax
+        aspectratio = (rmax - rmin) / (zmax-zmin)
 
         grid_x, grid_y = np.mgrid[rmin:rmax:500j, zmin:zmax:500j]
 
