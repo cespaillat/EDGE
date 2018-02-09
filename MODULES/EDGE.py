@@ -1983,7 +1983,7 @@ collated model.')
         # Create the grid of points
         if logscale:
             radii_grid = np.log10(self.radii_struc.reshape(npoints,1))
-            z_grid = np.log10(self.z_struc.reshape(npoints,1))
+            z_grid = np.log10(self.z_struc.reshape(npoints,1)+1e-20)
         else:
             radii_grid = self.radii_struc.reshape(npoints,1)
             z_grid = self.z_struc.reshape(npoints,1)
