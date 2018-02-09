@@ -42,40 +42,10 @@ set D2G='0.0065'
 set EPS='0.0001'
 #------------------------
 
-#uncomment the size of the small grains in the
-#upper disk; note: uncomment AMAXS and
-#corresponding lamaxs
-#------------------------
-#se AMAXS='0.05'
-#set lamaxs='amax0p05'
-#------------------------
-#set AMAXS='0.1'
-#set lamaxs='amax0p1'
-#------------------------
+#size of the small grains in the
+#upper disk
 set AMAXS='0.25'
 set lamaxs='amax0p25'
-#------------------------
-#set AMAXS='1.0'
-#set lamaxs='amax1p0'
-#------------------------
-#set AMAXS='2.0'
-#set lamaxs='amax2p0'
-#------------------------
-#set AMAXS='3.0'
-#set lamaxs='amax3p0'
-#------------------------
-#set AMAXS='4.0'
-#set lamaxs='amax4p0'
-#------------------------
-#set AMAXS='5.0'
-#set lamaxs='amax5p0'
-#------------------------
-#set AMAXS='10'
-#set lamaxs='amax10'
-#------------------------
-#set AMAXS='100'
-#set lamaxs='amax100'
-#------------------------
 
 #this sets size of grains in midplane
 set AMAXB='1000'
@@ -85,41 +55,8 @@ set lamaxb='amax1mm'
 set TEMP=130. #temperature at inner edge (i.e., wall) of disk
 set ALTINH='1' #scale height of wall
 #dust grain sizes in the wall----------------
-#note: uncomment AMAXW and corresponding lamaxw
-#------------------------
 set AMAXW=$AMAXS
 set lamaxw=$lamaxs
-#------------------------
-#set AMAXW='0.05'
-#set lamaxw='amax0p05'
-#------------------------
-#set AMAXW='0.1'
-#set lamaxw='amax0p1'
-#------------------------
-#set AMAXW='0.25'
-#set lamaxw='amax0p25'
-#------------------------
-#set AMAXW='1.0'
-#set lamaxw='amax1p0'
-#------------------------
-#set AMAXW='2.0'
-#set lamaxw='amax2p0'
-#------------------------
-#set AMAXW='3.0'
-#set lamaxw='amax3p0'
-#------------------------
-#set AMAXW='4.0'
-#set lamaxw='amax4p0'
-#------------------------
-#set AMAXW='5.0'
-#set lamaxw='amax5p0'
-#------------------------
-#set AMAXW='10'
-#set lamaxw='amax10'
-#------------------------
-#set AMAXW='100'
-#set lamaxw='amax100'
-#------------------------
 
 #set WLFILE=$DIRCOMUN/wlfile_1300um_1pt.ent
 set WL=1300 # wavelength in microns

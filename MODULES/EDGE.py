@@ -542,7 +542,7 @@ def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path =
         #Fix the special case of temp + Tshock
         elif param == 'TEMP':
             start = text.find('set '+param+"=") + len('set '+param+"=")
-            end = start + len(text[start:].split(".")[0])
+            end = start + len(text[start:].split(" #")[0])
             text = text[:start]+paramstr+text[end:]
         #This parameter does not work with the image code yet
         elif param == 'TSHOCK':
@@ -550,7 +550,7 @@ def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path =
                 print("WARNING: parameter 'TSHOCK' is not yet supported by image code.")
             else:
                 start = text.find('set '+param+"=") + len('set '+param+"=")
-                end = start + len(text[start:].split(".")[0])
+                end = start + len(text[start:].split(" #")[0])
                 text = text[:start]+paramstr+text[end:]
         #Fix the special case of MDOTSTAR (Sometimes it is $MDOT)
         #Also, this parameter does not work with the image code yet
@@ -2967,7 +2967,7 @@ class Red_Obs(TTS_Obs):
             if 'err' in self.spectra[specKey].keys():
                 spec_unc    = np.float64(spec_flux*np.sqrt(((self.spectra[specKey]['err']/self.spectra[specKey]['lFl'])\
                                          **2.) + (((0.4*math.log(10)*extInterpolated*Av_unc)/(AvoAj))**2.)) )
-                                         
+
             else:
                 spec_unc    = None
 

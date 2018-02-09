@@ -28,8 +28,14 @@ HOW TO USE THIS SCRIPT:
 NOTES:
     - 'amaxs', 'amaxw', and lamaxb only accept certain values. 'amaxw' accepts the same values as 'amaxs'
     Here are the possible values:
-        amaxs/amaxw: [0.1, 0.25, 1.0, 2.0, 3.0, 4.0, 5.0, 10, 100]
-        lamaxb: ['500', '1mm', '2mm', '5mm', '1cm', '2cm']
+        amaxs/amaxw: ['0.05', '0.1', '0.25', '0.5', '0.75', '1.0', '1.25',
+        '1.5', '1.75', '2.0', '2.25', '2.5', '3.0', '4.0', '5.0', '10.0',
+        '100.0']
+
+        lamaxb: ['500', '600', '700', '800',' 900', '1mm', '2mm', '3mm', '4mm',
+        '5mm', '6mm', '7mm', '8mm', '9mm', '1cm', '1p1cm', '1p2cm', '1p3cm',
+        '1p4cm', '1p5cm', '1p6cm', '1p7cm', '1p8cm', '1p9cm', '2cm', '2p1cm',
+        '2p2cm', '2p3cm', '2p4cm', '2p5cm']
     - 'image' can be set to either 'thin' or 'thick', depending on whether the disk will be optically thin or thick
     at the wavelength of the image.
     - 'mdotstar' and 'tshock' are not yet supported by the image code.
@@ -44,7 +50,6 @@ gridpath = '/Users/Connor/Desktop/Research/diad/test/'
 #Where you will be running the jobs on the cluster
 clusterpath = '/projectnb/bu-disks/connorr/test/'
 
-#No need to add an underscore/jobnumber, the script will do that for you.
 labelend = 'test_001'
 
 #What number to start counting from (for the names of the jobfiles), must be an integer
@@ -73,7 +78,7 @@ mdot    = 3.3e-9 #Mass accretion rate in the disk in solar masses per year
 
 amaxs   = 0.25 #Maximum grain size in the upper layers of the disk NOTE: Only acceptss certain values, see the docstring above
 amaxw   = amaxs #Maximum grain size in the wall
-epsilon = 0.1 #Settling parameter NOTE: Only accepts certain values, see the docstring above
+epsilon = 0.1 #Settling parameter
 alpha   = 1e-2 # Viscosity in the disk
 rdisk   = 30 #Outer radius of the disk
 
@@ -98,7 +103,7 @@ for i,wl in enumerate(wavelengths):
     wavelength = wl,\
     imagetype = imagetype,\
     amaxs     = amaxs,\
-    epsilon   = epsilon,\
+    eps       = epsilon,\
     mstar     = mstar, \
     tstar     = tstar, \
     rstar     = rstar, \
