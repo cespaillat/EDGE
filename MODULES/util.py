@@ -296,6 +296,131 @@ def convertMagErr(flux, magerr):
     fluxerr = np.abs(flux*(10**(-magerr/2.5) - 1))
     return fluxerr
 
+def convertJy_to_Mag(value, band, getwl='False'):
+    """
+    This function was adapted from the above convertMag function by A. Rilinger
+    Converts a flux in Jy into a magnitude. To use this for an array, use np.vectorize().
+    Currently handles:
+        UBVRI
+        JHK
+        LMNQ
+        griz
+        MIPS(24,70,160)
+        IRAC (3.6,4.5,5.8,8.0)
+        W1-W4 (WISE)
+
+    References: http://people.physics.tamu.edu/lmacri/astro603/lectures/astro603_lect01.pdf
+                http://casa.colorado.edu/~ginsbura/filtersets.htm
+                http://www.astro.utoronto.ca/~patton/astro/mags.html
+                http://ircamera.as.arizona.edu/astr_250/Lectures/Lecture_13.htm
+
+    INPUTS
+    value: A flux value in Jy.
+    band: The band corresponding to the flux value.
+    getwl: Boolean -- If True, output wavelength value in addition to the
+            magnitude.  If False, only magnitude is returned.
+
+    OUTPUTS
+    fluxmag: The flux value in magnitudes.
+    """
+
+    # Convert to magnitudes:
+    if band.upper()     == 'U':
+        fluxmag       = -2.5 * np.log10(value / 1810.)
+        wavelength  = 0.367                                     # In Microns
+    elif band.upper()   == 'B':
+        fluxmag       = -2.5 * np.log10(value / 4260.)
+        wavelength  = 0.436
+    elif band.upper()   == 'V':
+        fluxmag       = -2.5 * np.log10(value / 3640.)
+        wavelength  = 0.545
+    elif band.upper()   == 'R':
+        fluxmag       = -2.5 * np.log10(value / 3080.)
+        wavelength  = 0.638
+    elif band.upper()   == 'I':
+        fluxmag       = -2.5 * np.log10(value / 2550.)
+        wavelength  = 0.797
+    elif band.upper()   == 'J':
+        fluxmag       = -2.5 * np.log10(value / 1600.)
+        wavelength  = 1.220
+    elif band.upper()   == 'H':
+        fluxmag       = -2.5 * np.log10(value / 1080.)
+        wavelength  = 1.630
+    elif band.upper()   == 'K':
+        fluxmag       = -2.5 * np.log10(value / 670.)
+        wavelength  = 2.190
+    elif band.upper()   == 'L':
+        fluxmag       = -2.5 * np.log10(value / 281.)
+        wavelength  = 3.450
+    elif band.upper()   == 'M':
+        fluxmag       = -2.5 * np.log10(value / 154.)
+        wavelength  = 4.750
+    elif band.upper()   == 'N':
+        fluxmag       = -2.5 * np.log10(value / 37.)
+        wavelength  = 10.10
+    elif band.upper()   == 'Q':
+        fluxmag       = -2.5 * np.log10(value / 10.)
+        wavelength  = 20.00
+    elif band.upper()   == 'SDSSG':
+        fluxmag       = -2.5 * np.log10(value / 3730.)
+        wavelength  = 0.4686
+    elif band.upper()   == 'SDSSR':
+        fluxmag       = -2.5 * np.log10(value / 4490.)
+        wavelength  = 0.6165
+    elif band.upper()   == 'SDSSI':
+        fluxmag       = -2.5 * np.log10(value / 4760.)
+        wavelength  = 0.7481
+    elif band.upper()   == 'SDSSZ':
+        fluxmag       = -2.5 * np.log10(value / 4810.)
+        wavelength  = 0.8931
+    elif band.upper()   == 'MIPS24':
+        fluxmag       = -2.5 * np.log10(value / 7.17)
+        wavelength  = 23.675
+    elif band.upper()   == 'MIPS70':
+        fluxmag       = -2.5 * np.log10(value / 0.778)
+        wavelength  = 71.42
+    elif band.upper()   == 'MIPS160':
+        fluxmag       = -2.5 * np.log10(value / 0.16)
+        wavelength  = 155.9
+    elif band.upper()   == 'IRAC3.6':
+        fluxmag       = -2.5 * np.log10(value / 280.9)
+        wavelength  = 3.60
+    elif band.upper()   == 'IRAC4.5':
+        fluxmag       = -2.5 * np.log10(value / 179.7)
+        wavelength  = 4.50
+    elif band.upper()   == 'IRAC5.8':
+        fluxmag       = -2.5 * np.log10(value / 115.)
+        wavelength  = 5.80
+    elif band.upper()   == 'IRAC8.0':
+        fluxmag       = -2.5 * np.log10(value / 64.13)
+        wavelength  = 8.0
+    elif band.upper()   == 'W1':
+        fluxmag       = -2.5 * np.log10(value / 309.5)
+        wavelength  = 3.35
+    elif band.upper()   == 'W2':
+        fluxmag       = -2.5 * np.log10(value / 171.8)
+        wavelength  = 4.60
+    elif band.upper()   == 'W3':
+        fluxmag       = -2.5 * np.log10(value / 31.67)
+        wavelength  = 11.56
+    elif band.upper()   == 'W4':
+        fluxmag       = -2.5 * np.log10(value / 8.36)
+        wavelength  = 22.09
+    elif band.upper() == 'GAIAG':
+        fluxmag       = -2.5 * np.log10(value / 3488.)
+        wavelength = .550
+
+
+    else:
+        raise ValueError('CONVERTMAG: Unknown Band given. Cannot convert.')
+
+
+    if getwl == True:
+        return fluxmag, wavelength
+    else:
+        return fluxmag
+
+
 def convertSptype(spT):
     """
     Converts a spectral type into its numerical equivalent, based on Alice Perez's conversion table.
@@ -605,7 +730,7 @@ def linearInterp(x0, x1, x2, y1, y2, y1err, y2err):
 
     return y0, yerr
 
-def interp(x0, x, y, n,i0):
+def interp(x0, x, y, n, i0):
 	"""
 	Does a linear interpolation at x0 on arrays x and y.
 	
@@ -661,7 +786,7 @@ def parameters_siess(tstar,lui,commonpath=commonpath):
 
 	"""
 	
-	nages=6
+	nages=7
 	nmasses=29
 	lsun=4e33
 	rsun=7e10
@@ -671,13 +796,14 @@ def parameters_siess(tstar,lui,commonpath=commonpath):
 	tlstar=np.log10(tstar)
 
 	# reads in tracks and corresponding ages	
-	fileiso=(commonpath+'isochrones/'+'isochron3e5', \
+	fileiso=(commonpath +'isochrones/'+'isochron1e5',\
+        commonpath+'isochrones/'+'isochron3e5', \
 	commonpath+'isochrones/'+'isochron1e6', \
 	commonpath+'isochrones/'+'isochron3e6', \
 	commonpath+'isochrones/'+'isochron1e7', \
 	commonpath+'isochrones/'+'isochron3e7', \
 	commonpath+'isochrones/'+'isochron1e8')	
-	ages=3.e5,1.e6,3.e6,1.e7,3.e7,1.e8
+	ages=[1.e5,3.e5,1.e6,3.e6,1.e7,3.e7,1.e8]
 
 	# for the input tstar this interpolates between the T and L columns to get L 
 	# for each isochrone file and stores these 6 values in lu_track_temp 
@@ -687,7 +813,9 @@ def parameters_siess(tstar,lui,commonpath=commonpath):
 		lint=np.log10(tablesiess['L'])
 		tint=np.log10(tablesiess['Teff'])
 		massint=tablesiess['Mass']
-		lu_track_temp.append(interp(tlstar,tint,lint,nmasses,i0))
+		#lu_track_temp.append(interp(tlstar,tint,lint,nmasses,i0))
+		#replace util.interp with np.interp
+		lu_track_temp.append(np.interp(tlstar, tint, lint))
 
 	# if out of isochrone range, reject		
 	if lstar > lu_track_temp[0] or lstar < lu_track_temp[5]:
@@ -702,8 +830,14 @@ def parameters_siess(tstar,lui,commonpath=commonpath):
 			i0=jj
 
 	# this compares the input L (lstar) to the L from each isochrone file 
-	# for the appropriate Teff (lu_track_temp) and iterpolates to find the age
-	age=interp(lstar,lu_track_temp,ages,nages,i0)
+	# for the appropriate Teff (lu_track_temp) and interpolates to find the age
+	#age=interp(lstar,lu_track_temp,ages,nages,i0)
+	#again replace with np.interp
+	#np.interp requires the x coords to be increasing, so reverse the order of both
+	#lu_track_temp and ages
+	lu_track_temp.reverse()
+	ages.reverse()
+	age=np.interp(lstar, lu_track_temp, ages)
 
 	# for each of the 6 isochrone files, this grabs the L for each M
 	# then it interpolates using the calculated age to get the L for each M
@@ -711,17 +845,26 @@ def parameters_siess(tstar,lui,commonpath=commonpath):
 	# and stores in lu_track_mass
 	lint= []
 	lu_track_mass = []
+	ages.reverse() #undo reverse from above
 	for i2 in range(0,nmasses):
 		for i in range(0,nages):
-			tablesiess=ascii.read(fileiso[i], header_start=2, data_start=i2+3, data_end=i2+4)  
-			lint.append(np.log10(tablesiess['L']))
-			i0=0
-		lu_track_mass=np.append(lu_track_mass,interp(age,ages,lint,nages,i0))
+			#tablesiess=ascii.read(fileiso[i], header_start=2, data_start=i2+3, data_end=i2+4)
+			#lint.append(np.log10(tablesiess['L']))
+                    #changed way data was read in so lint would have a format compatible with np.interp
+                    #reading it in the above way meant that lint had a different format than ages, so
+                    #np.interp did not want to interpolate using those two lists
+                    with open(fileiso[i], 'rU') as fin:
+                        data = [row for row in fin.readlines()]
+                        lint.append(np.log10(float(data[6+i2][6:15])))
+			#i0=0
+		#lu_track_mass=np.append(lu_track_mass,interp(age,ages,lint,nages,i0))
+		lu_track_mass=np.append(lu_track_mass, np.interp(age,ages,lint))
 		lint= []
-		
+	
 	# this compares the input L to the track L and M interpolated at the calculated age
 	# (i.e., lu_track_mass) and interpolates to get the M
-	mass=interp(lstar,lu_track_mass,massint,nmasses,i0)
+	#mass=interp(lstar,lu_track_mass,massint,nmasses,i0)
+	mass=np.interp(lstar, lu_track_mass, massint)
 	
 	return mass,age
 
@@ -794,7 +937,7 @@ def parameters_baraffe(tstar,lui,commonpath=commonpath):
 			massint=np.concatenate((massint1,massint3),axis=0)
 		lu_track_temp.append(interp(tlstar,tint,lint,nmasses,i0))
 
-	# if out of isochrone range, reject		
+	# if out of isochrone range, reject
 	if lstar > lu_track_temp[0] or lstar < lu_track_temp[5]:
 		print('Luminosity out of isochrone bounds')
 		mass=99.0
