@@ -474,66 +474,66 @@ def apparent_to_absolute(d_pc, mag):
     absMag = mag - 5.0 * math.log10(d_pc / 10.0)
     return absMag
 
-def star_param(sptype, mag, Av, dist, params, picklepath=commonpath, jnotv=0):
-    """
-    Calculates the effective temperature and luminosity of a T-Tauri star. Uses either values based on
-    Kenyon and Hartmann (1995), or Pecault and Mamajek (2013). This function is based on code written
-    by Alice Perez at CIDA.
-
-    INPUTS
-    sptype: The spectral type of your object. Can be either a float value, or an alphanumeric representation.
-    mag: The magnitude used for correction. Must be either V band or J band.
-    Av: The extinction in the V band.
-    dist: The distance to your object in parsecs.
-    params: Must be either 'KH' (for Kenyon & Hartmann) or 'PM' (for Pecault and Mamajek)
-    picklepath: Where the star_param.pkl file is located. Default is hardcoded for where EDGE.py is located.
-    jnotv: BOOLEAN -- if True (1), it sets 'mag' input to be J band magnitude rather than V band.
-
-    OUTPUTS
-    Teff: The calculated effective temperature of the star (in Kelvin).
-    lum: The calculated luminosity of the star in solar luminosities (L / Lsun).
-    """
-
-    # First, we need to load in the pickle containing the conversions:
-    stparam_pick = open(picklepath + 'star_param.pkl', 'rb')
-    stparam_dict = cPickle.load(stparam_pick)
-    stparam_pick.close()
-
-    # Next, create relevant interpolation grids based on desired params:
-    # If the spectral type is not a number, we'll need to convert!
-    if type(sptype) == float or type(sptype) == int:
-        pass
-    else:
-        sptype = convertSptype(sptype)
-
-    if params == 'KH':
-        print('STAR_PARAM: Will be using Kenyon & Hartmann values.')
-        tempSpline = sinterp.UnivariateSpline(stparam_dict['KH']['SpType'], stparam_dict['KH']['Teff'], s=0)
-        boloSpline = sinterp.UnivariateSpline(stparam_dict['KH']['SpType'], stparam_dict['KH']['BC'], s=0)
-    elif params == 'PM':
-        print('STAR_PARAM: Will be using Pecaut and Mamajet values.')
-        tempSpline = sinterp.UnivariateSpline(stparam_dict['PM']['SpType'], stparam_dict['PM']['Teff'], s=0)
-        boloSpline = sinterp.UnivariateSpline(stparam_dict['PM']['SpType'], stparam_dict['PM']['BC'], s=0)
-    else:
-        raise IOError('STAR_PARAM: Did not enter a valid input for params!')
-
-    # Calculate the effective temperature:
-    Teff  = tempSpline(sptype)
-    # Error calculation? Do we need to use log base 10?
-
-    # Calculate the luminosity utilizing bolometric correction and distance modulus:
-    BCorr = boloSpline(sptype)
-
-    # Check if we have a J mag instead of a V mag:
-    if jnotv:
-        Mj   = mag + 5 - (5*np.log10(dist)) - 0.29*Av       # Aj/Av = 0.29 (Cardelli, Clayton and Mathis 1989)
-        Mbol = Mj + BCorr
-    else:
-        Mv   = mag + 5 - (5*np.log10(dist)) - Av
-        Mbol = Mv + BCorr
-    lum = 10.0 ** ((-Mbol+4.74) / 2.5)
-
-    return float(Teff), lum
+# def star_param(sptype, mag, Av, dist, params, picklepath=commonpath, jnotv=0):
+#     """
+#     Calculates the effective temperature and luminosity of a T-Tauri star. Uses either values based on
+#     Kenyon and Hartmann (1995), or Pecault and Mamajek (2013). This function is based on code written
+#     by Alice Perez at CIDA.
+#
+#     INPUTS
+#     sptype: The spectral type of your object. Can be either a float value, or an alphanumeric representation.
+#     mag: The magnitude used for correction. Must be either V band or J band.
+#     Av: The extinction in the V band.
+#     dist: The distance to your object in parsecs.
+#     params: Must be either 'KH' (for Kenyon & Hartmann) or 'PM' (for Pecault and Mamajek)
+#     picklepath: Where the star_param.pkl file is located. Default is hardcoded for where EDGE.py is located.
+#     jnotv: BOOLEAN -- if True (1), it sets 'mag' input to be J band magnitude rather than V band.
+#
+#     OUTPUTS
+#     Teff: The calculated effective temperature of the star (in Kelvin).
+#     lum: The calculated luminosity of the star in solar luminosities (L / Lsun).
+#     """
+#
+#     # First, we need to load in the pickle containing the conversions:
+#     stparam_pick = open(picklepath + 'star_param.pkl', 'rb')
+#     stparam_dict = cPickle.load(stparam_pick)
+#     stparam_pick.close()
+#
+#     # Next, create relevant interpolation grids based on desired params:
+#     # If the spectral type is not a number, we'll need to convert!
+#     if type(sptype) == float or type(sptype) == int:
+#         pass
+#     else:
+#         sptype = convertSptype(sptype)
+#
+#     if params == 'KH':
+#         print('STAR_PARAM: Will be using Kenyon & Hartmann values.')
+#         tempSpline = sinterp.UnivariateSpline(stparam_dict['KH']['SpType'], stparam_dict['KH']['Teff'], s=0)
+#         boloSpline = sinterp.UnivariateSpline(stparam_dict['KH']['SpType'], stparam_dict['KH']['BC'], s=0)
+#     elif params == 'PM':
+#         print('STAR_PARAM: Will be using Pecaut and Mamajet values.')
+#         tempSpline = sinterp.UnivariateSpline(stparam_dict['PM']['SpType'], stparam_dict['PM']['Teff'], s=0)
+#         boloSpline = sinterp.UnivariateSpline(stparam_dict['PM']['SpType'], stparam_dict['PM']['BC'], s=0)
+#     else:
+#         raise IOError('STAR_PARAM: Did not enter a valid input for params!')
+#
+#     # Calculate the effective temperature:
+#     Teff  = tempSpline(sptype)
+#     # Error calculation? Do we need to use log base 10?
+#
+#     # Calculate the luminosity utilizing bolometric correction and distance modulus:
+#     BCorr = boloSpline(sptype)
+#
+#     # Check if we have a J mag instead of a V mag:
+#     if jnotv:
+#         Mj   = mag + 5 - (5*np.log10(dist)) - 0.29*Av       # Aj/Av = 0.29 (Cardelli, Clayton and Mathis 1989)
+#         Mbol = Mj + BCorr
+#     else:
+#         Mv   = mag + 5 - (5*np.log10(dist)) - Av
+#         Mbol = Mv + BCorr
+#     lum = 10.0 ** ((-Mbol+4.74) / 2.5)
+#
+#     return float(Teff), lum
 
 def MdotCalc(Umag, Rmag, d_pc, Temp, Mstar, Rstar):
     """

@@ -5,6 +5,7 @@ import matplotlib.pyplot as plt
 import util
 import os
 import EDGE as edge
+import starparam
 
 #Set up path to where EDGE/MODULES resides
 modulespath = os.path.dirname(os.path.realpath(util.__file__)) + '/'
@@ -124,5 +125,8 @@ photfile=outpath+'photosphere.'+obj+'.'+law+'.rv'+str(r)+'.av'+str(avin)+'.'+tab
 photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'
 #photfilewl=commonpath+'wavelengths/'+'wlfile_standard.ent'
 
-#exec("starparam.py")
-exec(compile(open(modulespath+"starparam.py").read(), modulespath+"starparam.py", 'exec'))
+#
+starparam.starparam(obj, sptin, avin, distance, law, table, isochrone=, HR,
+calcphot, inter, r,
+xu, xb, xv, xr, xi, xj, xh, xk, xl, xm, irac1, irac2, irac3, irac4, mips1,
+outpath, outputfile, photfile, commonpath, photfilewl)
