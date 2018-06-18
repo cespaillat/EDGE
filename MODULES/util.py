@@ -1,16 +1,14 @@
 #!/usr/bin/env python
 
 from astropy.io import ascii
-from astropy.io import fits
 import numpy as np
 import matplotlib.pyplot as plt
 import math
 import scipy.interpolate as sinterp
 import os
-import pdb
 
-utilpath        = os.path.dirname(os.path.realpath(__file__))+'/'
-commonpath     = utilpath+'/../COMMON/'
+utilpath = os.path.dirname(os.path.realpath(__file__))+'/'
+commonpath = utilpath+'../COMMON/'
 
 #-------------------------------------------------------------
 
@@ -420,7 +418,6 @@ def convertJy_to_Mag(value, band, getwl='False'):
     else:
         return fluxmag
 
-
 def convertSptype(spT):
     """
     Converts a spectral type into its numerical equivalent, based on Alice Perez's conversion table.
@@ -461,42 +458,6 @@ def convertSptype(spT):
         raise ValueError('CONVERTSPTYPE: Spectral type not in correct format! Fix the spectral class.')
 
     return spT_float
-
-def diskMassCalc(lFl, wl, temp, dist):
-    """
-
-    THIS IS A TEST FUNCTION!
-
-    Calculates the disk mass based on a sub-mm flux value. Needs to be in Rayleigh-Jeans
-    regime or else it doesn't work. This equation assumes implicity that the gas-to-dust
-    ratio is 100. NOTE: THIS IS UNTESTED FOR ACCURACY.
-
-    INPUTS
-    lFl: The flux value at the given wavelength, in units of erg s-1 cm-2
-    wl: The wavelength of the band. It needs to be sufficiently in Rayleigh-Jeans regime. This
-        should be given in microns.
-    temp: The temperature of the dust in Kelvin.
-    dist: The distance to your object in parsecs.
-
-    OUTPUT
-    dmass: The disk mass in solar masses.
-    """
-
-    print('WARNING! THIS IS UNTESTED!')
-
-    # Define the constants and convert to CGS units:
-    K       = 1.381e-16             # Boltzmann constant in cgs
-    C       = 3.0e10                # Speed of light in cgs
-    NUM     = 0.5e13                # Extra constant needed for equation in units of Hz
-    SOLMASS = 1.989e33              # Solar mass in cgs
-    wl_cgs  = wl / 1e4              # Wavelength conversion from microns to cm
-    d_cgs   = dist * 3.09e18        # Distance to object in cgs
-
-    # Calculate the disk mass using equation from Williams & Cieza 2011:
-    dmass   = (NUM * lFl * (d_cgs**2.0) * (wl_cgs**4.0)) / (K * temp * (C**2.0))
-    dmass   /= (SOLMASS)            # Convert from cgs to solar masses
-
-    return dmass
 
 def apparent_to_absolute(d_pc, mag):
     """
@@ -605,7 +566,7 @@ def MdotCalc(Umag, Rmag, d_pc, Temp, Mstar, Rstar):
                          0.94,  1.01,  1.07,  1.14,  1.16,  1.17,  1.24,  1.33,  1.4 ,
                          1.45,  1.52,  1.59,  1.74,  1.91,  2.13,  2.26,  2.63,  2.93,
                          3.21,  3.5 ,  3.79,  3.94,  4.14,  4.19,  4.25,  4.59,  4.87,  5.26])))
-    
+
     # First, calculate the U band magnitude of the photosphere:
     tempMatch     = np.where(temps == Temp)[0]
     if len(tempMatch) == 0:                         # Is there an exact match? If not, interpolate
@@ -614,17 +575,17 @@ def MdotCalc(Umag, Rmag, d_pc, Temp, Mstar, Rstar):
         colInterp = colors[tempMatch]
     Uphot   = Rmag + colInterp
     print(colInterp)
-    
+
     # Calculate the U flux for the photosphere and star to get excess luminosity:
     photFlux= convertMag(Uphot, 'U') * 1e-3 * (0.068 / 0.367)
     starFlux= convertMag(Umag, 'U') * 1e-3 * (0.068 / 0.367)
-    
+
     L_u     = (4.0*math.pi) * (starFlux - photFlux) * (d_pc * 3.086e16)**2.0
     L_u_norm= L_u / 3.84e26
-    
+
     # Use the U band luminosity to calculate the accretion luminosity:
     L_acc   = 3.84e26 * 10.0**(1.09*math.log10(L_u_norm) + 0.98)
-    
+
     # Lastly, back out the accretion rate:
     G       = 6.67e-11                              # G in meters
     #Rin_m   = Rin * 1.496e11                        # Rin in meters
@@ -633,7 +594,6 @@ def MdotCalc(Umag, Rmag, d_pc, Temp, Mstar, Rstar):
     Mdot    = (Rstar_m * L_acc / (G*Mstar_kg)) / 0.8 * 3.16e7 / 1.989e30
 
     return Mdot
-
 
 def significant_digit(value):
     '''
@@ -646,25 +606,25 @@ def round_to_significant(value, uncertainty):
     '''
     PURPOSE:
         Returns a value and its uncertainty rounded to the corresponding significant
-    
+
     INPUTS:
         value:[float] Value of the measurement
-        uncertainty:[float] Uncertainty in the measurement. 
-    
+        uncertainty:[float] Uncertainty in the measurement.
+
     NOTES:
         If the leading sigficant digit is 1 or 2, then keep the proceeding significant digits
         If the leading significant digit is above 3 or above, then round to the place of the leading significant digit
-    
+
     AUTHOR:
         Sierra Grant, October 10th, 2017
     '''
-    
+
     if (np.isfinite(value) * np.isfinite(uncertainty)) == 0 or value == 0 or uncertainty  == 0:
         return 'nan', 'nan'
-    
+
     value, uncertainty = np.float(value), np.float(uncertainty)
     sd = significant_digit(uncertainty)
-    
+
     #Handle the weird case with numbers smaller than 10.
     if sd == 0:
         if uncertainty > 0:
@@ -674,33 +634,33 @@ def round_to_significant(value, uncertainty):
     else:
         sd_str = ('{:1.'+str(int(np.abs(sd)+5))+'f}').format(uncertainty)
         sd_val = float(sd_str[sd_str.index(".")-sd])
-    
+
     #Handle numbers that round to 1 digit
     if sd_val>2.0:
         #print(uncertainty,sd,sd_val,'I AM GREATER THAN 2')
         # round value and uncertainty (we used -1 in front of sd to change the behaviour of round)
         outval = np.round(value, -1 * sd)
         outunc = np.round(uncertainty, -1 * sd)
-        
+
         #Handle errors greater than 1
         if sd >= 0:
             return ("{:.0f}").format(outval),("{:.0f}").format(outunc)
         else:
             return ("{:."+str(-1*sd)+"f}").format(outval),("{:."+str(-1*sd)+"f}").format(outunc)
-    
+
     #Handle numbers that round to 2 digits
     if sd_val<=2.0:
         outval = np.round(value, -1 * sd + 1)
         outunc = np.round(uncertainty, -1 * sd + 1)
-        
+
         #Handle errors greater than 10
         if sd >=1:
             return ("{:.0f}").format(outval),("{:.0f}").format(outunc)
-        
+
         #Handles the one weird case with rounding to 3.0 exactly
         if outunc == 3.0:
             return ("{:."+str(-1*sd)+"f}").format(outval),("{:."+str(-1*sd)+"f}").format(outunc)
-        
+
         #Fix the issue where 3 is rounded
         if ('{:1.'+str(int(np.abs(sd)+5))+'f}').format(outunc)[('{:1.'+str(int(np.abs(sd)+5))+'f}').format(outunc).index(".")-sd] == '3':
             return ("{:."+str(-1*sd)+"f}").format(outval),("{:."+str(-1*sd)+"f}").format(outunc)
@@ -729,468 +689,3 @@ def linearInterp(x0, x1, x2, y1, y2, y1err, y2err):
     yerr = math.sqrt(2*(y1err**2) + (y2err**2))
 
     return y0, yerr
-
-def interp(x0, x, y, n, i0):
-	"""
-	Does a linear interpolation at x0 on arrays x and y.
-	
-	INPUTS
-		x0: value you want to interpolate at
-		x:  x array
-		y:  y array
-		n:  number of items in array
-		i0: label of first value
-	
-	OUTPUT
-		interp: interpolated value from y array
-
-	EXAMPLE
-		flux_phot=util.interp(wl_phot[i],xwef,save_xfluxb,12,i0)
-		For a given wavelength (wl_phot[i]) locate and interpolate 
-		in an array of wavelengths (xwef), look up and interpolate 
-		for the corresponding flux (save_xfluxb) and return this
-		value
-
-	"""
-
-	if x[1] < x[0] :
-	# x in decreasing order
-		while x0 < x[i0]:
-			i0 = i0 + 1
-	else:
-	# x in increasing order
-		while x0 > x[i0]:
-			i0 = i0 + 1
-
-	if i0 > 0 : 
-		i0 = i0 - 1
-		
-	interp = (((y[i0] * (x[i0 + 1] - x0)) \
-	+ (y[i0 + 1] * (x0 - x[i0]))) / (x[i0 + 1] - x[i0]))
-     
-	return interp
-
-
-#-------------------------------------------------------------
-def parameters_siess(tstar,lui,commonpath=commonpath):
-	"""
-	Calculates age and mass using Siess & Forestini 1996 tracks
-	
-	INPUTS
-		tstar: stellar temperature
-		lui:  stellar luminosity
-	
-	OUTPUT
-		mass: stellar mass
-		age: stellar age
-
-	"""
-	
-	nages=7
-	nmasses=29
-	lsun=4e33
-	rsun=7e10
-	i0=0
-	
-	lstar=np.log10(lui)
-	tlstar=np.log10(tstar)
-
-	# reads in tracks and corresponding ages	
-	fileiso=(commonpath +'isochrones/'+'isochron1e5',\
-        commonpath+'isochrones/'+'isochron3e5', \
-	commonpath+'isochrones/'+'isochron1e6', \
-	commonpath+'isochrones/'+'isochron3e6', \
-	commonpath+'isochrones/'+'isochron1e7', \
-	commonpath+'isochrones/'+'isochron3e7', \
-	commonpath+'isochrones/'+'isochron1e8')	
-	ages=[1.e5,3.e5,1.e6,3.e6,1.e7,3.e7,1.e8]
-
-	# for the input tstar this interpolates between the T and L columns to get L 
-	# for each isochrone file and stores these 6 values in lu_track_temp 
-	lu_track_temp = []
-	for i in range(0,nages):
-		tablesiess=ascii.read(fileiso[i], header_start=2, data_start=3, data_end=32)  
-		lint=np.log10(tablesiess['L'])
-		tint=np.log10(tablesiess['Teff'])
-		massint=tablesiess['Mass']
-		#lu_track_temp.append(interp(tlstar,tint,lint,nmasses,i0))
-		#replace util.interp with np.interp
-		lu_track_temp.append(np.interp(tlstar, tint, lint))
-
-	# if out of isochrone range, reject		
-	if lstar > lu_track_temp[0] or lstar < lu_track_temp[5]:
-		print('Luminosity out of isochrone bounds')
-		mass=99.0
-		age=99.0e6
-		return mass,age
-		
-	# to avoid issues due to extrapolation of tracks to high L
-	for jj in range (0,nages):
-		if lu_track_temp[jj] > lstar:
-			i0=jj
-
-	# this compares the input L (lstar) to the L from each isochrone file 
-	# for the appropriate Teff (lu_track_temp) and interpolates to find the age
-	#age=interp(lstar,lu_track_temp,ages,nages,i0)
-	#again replace with np.interp
-	#np.interp requires the x coords to be increasing, so reverse the order of both
-	#lu_track_temp and ages
-	lu_track_temp.reverse()
-	ages.reverse()
-	age=np.interp(lstar, lu_track_temp, ages)
-
-	# for each of the 6 isochrone files, this grabs the L for each M
-	# then it interpolates using the calculated age to get the L for each M
-	# it does this for each of the 29 masses listed in each isochrone file
-	# and stores in lu_track_mass
-	lint= []
-	lu_track_mass = []
-	ages.reverse() #undo reverse from above
-	for i2 in range(0,nmasses):
-		for i in range(0,nages):
-			#tablesiess=ascii.read(fileiso[i], header_start=2, data_start=i2+3, data_end=i2+4)
-			#lint.append(np.log10(tablesiess['L']))
-                    #changed way data was read in so lint would have a format compatible with np.interp
-                    #reading it in the above way meant that lint had a different format than ages, so
-                    #np.interp did not want to interpolate using those two lists
-                    with open(fileiso[i], 'rU') as fin:
-                        data = [row for row in fin.readlines()]
-                        lint.append(np.log10(float(data[6+i2][6:15])))
-			#i0=0
-		#lu_track_mass=np.append(lu_track_mass,interp(age,ages,lint,nages,i0))
-		lu_track_mass=np.append(lu_track_mass, np.interp(age,ages,lint))
-		lint= []
-	
-	# this compares the input L to the track L and M interpolated at the calculated age
-	# (i.e., lu_track_mass) and interpolates to get the M
-	#mass=interp(lstar,lu_track_mass,massint,nmasses,i0)
-	mass=np.interp(lstar, lu_track_mass, massint)
-	
-	return mass,age
-
-#-------------------------------------------------------------
-def parameters_baraffe(tstar,lui,commonpath=commonpath):
-	"""
-	Calculates age and mass using Baraffe et al. 1998 tracks
-	
-	INPUTS
-		tstar: stellar temperature
-		lui:  stellar luminosity
-	
-	OUTPUT
-		mass: stellar mass
-		age: stellar age
-
-	"""
-	
-	nages=19
-	nmasses=37
-	lsun=4e33
-	rsun=7e10
-	i0=0
-
-	lstar=np.log10(lui)
-	tlstar=np.log10(tstar)
-
-	lages=[6.0,6.1,6.2,6.3,6.4,6.5,6.6,6.7,6.8,6.9, \
-	7.0,7.1,7.2,7.3,7.4,7.5,7.6,7.7,7.8]
-
-	ages=[10**6.0,10**6.1,10**6.2,10**6.3,10**6.4, \
-	10**6.5,10**6.6,10**6.7,10**6.8,10**6.9, \
-	10**7.0,10**7.1,10**7.2,10**7.3,10**7.4, \
-	10**7.5,10**7.6,10**7.7,10**7.8]
-
-	# for the input tstar this interpolates between the T and L columns to get L 
-	# for each isochrone and stores these 19 values in lu_track_temp 
-	#BCAH98_iso.1 has Teff=2542-3978, M 0.02-1.2, l/H=1
-	#BCAH98_iso.3 has Teff=3862-4521, M 0.7-1.2, l/H=1.9
-	#here we use file BCAH98_iso.3 with l/H=1.9 for 0.7 msun and above
-	lu_track_temp = []
-	for i in range(0,nages):
-		if i==0:
-			start1=19	
-			tablebaraffe1=ascii.read(commonpath+'isochrones/'+'BCAH98_iso.1', data_start=start1, data_end=start1+28)	
-			lint1=tablebaraffe1['col4'] #already in log10
-			tint1=np.log10(tablebaraffe1['col2'])
-			massint1=tablebaraffe1['col1']
-			start3=19	
-			tablebaraffe3=ascii.read(commonpath+'isochrones/'+'BCAH98_iso.3', data_start=start3, data_end=start3+11)	
-			lint3=tablebaraffe3['col4'] #already in log10
-			tint3=np.log10(tablebaraffe3['col2'])
-			massint3=tablebaraffe3['col1']
-			lint=np.concatenate((lint1,lint3),axis=0)
-			tint=np.concatenate((tint1,tint3),axis=0)
-			massint=np.concatenate((massint1,massint3),axis=0)
-		else:
-			start1=start1+nmasses+5
-			tablebaraffe1=ascii.read(commonpath+'isochrones/'+'BCAH98_iso.1', data_start=start1, data_end=start1+28)	
-			lint1=tablebaraffe1['col4'] #already in log10
-			tint1=np.log10(tablebaraffe1['col2'])
-			massint1=tablebaraffe1['col1']
-			start3=start3+11+5
-			tablebaraffe3=ascii.read(commonpath+'isochrones/'+'BCAH98_iso.3', data_start=start3, data_end=start3+11)	
-			lint3=tablebaraffe3['col4'] #already in log10
-			tint3=np.log10(tablebaraffe3['col2'])
-			massint3=tablebaraffe3['col1']
-			lint=np.concatenate((lint1,lint3),axis=0)
-			tint=np.concatenate((tint1,tint3),axis=0)
-			massint=np.concatenate((massint1,massint3),axis=0)
-		lu_track_temp.append(interp(tlstar,tint,lint,nmasses,i0))
-
-	# if out of isochrone range, reject
-	if lstar > lu_track_temp[0] or lstar < lu_track_temp[5]:
-		print('Luminosity out of isochrone bounds')
-		mass=99.0
-		age=99.0e6
-		return mass,age
-
-	# to avoid issues due to extrapolation of tracks to high L
-	for jj in range (0,nages):
-		if lu_track_temp[jj] > lstar:
-			i0=jj
-
-	# this compares the input L (lstar) to the L from each isochrone file 
-	# for the appropriate Teff (lu_track_temp) and iterpolates to find the age
-	age=interp(lstar,lu_track_temp,ages,nages,i0) #in log10
-
-	#THIS TAKES TOO LONG, WAY TO SPEED UP?
-	#for each of the 19 isochrones, this grabs the L for each M
-	# then it interpolates using the calculated age to get the L for each M
-	# it does this for each of the 37 masses listed in each isochrone file
-	# and stores in lu_track_mass
-	lint= []
-	lu_track_mass = []
-	for i2 in range(0,nmasses):
-		for i in range(0,nages):
-			if i2<28:
-				start1=19+i2+(i*(nmasses+5))
-				tablebaraffe1=ascii.read(commonpath+'isochrones/'+'BCAH98_iso.1', data_start=start1, data_end=start1+1)	
-				lint.append(tablebaraffe1['col4']) #already in log10
-			else:
-				start1=19+(i2-28)+(i*(11+5))	
-				tablebaraffe3=ascii.read(commonpath+'isochrones/'+'BCAH98_iso.3', data_start=start1, data_end=start1+1)	
-				lint.append(tablebaraffe3['col4']) #already in log10
-		lu_track_mass=np.append(lu_track_mass,interp(age,ages,lint,nages,i0))
-		lint= []
-
-	# this compares the input L to the track L and M interpolated at the calculated age
-	# (i.e., lu_track_mass) and interpolates to get the M
-	mass=interp(lstar,lu_track_mass,massint,nmasses,i0)
-	
-	return mass,age
-
-#-------------------------------------------------------------
-def redd(av,wl,commonpath=commonpath):
-	"""
-	Calculates reddening correction using Mathis ARAA 28,37,1990
-	
-	INPUTS
-		av: visual extinction
-		wl: wavelength
-	
-	OUTPUT
-		redd: reddening correction
-
-	"""
-
-	i0=0
-	nm=39
-	
-	tablemathis=ascii.read(commonpath+'ext_laws/'+'mathis.table.rev', delimiter=" ")    	 
-	wlm=tablemathis['wlmu']
-	al=tablemathis['A_wl/A_J_R3.1']
-     
-	# normalize to V
-	avv=al[wlm == 0.55]
-	al=al/avv
-
-	redd=interp(wl,wlm,al,nm,i0)*av
-
-	return redd
-	
-#-------------------------------------------------------------
-def reddhd(av,wl,commonpath=commonpath):
-	"""
-	Calculates reddening correction using HD29647
-	
-	INPUTS
-		av: visual extinction
-		wl: wavelength
-	
-	OUTPUT
-		redd: reddening correction
-
-	"""
-
-	i0=0
-	nm=101
-	
-	table=ascii.read(commonpath+'ext_laws/'+'hd29647_ext_pei_1.dat', delimiter=" ")    	 
-	wlm=table['col1']
-	al=table['col2']
-	wlm=wlm*1e-4
-     
-	redd=interp(wl,wlm,al,nm,i0)*av
-
-	return redd
-	
-#-------------------------------------------------------------
-def reddccm89(wl,r,commonpath=commonpath):
-	"""
-	Calculates reddening correction using Crdelli, Clayton, & Mathis 1989, ApJ, 345, 245
-	
-	INPUTS
-		av: visual extinction
-		r: extinction factor
-	
-	OUTPUT
-		alambda_cc8: reddening correction
-
-	"""
-
-	x=1/wl
-
-	if x<0.3:
-		alambda_cc8=0.
-		return alambda_cc8
-
-	if x>10:
-		print('outside CCM89 range')
-		stop
-
-	if x>0.3 and x<1.1:
-		a=0.574*x**1.61
-		b=-0.527*x**1.61
-
-	else:
-		if x>1.1 and x<3.3:
-			y=x-1.82
-			a=1.+y*(0.176999+y*(-0.50447+y*(-0.02427+y*(0.72085 \
-			+ y*(0.01979+y*(-0.77530+y*0.32999))))))
-			b=y*(1.41338+y*(2.28305+y*(1.07233+y*(-5.38434 \
-			+ y*(-0.62251+y*(5.30260-y*2.09002))))))
-		if x>3.3 and x<8:
-			if x>5.9 and x<8:
-				fa=-0.0447*(x-5.9)**2-0.009779*(x-5.9)**3
-				fb=0.2130*(x-5.9)**2+0.1207*(x-5.9)**3
-			else:
-				fa=0.
-				fb=0.
-			a=1.752-0.316*x-0.104/((x-4.67)**2+0.341)+fa
-			b=-3.090+1.825*x+1.206/((x-4.62)**2+0.263)+fb
-
-		if x>8 and x<10:
-			a=-1.073+(x-8.)*(-0.628+(x-8.)*(0.137-(x-8.)*0.070))
-			b=13.670+(x-8.)*(4.257+(x-8.)*(-0.420+(x-8.)*0.374))
-	
-	alambda_cc8=a+b/r
-
-	return alambda_cc8
-	
-#-------------------------------------------------------------
-def reddmcclureavgt8rv5p0(av,wl,commonpath=commonpath):
-	"""
-	Calculates reddening correction using McClure (2010) 
-	for Av>8 & Rv=5
-	
-	INPUTS
-		av: visual extinction
-		wl: wavelength
-	
-	OUTPUT
-		redd: reddening correction
-
-	"""
-
-	i0=0
-	nm=22
-	
-	table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avgt8_rv5p0', data_start=1)    	 
-	wlm=table['col1']
-	al=table['col2']
-     
-	redd=interp(wl,wlm,al,nm,i0)*av
-
-	return redd
-	
-#-------------------------------------------------------------
-def reddmcclureavgt8rv3p1(av,wl,commonpath=commonpath):
-	"""
-	Calculates reddening correction using McClure (2010)
-	for Av>8 & Rv=3.1
-	
-	INPUTS
-		av: visual extinction
-		wl: wavelength
-	
-	OUTPUT
-		redd: reddening correction
-
-	"""
-
-	i0=0
-	nm=22
-	
-	table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avgt8_rv3p1', data_start=1)    	 
-	wlm=table['col1']
-	al=table['col2']
-     
-	redd=interp(wl,wlm,al,nm,i0)*av
-
-	return redd
-	
-#-------------------------------------------------------------
-def reddmcclureavlt8rv5p0(av,wl,commonpath):
-	"""
-	Calculates reddening correction using McClure (2010)
-	for Av<8 & Rv=5
-	
-	INPUTS
-		av: visual extinction
-		wl: wavelength
-	
-	OUTPUT
-		redd: reddening correction
-
-	"""
-
-	i0=0
-	nm=22
-	
-	table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avlt8_rv5p0', data_start=1)    	 
-	wlm=table['col1']
-	al=table['col2']
-     
-	redd=interp(wl,wlm,al,nm,i0)*av
-
-	return redd
-	
-#-------------------------------------------------------------
-def reddmcclureavlt8rv3p1(av,wl,commonpath):
-	"""
-	Calculates reddening correction using McClure (2010)
-	for Av<8 & Rv=3.1
-	
-	INPUTS
-		av: visual extinction
-		wl: wavelength
-	
-	OUTPUT
-		redd: reddening correction
-
-	"""
-
-	i0=0
-	nm=22
-	
-	table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avlt8_rv3p1', data_start=1)    	 
-	wlm=table['col1']
-	al=table['col2']
-     
-	redd=interp(wl,wlm,al,nm,i0)*av
-
-	return redd
-
-
-
-

@@ -2,6 +2,438 @@
 from astropy.io import ascii
 import numpy as np
 import util
+import scipy.interpolate as sinterp
+import os
+import matplotlib.pyplot as plt
+import math
+
+#starparampath = os.path.dirname(os.path.realpath(__file__))+'/'
+#commonpath = starparampath+'../COMMON/'
+
+#-------------------------------------------------------------
+def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
+    """
+    Calculates age and mass using Siess & Forestini 1996 tracks or
+    Baraffe et al. 1998 tracks.
+
+    INPUTS
+        tstar: stellar temperature
+        lui:  stellar luminosity
+        isomodel: Isochrones to be used, either 'siess' or 'baraffe'
+    OUTPUT
+        mass: stellar mass
+        age: stellar age
+
+    """
+    lstar = np.log10(lui)
+    tlstar = np.log10(tstar)
+
+    # reads in tracks and corresponding ages
+    if isomodel == 'siess':
+        siesspath = commonpath+'isochrones/siess/'
+        fileiso = [siesspath+'siess_t_0.0005.dat', \
+                   siesspath+'siess_t_0.0006.dat', \
+                   siesspath+'siess_t_0.0007.dat', \
+                   siesspath+'siess_t_0.0008.dat', \
+                   siesspath+'siess_t_0.0009.dat', \
+                   siesspath+'siess_t_0.001.dat', \
+                   siesspath+'siess_t_0.002.dat', \
+                   siesspath+'siess_t_0.003.dat', \
+                   siesspath+'siess_t_0.004.dat', \
+                   siesspath+'siess_t_0.005.dat', \
+                   siesspath+'siess_t_0.006.dat', \
+                   siesspath+'siess_t_0.007.dat', \
+                   siesspath+'siess_t_0.008.dat', \
+                   siesspath+'siess_t_0.009.dat', \
+                   siesspath+'siess_t_0.01.dat', \
+                   siesspath+'siess_t_0.02.dat', \
+                   siesspath+'siess_t_0.03.dat', \
+                   siesspath+'siess_t_0.04.dat', \
+                   siesspath+'siess_t_0.05.dat', \
+                   siesspath+'siess_t_1.dat', \
+                   siesspath+'siess_t_10.dat']
+        ages = [5.e5,6.e5,7.e5,8.e5,9.e5,1.e6,2.e6,3.e6,4.e6,5.e6,6.e6,\
+        7.e6,8.e6,9.e6,1.e7,2.e7,3.e7,4.e7,5.e7,1.e9,1.e10]
+        cols = [0,1,2] # columns of interest of files
+    elif isomodel == 'baraffe':
+        baraffepath = commonpath+'isochrones/baraffe/'
+        fileiso = [baraffepath+'bhac15_t_0.0005.dat', \
+                    baraffepath+'bhac15_t_0.001.dat', \
+                    baraffepath+'bhac15_t_0.002.dat', \
+                    baraffepath+'bhac15_t_0.003.dat', \
+                    baraffepath+'bhac15_t_0.004.dat', \
+                    baraffepath+'bhac15_t_0.005.dat', \
+                    baraffepath+'bhac15_t_0.008.dat',\
+                    baraffepath+'bhac15_t_0.01.dat',\
+                    baraffepath+'bhac15_t_0.015.dat', \
+                    baraffepath+'bhac15_t_0.02.dat', \
+                    baraffepath+'bhac15_t_0.025.dat', \
+                    baraffepath+'bhac15_t_0.03.dat', \
+                    baraffepath+'bhac15_t_0.04.dat', \
+                    baraffepath+'bhac15_t_0.05.dat',\
+                    baraffepath+'bhac15_t_1.dat',\
+                    baraffepath+'bhac15_t_10.dat']
+        ages = [5.e5,1.e6,2.e6,3.e6,4.e6,5.e6,8.e6,1.e7,1.5e7,2.e7,2.5e7,3.e7,4.e7,5.e7,1.e9,1.e10]
+        cols = [1,2,4] # columns of interest of files
+    else:
+        print('WARNING: '+isomodel+"is not supported. Use 'siess' or 'baraffe'")
+        return np.nan, np.nan
+
+    nages = len(ages)
+
+    # We read the isochrones and build a grid of points
+    # in the (Tstar,Lstar) plane
+    points = []
+    values_mass = []
+    values_age = []
+    for i in range(0,nages):
+        tableiso = np.genfromtxt(fileiso[i],skip_header=1,
+        usecols=(cols[0],cols[1],cols[2]))
+        massint = tableiso[:,0]
+        nmasses = len(massint)
+        tint = np.log10(tableiso[:,1]).reshape(nmasses,1)
+        lint = tableiso[:,2].reshape(nmasses,1)  # already in log
+        points.append(np.concatenate((tint,lint),axis=1))
+        values_mass.append(massint.reshape(nmasses,1))
+        values_age.append(np.ones((nmasses,1))*ages[i])
+
+    points = np.concatenate(points) # (Teff, Luminosities)
+    values_mass = np.concatenate(values_mass)
+    values_age = np.concatenate(values_age)
+
+    # if out of isochrone range, reject
+    if (tlstar > np.max(points[:,0])) or (tlstar < np.min(points[:,0])):
+        print('WARNING: Temperature out of isochrone bounds')
+        return np.nan, np.nan
+    if (lstar > np.max(points[:,1])) or (lstar < np.min(points[:,1])):
+        print('WARNING: Luminosity out of isochrone bounds')
+        return np.nan, np.nan
+
+    # Interpolation in mass and age
+    mass = sinterp.griddata(points, values_mass, (np.array([tlstar,lstar])), method='linear')
+    age = sinterp.griddata(points, values_age, (np.array([tlstar,lstar])), method='linear')
+
+    return mass[0,0], age[0,0]
+
+#-------------------------------------------------------------
+def redd(av,wl,commonpath=commonpath):
+    """
+    Calculates reddening correction using Mathis ARAA 28,37,1990
+
+    INPUTS
+        av: visual extinction
+        wl: wavelength
+
+    OUTPUT
+        redd: reddening correction
+
+    """
+    tablemathis=ascii.read(commonpath+'ext_laws/'+'mathis.table.rev', delimiter=" ")
+    wlm=tablemathis['wlmu']
+    al=tablemathis['A_wl/A_J_R3.1']
+
+    # normalize to V
+    avv=al[wlm == 0.55]
+    al=al/avv
+
+    redd=np.interp(wl,wlm[::-1],al[::-1])*av
+
+    return redd
+
+#-------------------------------------------------------------
+def reddrv5(av,wl,commonpath=commonpath):
+    """
+    Calculates reddening correction using Mathis ARAA 28,37,1990
+
+    INPUTS
+        av: visual extinction
+        wl: wavelength
+
+    OUTPUT
+        redd: reddening correction
+
+    """
+    tablemathis=ascii.read(commonpath+'ext_laws/'+'mathis.table.rev', delimiter=" ")
+    wlm=tablemathis['wlmu']
+    al=tablemathis['A_wl/A_J_R5']
+
+    # normalize to V
+    avv=al[wlm == 0.55]
+    al=al/avv
+
+    redd=np.interp(wl,wlm[::-1],al[::-1])*av
+
+    return redd
+
+#-------------------------------------------------------------
+def reddhd(av,wl,commonpath=commonpath):
+    """
+    Calculates reddening correction using HD29647
+
+    INPUTS
+        av: visual extinction
+        wl: wavelength
+
+    OUTPUT
+        redd: reddening correction
+
+    """
+    table=ascii.read(commonpath+'ext_laws/'+'hd29647_ext_pei_1.dat', delimiter=" ")
+    wlm=table['col1']
+    al=table['col2']
+    wlm=wlm*1e-4
+
+    redd=np.interp(wl,wlm[::-1],al[::-1])*av
+
+    return redd
+
+
+#-------------------------------------------------------------
+def reddccm89(wl,r,commonpath=commonpath):
+    """
+    Calculates reddening correction using Crdelli, Clayton, & Mathis 1989, ApJ, 345, 245
+
+    INPUTS
+        av: visual extinction
+        r: extinction factor
+
+    OUTPUT
+        alambda_cc8: reddening correction
+
+    """
+
+    x=1/wl
+
+    if x<0.3:
+        alambda_cc8=0.
+        return alambda_cc8
+
+    if x>10:
+        print('outside CCM89 range')
+        stop
+
+    if x>0.3 and x<1.1:
+        a=0.574*x**1.61
+        b=-0.527*x**1.61
+
+    else:
+        if x>1.1 and x<3.3:
+            y=x-1.82
+            a=1.+y*(0.176999+y*(-0.50447+y*(-0.02427+y*(0.72085 \
+            + y*(0.01979+y*(-0.77530+y*0.32999))))))
+            b=y*(1.41338+y*(2.28305+y*(1.07233+y*(-5.38434 \
+            + y*(-0.62251+y*(5.30260-y*2.09002))))))
+        if x>3.3 and x<8:
+            if x>5.9 and x<8:
+                fa=-0.0447*(x-5.9)**2-0.009779*(x-5.9)**3
+                fb=0.2130*(x-5.9)**2+0.1207*(x-5.9)**3
+            else:
+                fa=0.
+                fb=0.
+            a=1.752-0.316*x-0.104/((x-4.67)**2+0.341)+fa
+            b=-3.090+1.825*x+1.206/((x-4.62)**2+0.263)+fb
+
+        if x>8 and x<10:
+            a=-1.073+(x-8.)*(-0.628+(x-8.)*(0.137-(x-8.)*0.070))
+            b=13.670+(x-8.)*(4.257+(x-8.)*(-0.420+(x-8.)*0.374))
+
+    alambda_cc8=a+b/r
+
+    return alambda_cc8
+
+#-------------------------------------------------------------
+def reddmcclureavgt8rv5p0(av,wl,commonpath=commonpath):
+    """
+    Calculates reddening correction using McClure (2010)
+    for Av>8 & Rv=5
+
+    INPUTS
+        av: visual extinction
+        wl: wavelength
+
+    OUTPUT
+        redd: reddening correction
+
+    """
+    table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avgt8_rv5p0', data_start=1)
+    wlm=table['col1']
+    al=table['col2']
+
+    redd=np.interp(wl,wlm,al)*av
+
+    return redd
+
+#-------------------------------------------------------------
+def reddmcclureavgt8rv3p1(av,wl,commonpath=commonpath):
+    """
+    Calculates reddening correction using McClure (2010)
+    for Av>8 & Rv=3.1
+
+    INPUTS
+        av: visual extinction
+        wl: wavelength
+
+    OUTPUT
+        redd: reddening correction
+
+    """
+    table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avgt8_rv3p1', data_start=1)
+    wlm=table['col1']
+    al=table['col2']
+
+    redd=np.interp(wl,wlm,al)*av
+
+    return redd
+
+#-------------------------------------------------------------
+def reddmcclureavlt8rv5p0(av,wl,commonpath):
+    """
+    Calculates reddening correction using McClure (2010)
+    for Av<8 & Rv=5
+
+    INPUTS
+        av: visual extinction
+        wl: wavelength
+
+    OUTPUT
+        redd: reddening correction
+
+    """
+    table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avlt8_rv5p0', data_start=1)
+    wlm=table['col1']
+    al=table['col2']
+
+    redd=np.interp(wl,wlm,al)*av
+
+    return redd
+
+#-------------------------------------------------------------
+def reddmcclureavlt8rv3p1(av,wl,commonpath):
+    """
+    Calculates reddening correction using McClure (2010)
+    for Av<8 & Rv=3.1
+
+    INPUTS
+        av: visual extinction
+        wl: wavelength
+
+    OUTPUT
+        redd: reddening correction
+
+    """
+    table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avlt8_rv3p1', data_start=1)
+    wlm=table['col1']
+    al=table['col2']
+
+    redd=np.interp(wl,wlm,al)*av
+
+    return redd
+
+#-------------------------------------------------------------
+def HRdiagram(tstar,lui,track,obj,commonpath):
+    """
+    Plots object of interest on a HR diagram with selected isochrones.
+
+    INPUTS
+        tstar: temperature of the star
+        lui: luminostiy of the star
+        obj: object name
+
+    OUTPUT
+        HR diagram plot
+    """
+
+    # Plotting parameters
+    params = {
+            'font.family': 'serif',
+            'mathtext.fontset': 'cm',
+            'xtick.direction': 'in',
+            'ytick.direction': 'in',
+            'axes.labelsize': 13,
+            'font.size': 8,
+            'legend.fontsize': 14,
+            'xtick.labelsize': 15,
+            'ytick.labelsize': 15,
+            'text.usetex': False,
+            'figure.figsize': [6, 4]
+            }
+    plt.rcParams.update(params)
+
+    #plot_isochrones = True
+    # Required paths (photometry, spectra, and figures)
+    path_data = commonpath + 'isochrones/'
+#    path_figures = outpath
+
+    fig = plt.figure()
+    ax = fig.add_subplot(111)
+    # plot regions
+    plot_test, = plt.plot(3850,0.6,'o', ms=6, mfc='red', mec='None', label=obj)
+
+    # create legend for objects
+    objects_legend = plt.legend(handles=[plot_test], loc=3,
+                                numpoints=1, frameon=False,
+                                handletextpad=0.01, markerfirst=True)
+    # Add the legend manually to the current Axes.
+    ax1 = plt.gca().add_artist(objects_legend)
+
+    # plot isochrones if requested
+    if track == 'baraffe':               #plot HR using baraffe tracks
+        isochrone_handles = []
+        ages = [1, 3, 5,10]
+        styles = {1:'-', 3: '-.', 5:'--',10: ':'}
+        for age in ages:
+            # read isochrones from Baraffe+15
+            isochrone = ascii.read('{}bhac15_t_{}.dat'.format(path_data+'baraffe/',age*1e-3))
+            i_isochrones = isochrone['teff'].data >2000
+            teffs_iso = isochrone['teff'].data[i_isochrones]
+            lums_iso = 10**isochrone['logL'].data[i_isochrones]
+            plot_isochrone, = plt.plot(teffs_iso, lums_iso,
+                                       label='{} Myr'.format(age), ls=styles[age], color='k', lw=2,)
+            isochrone_handles.append(plot_isochrone)
+        # create legend for isochrones
+        isochrone_legend = plt.legend(handles=isochrone_handles, loc=1,
+                                      frameon=False, markerfirst=False)
+    else:                               #plot HR using siess tracks
+        isochrone_handles = []
+        ages = [1, 3, 5,10]
+        styles = {1:'-', 3: '-.', 5:'--',10: ':'}
+        for age in ages:
+            # read isochrones from Siess
+            isochrone = ascii.read('{}siess_t_{}.dat'.format(path_data+'siess/',age*1e-3))
+            i_isochrones = isochrone['teff'].data >2000
+            teffs_iso = isochrone['teff'].data[i_isochrones]
+            lums_iso = 10**isochrone['logL'].data[i_isochrones]
+            plot_isochrone, = plt.plot(teffs_iso, lums_iso,
+                                       label='{} Myr'.format(age), ls=styles[age], color='k', lw=2,)
+            isochrone_handles.append(plot_isochrone)
+        # create legend for isochrones
+        isochrone_legend = plt.legend(handles=isochrone_handles, loc=1,
+                                      frameon=False, markerfirst=False)
+
+
+    plt.xlabel(r'$\mathrm{T_{eff}\,[K]}$',size=20)
+    plt.ylabel(r'$\mathrm{L_*\,[L_{\odot}]}$',size=20)
+    plt.xscale('log')
+    plt.yscale('log')
+    plt.xlim(1.2e4, 1.7e3)
+    plt.ylim(3.01e-4, 4e2)
+    #plt.show()
+
+    # Format axis
+    ax.set_yticks([1e-3, 1e-1, 1e1, 1e3])
+    #tickFormatter = FormatStrFormatter('%d')
+    #ax.xaxis.set_major_formatter( tickFormatter )
+    #ax.xaxis.set_minor_formatter( tickFormatter )
+    ax.set_xticks([2000, 3000, 4000, 5000, 6000, 7000, 8000, 9000, ], minor='True')
+    ax.set_xticklabels(['2000', '3000', '4000', '', '6000', '', '', ''], minor='True')
+    #plt.setp(ax.get_xminorticklabels(), visible=False)
+
+    # lets try changing the
+    #plt.savefig('{}HR_diagram_Baraffe2015.pdf'.format(path_figures),dpi=300,bbox_inches='tight')
+    #plt.close()
+
+    return fig
+
 
 """
 
@@ -22,7 +454,8 @@ NOTES:
     run with jobstarparam.py
 
 Edited by:
-    ZhexingLi (Dec 2017), Anneliese Rilinger (May/June 2018)
+    ZhexingLi (Dec 2017), Anneliese Rilinger (May/June 2018),
+    Enrique Macias (June 2018)
 """
 
 
@@ -116,32 +549,32 @@ if law == 'mathis':
     f.write('{}\n'.format('Using Mathis law'))
     if r == 5:
         f.write('{}\n'.format('Using Rv=5'))
-        ar = util.reddrv5(av1, wlmic_Rband, commonpath)
+        ar = reddrv5(av1, wlmic_Rband, commonpath)
     else:
         f.write('{}\n'.format('Using Rv=3.1'))
-        ar = util.redd(av1, wlmic_Rband, commonpath)
+        ar = redd(av1, wlmic_Rband, commonpath)
 if law == 'HD29647':
     f.write('{}\n'.format('Using HD29647 law'))
-    ar = util.reddhd(av1, wlmic_Rband, commonpath)
+    ar = reddhd(av1, wlmic_Rband, commonpath)
 if law == 'CCM89':
     f.write('{}\n'.format('Using CCM89 law'))
-    ar = util.reddccm89(wlmic_Rband, r, commonpath)
+    ar = reddccm89(wlmic_Rband, r, commonpath)
 if law == 'mcclure':
     f.write('{}\n'.format('Using McClure (2010) law'))
     if r == 5:
         if avin>8:
             f.write('{}\n'.format('with mcclure_avgt8_rv5p0'))
-            ar = util.reddmcclureavgt8rv5p0(av1, wlmic_Rband, commonpath)
+            ar = reddmcclureavgt8rv5p0(av1, wlmic_Rband, commonpath)
         else:
             f.write('{}\n'.format('with mcclure_avlt8_rv5p0'))
-            ar = util.reddmcclureavlt8rv5p0(av1, wlmic_Rband, commonpath)
+            ar = reddmcclureavlt8rv5p0(av1, wlmic_Rband, commonpath)
     else:
         if avin>8:
             f.write('{}\n'.format('with mcclure_avgt8_rv3p1'))
-            ar = util.reddmcclureavgt8rv3p1(av1, wlmic_Rband, commonpath)
+            ar = reddmcclureavgt8rv3p1(av1, wlmic_Rband, commonpath)
         else:
             f.write('{}\n'.format('with mcclure_avlt8_rv3p1'))
-            ar = util.reddmcclureavlt8rv3p1(av1, wlmic_Rband, commonpath)
+            ar = reddmcclureavlt8rv3p1(av1, wlmic_Rband, commonpath)
 avvminusrc=(1/(1.-ar))*(vminusr-vminusr0c)
 f.write('{}\t{:.2}\n'.format('Av(V-R)=', avvminusrc))
 
@@ -149,24 +582,24 @@ f.write('{}\t{:.2}\n'.format('Av(V-R)=', avvminusrc))
 wlmic_Iband = 0.79
 if law == 'mathis':
     if r == 5:
-        ai = util.reddrv5(av1, wlmic_Iband, commonpath)
+        ai = reddrv5(av1, wlmic_Iband, commonpath)
     else:
-        ai = util.redd(av1, wlmic_Iband, commonpath)
+        ai = redd(av1, wlmic_Iband, commonpath)
 if law == 'HD29647':
-    ai=util.reddhd(av1, wlmic_Iband, commonpath)
+    ai=reddhd(av1, wlmic_Iband, commonpath)
 if law == 'CCM89':
-    ai = util.reddccm89(wlmic_Iband, r, commonpath)
+    ai = reddccm89(wlmic_Iband, r, commonpath)
 if law == 'mcclure':
     if r == 5:
         if avin > 8:
-            ai = util.reddmcclureavgt8rv5p0(av1, wlmic_Iband, commonpath)
+            ai = reddmcclureavgt8rv5p0(av1, wlmic_Iband, commonpath)
         else:
-            ai = util.reddmcclureavlt8rv5p0(av1, wlmic_Iband, commonpath)
+            ai = reddmcclureavlt8rv5p0(av1, wlmic_Iband, commonpath)
     else:
         if avin > 8:
-            ai = util.reddmcclureavgt8rv3p1(av1, wlmic_Iband, commonpath)
+            ai = reddmcclureavgt8rv3p1(av1, wlmic_Iband, commonpath)
         else:
-            ai = util.reddmcclureavlt8rv3p1(av1, wlmic_Iband, commonpath)
+            ai = reddmcclureavlt8rv3p1(av1, wlmic_Iband, commonpath)
 avvminusic = (1/(1.-ai))*(vminusi-vminusi0c)
 f.write('{}\t{:.2}\n'.format('Av(V-I)=', avvminusic))
 
@@ -178,24 +611,24 @@ f.write('{}\t{:.2}\n'.format('Av(R-I)=', avrcminusic))
 wlmic_Jband = 1.22
 if law == 'mathis':
     if r == 5:
-        aj = util.reddrv5(av1, wlmic_Jband, commonpath)
+        aj = reddrv5(av1, wlmic_Jband, commonpath)
     else:
-        aj = util.redd(av1, wlmic_Jband, commonpath)
+        aj = redd(av1, wlmic_Jband, commonpath)
 if law == 'HD29647':
-    aj = util.reddhd(av1, wlmic_Jband, commonpath)
+    aj = reddhd(av1, wlmic_Jband, commonpath)
 if law == 'CCM89':
-    aj = util.reddccm89(wlmic_Jband, r, commonpath)
+    aj = reddccm89(wlmic_Jband, r, commonpath)
 if law == 'mcclure':
     if r == 5:
         if avin > 8:
-            aj = util.reddmcclureavgt8rv5p0(av1, wlmic_Jband, commonpath)
+            aj = reddmcclureavgt8rv5p0(av1, wlmic_Jband, commonpath)
         else:
-            aj = util.reddmcclureavlt8rv5p0(av1, wlmic_Jband, commonpath)
+            aj = reddmcclureavlt8rv5p0(av1, wlmic_Jband, commonpath)
     else:
         if avin > 8:
-            aj = util.reddmcclureavgt8rv3p1(av1, wlmic_Jband, commonpath)
+            aj = reddmcclureavgt8rv3p1(av1, wlmic_Jband, commonpath)
         else:
-            aj = util.reddmcclureavlt8rv3p1(av1, wlmic_Jband, commonpath)
+            aj = reddmcclureavlt8rv3p1(av1, wlmic_Jband, commonpath)
 avicminusj = (1/(ai-aj))*(iminusj-iminusj0c)
 f.write('{}\t{:.2}\n'.format('Av(I-J)=', avicminusj))
 
@@ -203,7 +636,7 @@ f.write('{}\t{:.2}\n'.format('Av(I-J)=', avicminusj))
 # f.write('{}\n'.format('Observed Magnitudes:'))
 # f.write('{}\n'.format(input_mags))
 
-if inter == 'True':
+if inter:
     print('\n')
     print('User input Av is:', avin, '. To stick with it, press "y".', '\n')
     print('Calculated Av(V-R) is:', str(avvminusrc), '. To use it, press "1".', '\n')
@@ -235,14 +668,14 @@ for i in range(0, 15):
     redmag = input_mags[i]
     if Av_new < 8:
         if r == 5:
-            dered = util.reddrv5(av1, filter, commonpath)*Av_new
+            dered = reddrv5(av1, filter, commonpath)*Av_new
         else:
-            dered = util.redd(av1, filter, commonpath)*Av_new
+            dered = redd(av1, filter, commonpath)*Av_new
     else:
         if r == 5:
-            dered = util.reddmcclureavgt8rv5p0(av1, filter, commonpath)*Av_new
+            dered = reddmcclureavgt8rv5p0(av1, filter, commonpath)*Av_new
         else:
-            dered = util.reddmcclureavgt8rv3p1(av1, filter, commonpath)*Av_new
+            dered = reddmcclureavgt8rv3p1(av1, filter, commonpath)*Av_new
     dered_mag = input_mags[i]-dered
     # store de-reddened V, I, and J-band
     if i == 2:
@@ -305,19 +738,16 @@ else:
 
 # calculate mass and age with both Siess and Baraffe tracks
 # Baraffe tracks
-if teff < 4169:
-    valuesbaraffe = util.parameters_baraffe(teff,luminosity,commonpath)
-    massbaraffe = valuesbaraffe[0]
-    agebaraffe = valuesbaraffe[1]
-else:
-    massbaraffe = 99.0
-    agebaraffe = 99.e6
+#if teff < 4169:
+valuesbaraffe = parameters_isochrone(teff, luminosity, 'baraffe', commonpath)
+massbaraffe = valuesbaraffe[0]
+agebaraffe = valuesbaraffe[1]
 
 f.write('{}\n'.format('----------------------------'))
 f.write('{}\t{:.2}\t{:.2}\n'.format('M_Baraffe,Age_Baraffe', massbaraffe, agebaraffe/1.e6))
 
 # Siess tracks
-valuessiess = util.parameters_siess(teff, luminosity, commonpath)
+valuessiess = parameters_isochrone(teff, luminosity, 'siess', commonpath)
 masssiess = valuessiess[0]
 agesiess = valuessiess[1]
 f.write('{}\t{:.2}\t{:.2}\n'.format('M_Siess,Age_Siess', masssiess, agesiess/1.e6))
@@ -372,8 +802,8 @@ else:
     mdot = 0.
 
 # Plot HR diagram with object on it
-if HR == 'True':
-    figure = util.HRdiagram(teff, luminosity, isochrone, obj, commonpath)
+if HR:
+    figure = HRdiagram(teff, luminosity, isochrone, obj, commonpath)
     figure.show()
     figure.savefig(outpath + 'HR_' + obj + '.png', dpi=300, bbox_inches='tight')
 else:
@@ -395,7 +825,7 @@ f.close()
 #####################################################
 
 # calculate scaled template photosphere using KH95 colors
-if calcphot == 'yes' and table == 'kh95':
+if calcphot and table == 'kh95':
 
     i0 = 0
 
@@ -433,7 +863,7 @@ if calcphot == 'yes' and table == 'kh95':
         fluxes_from_colors.append(log_nu_fnu_from_colors)
     for i in range(0, number_wl):
         if wl_phot[i] < wl_from_colors[11]:
-            flux_phot = util.interp(wl_phot[i], wl_from_colors, fluxes_from_colors, 12, i0)
+            flux_phot = np.interp(wl_phot[i], wl_from_colors, fluxes_from_colors)
             flux_phot = 10**flux_phot
         else:
             flux_phot = (10**fluxes_from_colors[11])*((wl_from_colors[11]/wl_phot[i])**3)
@@ -441,7 +871,7 @@ if calcphot == 'yes' and table == 'kh95':
     filephot.close()
 
 # calculate scaled template photosphere using PM13 colors
-if calcphot == 'yes' and table == 'pm13':
+if calcphot and table == 'pm13':
 
     i0 = 0
 
@@ -482,7 +912,7 @@ if calcphot == 'yes' and table == 'pm13':
         fluxes_from_colors.append(log_nu_fnu_from_colors)
     for i in range(0, number_wl):
         if wl_phot[i] < wl_from_colors[7]:
-            flux_phot = util.interp(wl_phot[i], wl_from_colors, fluxes_from_colors, 12, i0)
+            flux_phot = np.interp(wl_phot[i], wl_from_colors, fluxes_from_colors)
             flux_phot = 10**flux_phot
         else:
             flux_phot = (10**fluxes_from_colors[7])*((wl_from_colors[7]/wl_phot[i])**3)
