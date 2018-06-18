@@ -696,23 +696,27 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                 strucfile = strucfiles[['.irr.' in element for element in strucfiles]][0]
             except:
                 raise IOError('COLLATE: ERROR WITH fort14.irr files.')
-            radii, z, p, t, rho, epsbig, eps = readstruc(strucfile) # arrays as [nrad,nz]
 
-            # We save them in different fits extensions as [nz,nrad]
-            radii_hdu = fits.ImageHDU(np.meshgrid(radii,z[0,:])[0])
-            radii_hdu.header.set('COMMENT','Radii (au)')
-            z_hdu = fits.ImageHDU(z.T)
-            z_hdu.header.set('COMMENT','Z (au)')
-            p_hdu = fits.ImageHDU(p.T)
-            p_hdu.header.set('COMMENT','Pressure (cgs)')
-            t_hdu = fits.ImageHDU(t.T)
-            t_hdu.header.set('COMMENT','Temperature (K)')
-            rho_hdu = fits.ImageHDU(rho.T)
-            rho_hdu.header.set('COMMENT','Density (g cm-2)')
-            epsbig_hdu = fits.ImageHDU(epsbig.T)
-            epsbig_hdu.header.set('COMMENT','Epsbig')
-            eps_hdu = fits.ImageHDU(eps.T)
-            eps_hdu.header.set('COMMENT','Eps')
+            try:
+                radii, z, p, t, rho, epsbig, eps = readstruc(strucfile) # arrays as [nrad,nz]
+                # We save them in different fits extensions as [nz,nrad]
+                radii_hdu = fits.ImageHDU(np.meshgrid(radii,z[0,:])[0])
+                radii_hdu.header.set('COMMENT','Radii (au)')
+                z_hdu = fits.ImageHDU(z.T)
+                z_hdu.header.set('COMMENT','Z (au)')
+                p_hdu = fits.ImageHDU(p.T)
+                p_hdu.header.set('COMMENT','Pressure (cgs)')
+                t_hdu = fits.ImageHDU(t.T)
+                t_hdu.header.set('COMMENT','Temperature (K)')
+                rho_hdu = fits.ImageHDU(rho.T)
+                rho_hdu.header.set('COMMENT','Density (g cm-2)')
+                epsbig_hdu = fits.ImageHDU(epsbig.T)
+                epsbig_hdu.header.set('COMMENT','Epsbig')
+                eps_hdu = fits.ImageHDU(eps.T)
+                eps_hdu.header.set('COMMENT','Eps')
+            except:
+                print('COLLATE: Error reading the structure. Model probably failed')
+                struc = 0
 
         #We add the different fits extensions
         if struc == 1:
