@@ -28,6 +28,11 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
     lstar = np.log10(lui)
     tlstar = np.log10(tstar)
 
+    if np.isnan(tlstar) or np.isnan(lstar):
+        print('WARNING: Nans in temperature and/or luminosity. '+
+        'Unable to calculate mass and age. \n')
+        return np.nan, np.nan
+
     # reads in tracks and corresponding ages
     if isomodel == 'siess':
         siesspath = commonpath+'isochrones/siess/'
@@ -113,6 +118,9 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
     mass = sinterp.griddata(points, values_mass, (np.array([tlstar,lstar])), method='linear')
     age = sinterp.griddata(points, values_age, (np.array([tlstar,lstar])), method='linear')
 
+    if np.isnan(mass) or np.isnan(age):
+        print('WARNING: Problem with interpolation. Values are probably '+
+        'out of bounds')
     return mass[0,0], age[0,0]
 
 #-------------------------------------------------------------
@@ -541,6 +549,7 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
                     kminusw40 = float(col[13])
                     rminusi0c = vminusi0c - vminusr0c
                     iminusj0c = vminusj0 - vminusi0c
+                    break
 
     # begins calculation of Av's
     av1 = 1
@@ -733,6 +742,7 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
             luminosity = lum
             radius = np.sqrt(luminosity)/(teff/5770.)**2
             radiusv = np.sqrt(lumv)/(teff/5770.)**2
+            print(luminosity,radius,teff)
         else:
             luminosity = lumv
             radiusv = np.sqrt(lumv)/(teff/5770.)**2
