@@ -132,7 +132,33 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
     return mass[0], age[0]
 
 #-------------------------------------------------------------
-def redd(av,wl,commonpath=commonpath):
+def reddening(wl, law, rv=3.1, av=1, avin=0, commonpath=commonpath):
+    '''
+    Calculates reddening correction using specified law.
+
+    INPUTS:
+    - wl: wavelength.
+    - law: extinction law that will be used.
+    - av: visual extinction.
+
+    OUTPUT:
+    - red: reddening correction.
+    '''
+    if law == 'mathis':
+        redd = redd(av, wl, rv, commonpath)
+    elif law == 'HD29647':
+        redd = reddhd(av, wl, commonpath)
+    elif law == 'CCM89':
+        redd = reddccm89(wl, r, commonpath)
+    elif law == 'mcclure':
+        redd = reddmcclure(av, wl, rv, avin, commonpath)
+    else:
+        raise IOError('Unknown extinction law.')
+
+    return redd
+
+#-------------------------------------------------------------
+def redd(av, wl, rv=3.1, commonpath=commonpath):
     """
     Calculates reddening correction using Mathis ARAA 28,37,1990
 
@@ -146,7 +172,10 @@ def redd(av,wl,commonpath=commonpath):
     """
     tablemathis=ascii.read(commonpath+'ext_laws/'+'mathis.table.rev', delimiter=" ")
     wlm=tablemathis['wlmu']
-    al=tablemathis['A_wl/A_J_R3.1']
+    if rv == 3.1:
+        al=tablemathis['A_wl/A_J_R3.1']
+    elif rv == 5:
+        al=tablemathis['A_wl/A_J_R5']
 
     # normalize to V
     avv=al[wlm == 0.55]
@@ -157,27 +186,37 @@ def redd(av,wl,commonpath=commonpath):
     return redd
 
 #-------------------------------------------------------------
-def reddrv5(av,wl,commonpath=commonpath):
+def reddmcclure(av, wl, rv=3.1, avin=0, commonpath=commonpath):
     """
-    Calculates reddening correction using Mathis ARAA 28,37,1990
+    Calculates reddening correction using McClure (2010)
 
     INPUTS
         av: visual extinction
         wl: wavelength
-
+        rv: Rv.
+        avin: initial (maybe guess) extinction
     OUTPUT
         redd: reddening correction
-
     """
-    tablemathis=ascii.read(commonpath+'ext_laws/'+'mathis.table.rev', delimiter=" ")
-    wlm=tablemathis['wlmu']
-    al=tablemathis['A_wl/A_J_R5']
+    if rv == 5:
+        if avin>8:
+            table=ascii.read(commonpath+'ext_laws/'+
+            'mcclurereddening_avgt8_rv5p0', data_start=1)
+        else:
+            table=ascii.read(commonpath+'ext_laws/'+
+            'mcclurereddening_avlt8_rv5p0', data_start=1)
+    elif rv ==3.1:
+        if avin>8:
+            table=ascii.read(commonpath+'ext_laws/'+
+            'mcclurereddening_avgt8_rv3p1', data_start=1)
+        else:
+            table=ascii.read(commonpath+'ext_laws/'+
+            'mcclurereddening_avlt8_rv3p1', data_start=1)
 
-    # normalize to V
-    avv=al[wlm == 0.55]
-    al=al/avv
+    wlm=table['col1']
+    al=table['col2']
 
-    redd=np.interp(wl,wlm[::-1],al[::-1])*av
+    redd=np.interp(wl,wlm,al)*av
 
     return redd
 
@@ -256,94 +295,6 @@ def reddccm89(wl,r,commonpath=commonpath):
     alambda_cc8=a+b/r
 
     return alambda_cc8
-
-#-------------------------------------------------------------
-def reddmcclureavgt8rv5p0(av,wl,commonpath=commonpath):
-    """
-    Calculates reddening correction using McClure (2010)
-    for Av>8 & Rv=5
-
-    INPUTS
-        av: visual extinction
-        wl: wavelength
-
-    OUTPUT
-        redd: reddening correction
-
-    """
-    table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avgt8_rv5p0', data_start=1)
-    wlm=table['col1']
-    al=table['col2']
-
-    redd=np.interp(wl,wlm,al)*av
-
-    return redd
-
-#-------------------------------------------------------------
-def reddmcclureavgt8rv3p1(av,wl,commonpath=commonpath):
-    """
-    Calculates reddening correction using McClure (2010)
-    for Av>8 & Rv=3.1
-
-    INPUTS
-        av: visual extinction
-        wl: wavelength
-
-    OUTPUT
-        redd: reddening correction
-
-    """
-    table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avgt8_rv3p1', data_start=1)
-    wlm=table['col1']
-    al=table['col2']
-
-    redd=np.interp(wl,wlm,al)*av
-
-    return redd
-
-#-------------------------------------------------------------
-def reddmcclureavlt8rv5p0(av,wl,commonpath):
-    """
-    Calculates reddening correction using McClure (2010)
-    for Av<8 & Rv=5
-
-    INPUTS
-        av: visual extinction
-        wl: wavelength
-
-    OUTPUT
-        redd: reddening correction
-
-    """
-    table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avlt8_rv5p0', data_start=1)
-    wlm=table['col1']
-    al=table['col2']
-
-    redd=np.interp(wl,wlm,al)*av
-
-    return redd
-
-#-------------------------------------------------------------
-def reddmcclureavlt8rv3p1(av,wl,commonpath):
-    """
-    Calculates reddening correction using McClure (2010)
-    for Av<8 & Rv=3.1
-
-    INPUTS
-        av: visual extinction
-        wl: wavelength
-
-    OUTPUT
-        redd: reddening correction
-
-    """
-    table=ascii.read(commonpath+'ext_laws/'+'mcclurereddening_avlt8_rv3p1', data_start=1)
-    wlm=table['col1']
-    al=table['col2']
-
-    redd=np.interp(wl,wlm,al)*av
-
-    return redd
 
 #-------------------------------------------------------------
 def HRdiagram(tstar,lui,track,obj,commonpath):
@@ -450,6 +401,7 @@ def HRdiagram(tstar,lui,track,obj,commonpath):
 
     return fig
 
+#-------------------------------------------------------------
 def starparam(obj, sptin, avin, distance, law='mcclure', table='kh95',
 isochrone='siess', HR=True, calcphot=True, inter=True, r=3.1,
 xu=np.nan, xb=np.nan, xv=np.nan, xr=np.nan, xi=np.nan, xj=np.nan, xh=np.nan,
@@ -559,103 +511,54 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
                     iminusj0c = vminusj0 - vminusi0c
                     break
 
-    # begins calculation of Av's
-    av1 = 1
     # open text file to write outputs
     f = open(outputfile, 'w')
-
-    # Av from V-R
-    wlmic_Rband = 0.64
+    # begins calculation of Av's
+    av1 = 1
     if law == 'mathis':
         f.write('{}\n'.format('Using Mathis law'))
         if r == 5:
             f.write('{}\n'.format('Using Rv=5'))
-            ar = reddrv5(av1, wlmic_Rband, commonpath)
         else:
             f.write('{}\n'.format('Using Rv=3.1'))
-            ar = redd(av1, wlmic_Rband, commonpath)
-    if law == 'HD29647':
+    elif law == 'HD29647':
         f.write('{}\n'.format('Using HD29647 law'))
-        ar = reddhd(av1, wlmic_Rband, commonpath)
-    if law == 'CCM89':
+    elif law == 'CCM89':
         f.write('{}\n'.format('Using CCM89 law'))
-        ar = reddccm89(wlmic_Rband, r, commonpath)
-    if law == 'mcclure':
+    elif law == 'mcclure':
         f.write('{}\n'.format('Using McClure (2010) law'))
         if r == 5:
             if avin>8:
                 f.write('{}\n'.format('with mcclure_avgt8_rv5p0'))
-                ar = reddmcclureavgt8rv5p0(av1, wlmic_Rband, commonpath)
             else:
                 f.write('{}\n'.format('with mcclure_avlt8_rv5p0'))
-                ar = reddmcclureavlt8rv5p0(av1, wlmic_Rband, commonpath)
         else:
             if avin>8:
                 f.write('{}\n'.format('with mcclure_avgt8_rv3p1'))
-                ar = reddmcclureavgt8rv3p1(av1, wlmic_Rband, commonpath)
             else:
                 f.write('{}\n'.format('with mcclure_avlt8_rv3p1'))
-                ar = reddmcclureavlt8rv3p1(av1, wlmic_Rband, commonpath)
-    avvminusrc=(1/(1.-ar))*(vminusr-vminusr0c)
+
+    # Av from V-R
+    wlmic_Rband = 0.64
+    ar = reddening(wlmic_Rband, law=law, rv=r, avin=avin, commonpath=commonpath)
+    avvminusrc=(1./(1.-ar))*(vminusr-vminusr0c)
     f.write('{}\t{:.2}\n'.format('Av(V-R)=', avvminusrc))
 
     # Av from V-Ic
     wlmic_Iband = 0.79
-    if law == 'mathis':
-        if r == 5:
-            ai = reddrv5(av1, wlmic_Iband, commonpath)
-        else:
-            ai = redd(av1, wlmic_Iband, commonpath)
-    if law == 'HD29647':
-        ai=reddhd(av1, wlmic_Iband, commonpath)
-    if law == 'CCM89':
-        ai = reddccm89(wlmic_Iband, r, commonpath)
-    if law == 'mcclure':
-        if r == 5:
-            if avin > 8:
-                ai = reddmcclureavgt8rv5p0(av1, wlmic_Iband, commonpath)
-            else:
-                ai = reddmcclureavlt8rv5p0(av1, wlmic_Iband, commonpath)
-        else:
-            if avin > 8:
-                ai = reddmcclureavgt8rv3p1(av1, wlmic_Iband, commonpath)
-            else:
-                ai = reddmcclureavlt8rv3p1(av1, wlmic_Iband, commonpath)
-    avvminusic = (1/(1.-ai))*(vminusi-vminusi0c)
+    ai = reddening(wlmic_Iband, law=law, rv=r, avin=avin, commonpath=commonpath)
+    avvminusic = (1./(1.-ai))*(vminusi-vminusi0c)
     f.write('{}\t{:.2}\n'.format('Av(V-I)=', avvminusic))
 
     # Av from Rc-Ic
-    avrcminusic = (1/(ar-ai))*(rminusi-rminusi0c)
+    avrcminusic = (1./(ar-ai))*(rminusi-rminusi0c)
     f.write('{}\t{:.2}\n'.format('Av(R-I)=', avrcminusic))
 
     # Av from Ic-J
     wlmic_Jband = 1.22
-    if law == 'mathis':
-        if r == 5:
-            aj = reddrv5(av1, wlmic_Jband, commonpath)
-        else:
-            aj = redd(av1, wlmic_Jband, commonpath)
-    if law == 'HD29647':
-        aj = reddhd(av1, wlmic_Jband, commonpath)
-    if law == 'CCM89':
-        aj = reddccm89(wlmic_Jband, r, commonpath)
-    if law == 'mcclure':
-        if r == 5:
-            if avin > 8:
-                aj = reddmcclureavgt8rv5p0(av1, wlmic_Jband, commonpath)
-            else:
-                aj = reddmcclureavlt8rv5p0(av1, wlmic_Jband, commonpath)
-        else:
-            if avin > 8:
-                aj = reddmcclureavgt8rv3p1(av1, wlmic_Jband, commonpath)
-            else:
-                aj = reddmcclureavlt8rv3p1(av1, wlmic_Jband, commonpath)
+    aj = reddening(wlmic_Jband, law=law, rv=r, avin=avin, commonpath=commonpath)
     avicminusj = (1/(ai-aj))*(iminusj-iminusj0c)
     f.write('{}\t{:.2}\n'.format('Av(I-J)=', avicminusj))
-
-    # Adopt Av from V-I
-    # f.write('{}\n'.format('Observed Magnitudes:'))
-    # f.write('{}\n'.format(input_mags))
 
     if inter:
         print('\n')
@@ -679,7 +582,6 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
     else:
         Av_new = avin
 
-
     f.write('{}\n'.format('----------------------------'))
     f.write('{}\n'.format('Band Wavelength Mag_obs Mag_dered lFl_obs lFl_dered'))
     # correct for reddening and calculate Flambda and Fobserved
@@ -687,37 +589,28 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
         filter = filterwl[i]
         # de-reddened magnitudes
         redmag = input_mags[i]
-        if Av_new < 8:
-            if r == 5:
-                dered = reddrv5(av1, filter, commonpath)*Av_new
-            else:
-                dered = redd(av1, filter, commonpath)*Av_new
-        else:
-            if r == 5:
-                dered = reddmcclureavgt8rv5p0(av1, filter, commonpath)*Av_new
-            else:
-                dered = reddmcclureavgt8rv3p1(av1, filter, commonpath)*Av_new
+        dered = reddening(filter, law=law, rv=r, avin=Av_new,
+        commonpath=commonpath) * Av_new
         dered_mag = input_mags[i]-dered
         # store de-reddened V, I, and J-band
         if i == 2:
-            dered_V = input_mags[i]-dered
+            dered_V = dered_mag
         if i == 4:
-            dered_Ic = input_mags[i]-dered
+            dered_Ic = dered_mag
         if i == 5:
-            dered_J = input_mags[i]-dered
+            dered_J = dered_mag
 
-        # f.write('{}\t{:.3}\t{:.3}\n'.format(band[i], redmag, dered_mags))
-        fnu = zeropoint[i]*10.**(-dered_mag/2.5)  # dereddened flux
-        fnuobs = zeropoint[i]*10.**(-redmag/2.5)  # observed flux
-        nu = c*1e4/filterwl[i]  # frequency corresponding to wavelength
-        wangs = filterwl[i]*1.e4   # wavelength in angstroms
-        nufnu = np.log10(nu*fnu)
-        nufnuobs = np.log10(nu*fnuobs)
-        fl = nu*fnu/wangs
+        fnu = zeropoint[i] * 10.**(-dered_mag/2.5)  # dereddened flux
+        fnuobs = zeropoint[i] * 10.**(-redmag/2.5)  # observed flux
+        nu = c * 1e4 / filterwl[i]  # frequency corresponding to wavelength
+        nufnu = np.log10(nu * fnu)
+        nufnuobs = np.log10(nu * fnuobs)
         # store flux in U band for use in Lacc calculation
         if i == 0:
-            flux = fl
-        f.write('{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\n'.format(band[i], filterwl[i], redmag, dered_mag, nufnuobs, nufnu))
+            wangs = filterwl[i] * 1.e4   # wavelength in angstroms
+            flux = nu * fnu / wangs  # store flambda in U band for use in Lacc calculation
+        f.write('{}\t{}\t{:.4}\t{:.4}\t{:.4}\t{:.4}\n'.format(
+        band[i], filterwl[i], redmag, dered_mag, nufnuobs, nufnu))
 
     dmodulus = 5*np.log10(distance)-5   # distance modulus = m - M
     abs_jmag = dered_J-dmodulus
@@ -792,41 +685,26 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
 
     f.write('{}\t{:.2}\t{:.2}\n'.format('M_adopt,Age_adopt', mass, age/1.e6))
 
-    # check out if switches around 598
-
     # Mass accretion rate calculation
     deltau = 680
-    lumu = 4*np.pi*(distance*pc)*(distance*pc/lsun)*flux*deltau
+    lumu = 4*np.pi*(distance*pc)**2./lsun*flux*deltau
 
-    # f.write('{}\t{:.2}\t{:.2}\n'.format('flux, lumu', flux, lumu))
     # U standard from I (ie, assuming no veiling at U)
-
-    # f.write('{:.2}\t{:.2}\t{:.2}\n'.format(uminusv0[0], vmi0c[0], dered_Ic))
     ustandard = (uminusv0+vminusi0c)+dered_Ic
-
-    # f.write('{}\t{:.3}\n'.format('ustandard', ustandard[0]))
-    fnustandard = zeropoint[0]*10.**(-ustandard/2.5)
-    nu = c*1e4/filterwl[0]
+    fnustandard = zeropoint[0] * 10.**(-ustandard/2.5)
+    nu = c * 1e4/filterwl[0]
     wangs = filterwl[0]*1.e4
     # flambda per A
-    fluxstandard = nu*fnustandard/wangs
-    lumustandard = 4.*np.pi*(distance*pc)*(distance*pc/lsun)*fluxstandard*deltau
-
-    # f.write('{}\t{:.2}\t{:.2}\n'.format('fluxstandard, lumustandard', fluxstandard[0], lumustandard[0]))
+    fluxstandard = nu * fnustandard/wangs
+    lumustandard = 4.*np.pi*(distance*pc)**2./lsun*fluxstandard*deltau
 
     # excess U luminosity
     lumu = lumu-lumustandard
-
-    # f.write('{}\t{:.2}\n'.format('lumu', lumu[0]))
-
     if lumu > 0:
         # accretion luminosity - Gullbring calibration
         lacc = 1.09*np.log10(lumu)+0.98
         lacc = 10.**lacc
-        if mass < 50:
-            mdot = radius*lacc/gg/mass*(rsun/msun)*(lsun/msun)*3.17e7
-        else:
-            mdot = 0.
+        mdot = radius*lacc/gg/mass*(rsun/msun)*(lsun/msun)*3.17e7
     else:
         lacc = 0.
         mdot = 0.
