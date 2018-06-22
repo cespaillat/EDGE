@@ -6,6 +6,7 @@ import scipy.interpolate as sinterp
 import os
 import matplotlib.pyplot as plt
 import math
+import pickle
 
 starparampath = os.path.dirname(os.path.realpath(__file__))+'/'
 commonpath = starparampath+'../COMMON/'
@@ -80,31 +81,38 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
                     baraffepath+'bhac15_t_10.dat']
         ages = [5.e5,1.e6,2.e6,3.e6,4.e6,5.e6,8.e6,1.e7,1.5e7,2.e7,2.5e7,3.e7,4.e7,5.e7,1.e9,1.e10]
         cols = [1,2,4] # columns of interest of files
+    elif (isomodel == 'MIST') or (isomodel == 'mist'):
+        f = open(commonpath+'isochrones/MIST_evol_tracks/MIST_tracks.pkl','rb')
+        tracks = pickle.load(f)
+        f.close()
+        points = tracks[:,2:]
+        values_mass = tracks[:,0]
+        values_age = tracks[:,1]
     else:
-        print('WARNING: '+isomodel+"is not supported. Use 'siess' or 'baraffe'")
+        print('WARNING: '+isomodel+"is not supported. Use 'siess', 'baraffe', "+
+        "or 'MIST'")
         return np.nan, np.nan
 
-    nages = len(ages)
-
-    # We read the isochrones and build a grid of points
-    # in the (Tstar,Lstar) plane
-    points = []
-    values_mass = []
-    values_age = []
-    for i in range(0,nages):
-        tableiso = np.genfromtxt(fileiso[i],skip_header=1,
-        usecols=(cols[0],cols[1],cols[2]))
-        massint = tableiso[:,0]
-        nmasses = len(massint)
-        tint = np.log10(tableiso[:,1]).reshape(nmasses,1)
-        lint = tableiso[:,2].reshape(nmasses,1)  # already in log
-        points.append(np.concatenate((tint,lint),axis=1))
-        values_mass.append(massint.reshape(nmasses,1))
-        values_age.append(np.ones((nmasses,1))*ages[i])
-
-    points = np.concatenate(points) # (Teff, Luminosities)
-    values_mass = np.concatenate(values_mass)
-    values_age = np.concatenate(values_age)
+    if (isomodel == 'siess') or (isomodel == 'baraffe'):
+        nages = len(ages)
+        # We read the isochrones and build a grid of points
+        # in the (Tstar,Lstar) plane
+        points = []
+        values_mass = []
+        values_age = []
+        for i in range(0,nages):
+            tableiso = np.genfromtxt(fileiso[i],skip_header=1,
+            usecols=(cols[0],cols[1],cols[2]))
+            massint = tableiso[:,0]
+            nmasses = len(massint)
+            tint = np.log10(tableiso[:,1]).reshape(nmasses,1)
+            lint = tableiso[:,2].reshape(nmasses,1)  # already in log
+            points.append(np.concatenate((tint,lint),axis=1))
+            values_mass.append(massint.reshape(nmasses))
+            values_age.append(np.ones((nmasses))*ages[i])
+        points = np.concatenate(points) # (Teff, Luminosities)
+        values_mass = np.concatenate(values_mass)
+        values_age = np.concatenate(values_age)
 
     # if out of isochrone range, reject
     if (tlstar > np.max(points[:,0])) or (tlstar < np.min(points[:,0])):
@@ -121,7 +129,7 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
     if np.isnan(mass) or np.isnan(age):
         print('WARNING: Problem with interpolation. Values are probably '+
         'out of bounds')
-    return mass[0,0], age[0,0]
+    return mass[0], age[0]
 
 #-------------------------------------------------------------
 def redd(av,wl,commonpath=commonpath):
@@ -742,7 +750,6 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
             luminosity = lum
             radius = np.sqrt(luminosity)/(teff/5770.)**2
             radiusv = np.sqrt(lumv)/(teff/5770.)**2
-            print(luminosity,radius,teff)
         else:
             luminosity = lumv
             radiusv = np.sqrt(lumv)/(teff/5770.)**2
@@ -766,13 +773,22 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
     agesiess = valuessiess[1]
     f.write('{}\t{:.2}\t{:.2}\n'.format('M_Siess,Age_Siess', masssiess, agesiess/1.e6))
 
+    # MIST tracks
+    valuesmist = parameters_isochrone(teff, luminosity, 'MIST', commonpath)
+    massmist = valuesmist[0]
+    agemist = valuesmist[1]
+    f.write('{}\t{:.2}\t{:.2}\n'.format('M_MIST,Age_MIST', massmist, agemist/1.e6))
+
     # Adopt user picked values
     if isochrone == 'baraffe':
         mass = massbaraffe
         age = agebaraffe
-    else:
+    elif isochrone == 'siess':
         mass = masssiess
         age = agesiess
+    elif (isochrone == 'MIST') or (isochrone == 'mist'):
+        mass = massmist
+        age = agemist
 
     f.write('{}\t{:.2}\t{:.2}\n'.format('M_adopt,Age_adopt', mass, age/1.e6))
 
