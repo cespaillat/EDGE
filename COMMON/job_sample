@@ -132,10 +132,10 @@ set FILEFORSTERITE=$DIRCOMs/FORSTERITE/forsterite_cde_lam_op_ext.txt
 set FILEENSTATITE=$DIRCOMs/ENSTATITE/enstatite_cde_lam_op_ext.txt
 
 #-------------------------------------------
-echo olivine: ls $FILESILAMORPO
-echo PYROXENE: ls $FILESILAMORPP
-echo forsterite: ls $FILEFORSTERITE
-echo enstatite: ls $FILEENSTATITE
+#echo olivine: ls $FILESILAMORPO
+#echo PYROXENE: ls $FILESILAMORPP
+#echo forsterite: ls $FILEFORSTERITE
+#echo enstatite: ls $FILEENSTATITE
 
 #end label for output file label to identify case. Check which is the last you run.
 #all the properties of the model will be written in file log$labelend and it will
@@ -669,7 +669,7 @@ $FILEORGWALL
 $FILEICEWALL
 EOD
 
-ls $FILERIN
+#ls $FILERIN
 
 endif
 #end wall at inner disk edge calculation--------------
