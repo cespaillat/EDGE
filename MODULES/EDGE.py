@@ -396,7 +396,8 @@ def loadObs(name, datapath = datapath):
 
     return obj
 
-def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path = None, image = False, **kwargs):
+def job_file_create(jobnum, path, fill=3, iwall=False, inostruc=False,
+imod=False, sample_path = None, image = False, **kwargs):
     """
     Creates a new job file that is used by the D'Alessio Model.
 
@@ -604,7 +605,13 @@ def job_file_create(jobnum, path, fill=3, iwall=False, imod=False, sample_path =
 
     if iwall:
         turnoff = ['IPHOT', 'IOPA', 'IVIS', 'IIRR', 'IPROP', 'ISEDT']
+        for switch in turnoff:
+            start = text.find('set '+switch+"='") + len('set '+switch+"='")
+            end = start + len(text[start:].split("'")[0])
+            text = text[:start] + '0' + text[end:]
 
+    if inostruc:
+        turnoff = ['IOPA', 'IVIS', 'IIRR']
         for switch in turnoff:
             start = text.find('set '+switch+"='") + len('set '+switch+"='")
             end = start + len(text[start:].split("'")[0])
