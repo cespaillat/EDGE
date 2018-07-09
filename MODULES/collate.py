@@ -168,8 +168,8 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         f.close()
 
         # Read name and jobnum
-        name = '_'.join(file_outputs.split('_')[:-1])
-        jobnum = file_outputs.split('_')[-1]
+        name = '_'.join(file_outputs.split('_')[:-2])
+        jobnum = file_outputs.split('_')[-2]
 
     else:
         # If file_names is not provided, then jobnum and name should be used
