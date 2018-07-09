@@ -126,7 +126,7 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'
 #photfilewl=commonpath+'wavelengths/'+'wlfile_standard.ent'
 
 #
-starparam.starparam(obj, sptin, avin, distance, law, table, isochrone=, HR,
+starparam.starparam(obj, sptin, avin, distance, law, table, isochrone, HR,
 calcphot, inter, r,
 xu, xb, xv, xr, xi, xj, xh, xk, xl, xm, irac1, irac2, irac3, irac4, mips1,
 outpath, outputfile, photfile, commonpath, photfilewl)

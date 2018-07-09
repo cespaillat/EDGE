@@ -457,12 +457,18 @@ def color_tables(sptin, table='kh95', commonpath=commonpath):
                     vminush0 = float(col[8])
                     vminusk0 = float(col[9])
                     jminush0 = vminush0 - vminusj0
-                    kminusw10 = float(col[10])
-                    kminusw20 = float(col[11])
-                    kminusw30 = float(col[12])
-                    kminusw40 = float(col[13])
                     rminusi0c = vminusi0c - vminusr0c
                     iminusj0c = vminusj0 - vminusi0c
+                    try: # Some sp. types do not have these colors
+                        kminusw10 = float(col[10])
+                        kminusw20 = float(col[11])
+                        kminusw30 = float(col[12])
+                        kminusw40 = float(col[13])
+                    except:
+                        kminusw10 = np.nan
+                        kminusw20 = np.nan
+                        kminusw30 = np.nan
+                        kminusw40 = np.nan
                     break
         colors0 = np.array([uminusb0, bminusv0, vminusr0c, rminusi0c, iminusj0c,
         jminush0, vminusk0-vminush0])
