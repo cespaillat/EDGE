@@ -352,9 +352,9 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                     dparam[ind] = dparam[sparam.index('AMAXS')]
             elif param == 'TEMP' or param == 'TSHOCK':
                 try:
-                    dparam[ind] = float(jobf.split(param+"=")[1].split(".")[0])
+                    dparam[ind] = float(jobf.split(param+"=")[1].split(" #")[0])
                 except ValueError:
-                    raise ValueError('COLLATE: MISSING . AFTER '+param+' VALUE, GO FIX IN JOB FILE ' +jobnum)
+                    raise ValueError('COLLATE: PROBLME WITH '+param+' VALUE, GO FIX IN JOB FILE ' +jobnum)
             elif param == 'MDOTSTAR':
                 #MDOTSTAR is often set to $MDOT, but could also be set to a number
                 #If it is the same as MDOT/not there, grab the value of MDOT
