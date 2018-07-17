@@ -648,26 +648,32 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
                 else:
                     f.write('{}\n'.format('with mcclure_avlt8_rv3p1'))
 
-    # Av from fit to input magnitudes, from V to K
-    init = [avin]
-    result, flag = op.leastsq(residual_extinctions, init,
-    args=(input_mags[2:8], filterwl[2:8], colors0, r, law))
-    avfit1 = result[0]
-    if flag != 5:
-        f.write('{}\t{:.2}\n'.format('Av(fit)=', avfit1))
-    else:
-        f.write('{}\t{:.2}\n'.format('Av(fit)=', np.nan))
+    try:
+        # Av from fit to input magnitudes, from V to K
+        init = [avin]
+        result, flag = op.leastsq(residual_extinctions, init,
+        args=(input_mags[2:8], filterwl[2:8], colors0, r, law, commonpath))
+        avfit1 = result[0]
+        if flag != 5:
+            f.write('{}\t{:.2}\n'.format('Av(fit)=', avfit1))
+        else:
+            f.write('{}\t{:.2}\n'.format('Av(fit)=', np.nan))
+    except:
+        print('AV_Fit1 did not work. You probably need more data points.')
 
-    # Fitting for a dereddened J as well
-    init = [avin, xj]
-    result, flag = op.leastsq(residual_extinctions_J, init,
-    args=(input_mags[2:8], filterwl[2:8], colors0, r, law))
-    avfit2 = result[0]
-    Jfit = result[1]
-    if flag != 5:
-        f.write('{}\t{:.2}, {:.2}\n'.format('Av(fit), J =', avfit2, Jfit))
-    else:
-        f.write('{}\t{:.2}, {:.2}\n'.format('Av(fit), J =', np.nan, np.nan))
+    try:
+        # Fitting for a dereddened J as well
+        init = [avin, xj]
+        result, flag = op.leastsq(residual_extinctions_J, init,
+        args=(input_mags[2:8], filterwl[2:8], colors0, r, law, commonpath))
+        avfit2 = result[0]
+        Jfit = result[1]
+        if flag != 5:
+            f.write('{}\t{:.2}, {:.2}\n'.format('Av(fit), J =', avfit2, Jfit))
+        else:
+            f.write('{}\t{:.2}, {:.2}\n'.format('Av(fit), J =', np.nan, np.nan))
+    except:
+        print('AV_Fit2 did not work. You probably need more data points.')
 
     # Av from V-R
     wlmic_Rband = 0.64
