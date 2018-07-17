@@ -660,6 +660,8 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
             f.write('{}\t{:.2}\n'.format('Av(fit)=', np.nan))
     except:
         print('AV_Fit1 did not work. You probably need more data points.')
+        avfit1 = np.nan
+        f.write('{}\t{:.2}\n'.format('Av(fit)=', avfit1))
 
     try:
         # Fitting for a dereddened J as well
@@ -674,6 +676,9 @@ photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'):
             f.write('{}\t{:.2}, {:.2}\n'.format('Av(fit), J =', np.nan, np.nan))
     except:
         print('AV_Fit2 did not work. You probably need more data points.')
+        avfit2 = np.nan
+        Jfit = np.nan
+        f.write('{}\t{:.2}, {:.2}\n'.format('Av(fit), J =', avfit2, Jfit))
 
     # Av from V-R
     wlmic_Rband = 0.64
