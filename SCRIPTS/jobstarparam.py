@@ -122,8 +122,7 @@ photfile=outpath+'photosphere.'+obj+'.'+law+'.rv'+str(r)+'.av'+str(avin)+'.'+tab
 
 # wavelengths over which to interpolate template photosphere
 # use 'wlfile_standard.ent' if you're using the photosphere in SED models
-photfilewl=commonpath+'wavelengths/'+'longitudes_4testruns_shorter.ent'
-#photfilewl=commonpath+'wavelengths/'+'wlfile_standard.ent'
+photfilewl=commonpath+'wavelengths/'+'wlfile_standard.ent'
 
 #
 starparam.starparam(obj, sptin, avin, distance, law, table, isochrone, HR,
