@@ -1501,36 +1501,38 @@ class TTS_Model(object):
         try:
             self.amaxw = header['AMAXW']
         except:
-            print('WARNING: AMAXW not found. This is probably an old collated \
-model. Setting it to AMAXS')
+            print('WARNING: AMAXW not found. This is probably an old collated '+
+            'model. Setting it to AMAXS')
             self.amaxw = header['AMAXS']
         try:
             self.ztran = header['ZTRAN']
         except:
-            print('WARNING: ZTRAN not found. This is probably an old collated model.')
+            print('WARNING: ZTRAN not found. This is probably an old collated '+
+            'model.')
         try:
             self.zwall = header['ZWALL']
         except:
-            print('WARNING: ZWALL not found. This is probably an old collated model.')
+            print('WARNING: ZWALL not found. This is probably an old collated '+
+            'model.')
         try:
             self.d2g = header['D2G']
         except:
-            print('WARNING: D2G not found. This is probably an old collated \
-model. Setting it to NaN.')
+            print('WARNING: D2G not found. This is probably an old collated '+
+            'model. Setting it to NaN.')
             self.d2g = np.nan
         try:
             self.rc = header['RC']
             self.gamma = header['GAMMA']
         except:
-            print('WARNING: RC and GAMMA not found. This is probably an old \
-collated model.')
+            print('WARNING: RC and GAMMA not found. This is probably an old '+
+            'collated model.')
         try:
             self.silab = header['SILAB']
             self.grafab = header['GRAFAB']
             self.iceab = header['ICEAB']
         except:
-            print('WARNING: SILAB, GRAFAB, and ICEAB not found. This is probably\
-             an old collated model. Setting them to NaN.')
+            print('WARNING: SILAB, GRAFAB, and ICEAB not found. This is '+
+            'probably an old collated model. Setting them to NaN.')
             self.silab = np.nan
             self.grafab = np.nan
             self.iceab = np.nan
@@ -2263,21 +2265,34 @@ class PTD_Model(TTS_Model):
 
         # Make sure the inner wall job you supplied is, in fact, an inner wall.
         if 'WALLAXIS' not in HDUwall[0].header.keys():
-            raise IOError('DATAINIT: Job you supplied for inner wall does not have a wall!')
+            raise IOError('DATAINIT: Job you supplied for inner wall does not '+
+            'have a wall!')
 
         stringNum     = str(self.jobn).zfill(self.fill)
 
         # Define the inner wall height.
-        self.iwallH   = HDUwall[0].header['ALTINH']
-        self.itemp    = HDUwall[0].header['TEMP']
-        self.ijobn    = HDUwall[0].header['JOBNUM']
+        self.iwallH      = HDUwall[0].header['ALTINH']
+        self.itemp       = HDUwall[0].header['TEMP']
+        self.ijobn       = HDUwall[0].header['JOBNUM']
+        self.insilcomp   = HDUwall[0].header['NSILCOMP']
+        self.isiltotab   = HDUwall[0].header['SILTOTAB']
+        self.iamorf_ol   = HDUwall[0].header['AMORF_OL']
+        self.iamorf_py   = HDUwall[0].header['AMORF_PY']
+        self.iforsteri   = HDUwall[0].header['FORSTERI']
+        self.ienstatit   = HDUwall[0].header['ENSTATIT']
+        self.irin        = HDUwall[0].header['RIN']
         try:
-            self.izwall = HDUwall[0].header['ZWALL']
+            self.iamaxw  = HDUwall[0].header['AMAXW']
         except:
-            print('WARNING: IZWALL not found. This is probably an old collated model.')
+            print('WARNING: AMAXW not found for inner wall. This is probably '+
+            'an old collated model. Setting it to AMAXS')
+            self.iamaxw  = HDUwall[0].header['AMAXS']
+        try:
+            self.izwall  = HDUwall[0].header['ZWALL']
+        except:
+            print('WARNING: ZWALL not found for inner wall. This is probably '+
+            'an old collated model.')
 
-
-        # Inner wall
         # Correct for self extinction:
         if self.extcorr != None:
             iwallFcorr= HDUwall[0].data[HDUwall[0].header['WALLAXIS'],:]*np.exp(-1*self.extcorr)
@@ -2296,15 +2311,9 @@ class PTD_Model(TTS_Model):
             #Add information about the disk
             self.ialpha      = HDUwall[0].header['ALPHA']
             self.irdisk      = HDUwall[0].header['RDISK']
-            self.iamax       = HDUwall[0].header['AMAXS']
             self.ieps        = HDUwall[0].header['EPS']
-            self.insilcomp   = HDUwall[0].header['NSILCOMP']
-            self.isiltotab   = HDUwall[0].header['SILTOTAB']
-            self.iamorf_ol   = HDUwall[0].header['AMORF_OL']
-            self.iamorf_py   = HDUwall[0].header['AMORF_PY']
-            self.iforsteri   = HDUwall[0].header['FORSTERI']
-            self.ienstatit   = HDUwall[0].header['ENSTATIT']
-            self.irin        = HDUwall[0].header['RIN']
+            self.iamax       = HDUwall[0].header['AMAXS']
+            self.iamaxb      = HDUwall[0].header['AMAXB']
 
         # We change the keys for the outer wall and outer disk
         # Outer wall
