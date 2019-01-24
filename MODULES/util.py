@@ -534,7 +534,7 @@ def round_to_significant(value, uncertainty):
         Sierra Grant, October 10th, 2017
     '''
     
-    if (np.isfinite(value) * np.isfinite(uncertainty)) == 0 or value == 0 or uncertainty  == 0:
+    if (np.isfinite(value) * np.isfinite(uncertainty)) == 0 or uncertainty  == 0:
         return 'nan', 'nan'
     
     value, uncertainty = np.float(value), np.float(uncertainty)
