@@ -8,20 +8,21 @@ import matplotlib.pyplot as plt
 import math
 import pickle
 import scipy.optimize as op
+import pdb
 
 starparampath = os.path.dirname(os.path.realpath(__file__))+'/'
 commonpath = starparampath+'../COMMON/'
 
 #-------------------------------------------------------------
-def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
+def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath, extrapolate = False):
     """
     Calculates age and mass using Siess & Forestini 1996 tracks or
-    Baraffe et al. 1998 tracks.
+    Baraffe et al. 2015, or Baraffe et al. 1998 tracks.
 
     INPUTS
         tstar: stellar temperature
         lui:  stellar luminosity
-        isomodel: Isochrones to be used, either 'siess' or 'baraffe'
+        isomodel: Isochrones to be used, either 'siess' or 'baraffe' or 'baraffe98'
     OUTPUT
         mass: stellar mass
         age: stellar age
@@ -62,6 +63,8 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
         ages = [5.e5,6.e5,7.e5,8.e5,9.e5,1.e6,2.e6,3.e6,4.e6,5.e6,6.e6,\
         7.e6,8.e6,9.e6,1.e7,2.e7,3.e7,4.e7,5.e7,1.e9,1.e10]
         cols = [0,1,2] # columns of interest of files
+        skip_head = 1
+        
     elif isomodel == 'baraffe':
         baraffepath = commonpath+'isochrones/baraffe/'
         fileiso = [baraffepath+'bhac15_t_0.0005.dat', \
@@ -82,6 +85,59 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
                     baraffepath+'bhac15_t_10.dat']
         ages = [5.e5,1.e6,2.e6,3.e6,4.e6,5.e6,8.e6,1.e7,1.5e7,2.e7,2.5e7,3.e7,4.e7,5.e7,1.e9,1.e10]
         cols = [1,2,4] # columns of interest of files
+        skip_head = 1
+        
+    elif isomodel == 'baraffe98':
+        baraffe98path = commonpath+'isochrones/baraffe98/'
+        fileiso = [baraffe98path+'bcah98_t_6.0.dat',\
+                   baraffe98path+'bcah98_t_6.1.dat',\
+                   baraffe98path+'bcah98_t_6.2.dat',\
+                   baraffe98path+'bcah98_t_6.3.dat',\
+                   baraffe98path+'bcah98_t_6.4.dat',\
+                   baraffe98path+'bcah98_t_6.5.dat',\
+                   baraffe98path+'bcah98_t_6.6.dat',\
+                   baraffe98path+'bcah98_t_6.7.dat',\
+                   baraffe98path+'bcah98_t_6.8.dat',\
+                   baraffe98path+'bcah98_t_6.9.dat',\
+                   baraffe98path+'bcah98_t_7.0.dat',\
+                   baraffe98path+'bcah98_t_7.1.dat',\
+                   baraffe98path+'bcah98_t_7.2.dat',\
+                   baraffe98path+'bcah98_t_7.3.dat',\
+                   baraffe98path+'bcah98_t_7.4.dat',\
+                   baraffe98path+'bcah98_t_7.5.dat',\
+                   baraffe98path+'bcah98_t_7.6.dat',\
+                   baraffe98path+'bcah98_t_7.7.dat',\
+                   baraffe98path+'bcah98_t_7.8.dat',\
+                   baraffe98path+'bcah98_t_7.9.dat',\
+                   baraffe98path+'bcah98_t_8.0.dat',\
+                   baraffe98path+'bcah98_t_8.1.dat',\
+                   baraffe98path+'bcah98_t_8.2.dat',\
+                   baraffe98path+'bcah98_t_8.3.dat',\
+                   baraffe98path+'bcah98_t_8.4.dat',\
+                   baraffe98path+'bcah98_t_8.5.dat',\
+                   baraffe98path+'bcah98_t_8.6.dat',\
+                   baraffe98path+'bcah98_t_8.7.dat',\
+                   baraffe98path+'bcah98_t_8.8.dat',\
+                   baraffe98path+'bcah98_t_8.9.dat',\
+                   baraffe98path+'bcah98_t_9.0.dat',\
+                   baraffe98path+'bcah98_t_9.1.dat',\
+                   baraffe98path+'bcah98_t_9.2.dat',\
+                   baraffe98path+'bcah98_t_9.3.dat',\
+                   baraffe98path+'bcah98_t_9.4.dat',\
+                   baraffe98path+'bcah98_t_9.5.dat',\
+                   baraffe98path+'bcah98_t_9.6.dat',\
+                   baraffe98path+'bcah98_t_9.7.dat',\
+                   baraffe98path+'bcah98_t_9.8.dat',\
+                   baraffe98path+'bcah98_t_9.9.dat']
+                   
+        ages = 10**np.array([6.0, 6.1, 6.2, 6.3, 6.4, 6.5, 6.6, 6.7, 6.8, 6.9, \
+                             7.0, 7.1, 7.2, 7.3, 7.4, 7.5, 7.6, 7.7, 7.8, 7.9, \
+                             8.0, 8.1, 8.2, 8.3, 8.4, 8.5, 8.6, 8.7, 8.8, 8.9, \
+                             9.0, 9.1, 9.2, 9.3, 9.4, 9.5, 9.6, 9.7, 9.8, 9.9])
+        cols = [0, 1, 3]
+        
+        skip_head = 4
+                   
     elif (isomodel == 'MIST') or (isomodel == 'mist'):
         f = open(commonpath+'isochrones/MIST_evol_tracks/MIST_tracks.pkl','rb')
         tracks = pickle.load(f)
@@ -90,11 +146,11 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
         values_mass = tracks[:,0]
         values_age = tracks[:,1]
     else:
-        print('WARNING: '+isomodel+"is not supported. Use 'siess', 'baraffe', "+
+        print('WARNING: '+isomodel+"is not supported. Use 'siess', 'baraffe', 'baraffe98', "+
         "or 'MIST'")
         return np.nan, np.nan
 
-    if (isomodel == 'siess') or (isomodel == 'baraffe'):
+    if (isomodel == 'siess') or (isomodel == 'baraffe') or (isomodel == 'baraffe98'):
         nages = len(ages)
         # We read the isochrones and build a grid of points
         # in the (Tstar,Lstar) plane
@@ -102,7 +158,7 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
         values_mass = []
         values_age = []
         for i in range(0,nages):
-            tableiso = np.genfromtxt(fileiso[i],skip_header=1,
+            tableiso = np.genfromtxt(fileiso[i],skip_header=skip_head,\
             usecols=(cols[0],cols[1],cols[2]))
             massint = tableiso[:,0]
             nmasses = len(massint)
@@ -122,11 +178,40 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath):
     if (lstar > np.max(points[:,1])) or (lstar < np.min(points[:,1])):
         print('WARNING: Luminosity out of isochrone bounds')
         return np.nan, np.nan
-
-    # Interpolation in mass and age
-    mass = sinterp.griddata(points, values_mass, (np.array([tlstar,lstar])), method='linear')
-    age = sinterp.griddata(points, values_age, (np.array([tlstar,lstar])), method='linear')
-
+    
+    # Interpolate with extrapolation
+    if extrapolate == True:
+        print('EXTRAPOLATING CAN LEAD TO ERRONEOUS RESULTS! USE WITH CAUTION!')
+        massfnc = sinterp.interp2d(points[:,0], points[:,1], values_mass, kind='linear', bounds_error = False)
+        agefnc = sinterp.interp2d(points[:,0], points[:,1], values_age, kind='linear', bounds_error = False)
+        
+        
+        mass = massfnc(tlstar,lstar)
+        age = agefnc(tlstar,lstar)
+        
+        #Temporary plotting
+        # plt.scatter(tlstar, lstar, color = 'r')
+        # plt.scatter(points[:,0], points[:,1], c = values_mass)
+        # plt.colorbar()
+        # plt.show()
+        
+        #plt.scatter(points[:,1], values_mass, c = 10**points[:,0])
+        #plt.scatter(lstar, mass, color = 'r')
+        
+        #plt.scatter(points[:,1], values_mass[:])
+        # plt.colorbar()
+        # plt.show()
+        
+        #pdb.set_trace()
+        
+        
+    else:
+        # Interpolation in mass and age
+        mass = sinterp.griddata(points, values_mass, (np.array([tlstar,lstar])), method='linear')
+        age = sinterp.griddata(points, values_age, (np.array([tlstar,lstar])), method='linear')
+    
+    
+    
     if np.isnan(mass) or np.isnan(age):
         print('WARNING: Problem with interpolation. Values are probably '+
         'out of bounds')
