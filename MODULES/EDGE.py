@@ -356,7 +356,7 @@ def loadPickle(name, picklepath=datapath, num=None, red=0, fill = 3, py2 = False
 
     return pickle
 
-def loadObs(name, datapath = datapath):
+def loadObs(name, datapath = datapath, red = False):
     '''
     Loads in a fits file saved from the TTS_Obs class and places that information into a TTS_obs object
 
@@ -371,10 +371,17 @@ def loadObs(name, datapath = datapath):
     '''
 
     #Read in the object
-    HDU = fits.open(datapath+name+'_obs.fits')
-
+    if red == False:
+        HDU = fits.open(datapath+name+'_obs.fits')
+    
+    else:
+        HDU = fits.open(datapath+name+'_red.fits')
     #Create the empty TTS_Obs object
-    obj = TTS_Obs(name)
+    
+    if red:
+        obj = Red_Obs(name)
+    else:
+        obj = TTS_Obs(name)
 
     #Extract the unique instrument keys
     photkeys = list(np.unique(HDU[1].data['instrument']))
@@ -1803,10 +1810,14 @@ class TTS_Model(object):
                                         'f12.0': {'wl':W3filter[:,0],'trans':W3filter[:,1]},\
                                         'f22.0': {'wl':W4filter[:,0],'trans':W4filter[:,1]}}
             elif instrKey == 'CVSO': # CIDA Variability Survey
+                UCVSOfilter        = np.loadtxt(filterspath+'Johnson-Cousins_filters/Bessel_V-1_km.txt')
+                BCVSOfilter        = np.loadtxt(filterspath+'Johnson-Cousins_filters/Bessel_V-1_km.txt')
                 VCVSOfilter        = np.loadtxt(filterspath+'Johnson-Cousins_filters/Bessel_V-1_km.txt')
                 RCVSOfilter        = np.loadtxt(filterspath+'Johnson-Cousins_filters/Bessel_R-1_km.txt')
                 ICVSOfilter        = np.loadtxt(filterspath+'Johnson-Cousins_filters/Bessel_I-1_km.txt')
-                self.filters[instrKey] = {'f0.55': {'wl':VCVSOfilter[:,0]*0.001,'trans':VCVSOfilter[:,1]},\
+                self.filters[instrKey] = {'f0.37': {'wl':UCVSOfilter[:,0]*0.001,'trans':UCVSOfilter[:,1]},\
+                                        'f0.44': {'wl':BCVSOfilter[:,0]*0.001,'trans':BCVSOfilter[:,1]},\
+                                        'f0.55': {'wl':VCVSOfilter[:,0]*0.001,'trans':VCVSOfilter[:,1]},\
                                         'f0.64': {'wl':RCVSOfilter[:,0]*0.001,'trans':RCVSOfilter[:,1]},\
                                         'f0.79': {'wl':ICVSOfilter[:,0]*0.001,'trans':ICVSOfilter[:,1]}}
             elif instrKey == 'CANA': # CanaryCam
@@ -2820,8 +2831,8 @@ class Red_Obs(TTS_Obs):
 
     """
 
-    def dered(self, Av, Av_unc, law, datapath, rv=None, flux=1, lpath=commonpath, err_prop=1, UV = 0, clob = False, \
-        Mstar = None, Mref = None, Rstar = None, Rref = None, Tstar = None, Tref = None, dist = None):
+    def dered(self, Av, law, datapath, Av_unc = 0, flux=1, lpath=commonpath, err_prop=0, UV = 0, clob = False, \
+        Mstar = None, Mref = None, Rstar = None, Rref = None, Tstar = None, Tref = None, dist = None, save = True, verbose = True):
         """
         Deredden the spectra/photometry present in the object, and then convert to TTS_Obs structure.
         This function is adapted from the IDL procedure 'dered_calc.pro' (written by Melissa McClure).
@@ -2854,10 +2865,11 @@ class Red_Obs(TTS_Obs):
         extPickle = open(lpath + 'ext_laws.pkl', 'rb')
         extLaws   = cPickle.load(extPickle, encoding = 'latin1')
         extPickle.close()
-
+        
         # Figure out which law we will be using based on the user input and Av:
         if law == 'mkm09_rv5':
-            print('Using the McClure (2009) ext. laws for Av >3\nwith the Mathis (1990) Rv=5.0 \
+            if verbose:
+                print('Using the McClure (2009) ext. laws for Av >3\nwith the Mathis (1990) Rv=5.0 \
                    law for Av < 3\n(appropriate for molecular clouds like Ophiuchus).')
             AjoAks = 2.5341
             AvoAj  = 3.06
@@ -2874,7 +2886,8 @@ class Red_Obs(TTS_Obs):
             else:
                 raise ValueError('DERED: Specified Av is not within acceptable ranges.')
         elif law == 'mkm09_rv3':
-            print('Using the McClure (2009) ext. laws for Av >3\nwith the Mathis (1990) Rv=3.1 \
+            if verbose:
+                print('Using the McClure (2009) ext. laws for Av >3\nwith the Mathis (1990) Rv=3.1 \
                    law for Av < 3\n(appropriate for molecular clouds like Taurus).')
             AjoAks = 2.5341
             AvoAj  = 3.55 # for Rv=3.1 **WARNING** this is still the Rv=5 curve until 2nd step below.
@@ -2898,9 +2911,10 @@ class Red_Obs(TTS_Obs):
             jindjm   = np.where(wave_jm < 1.25)[0]
             wave_law = np.append(wave_jm[jindjm], wave_law[jindmkm])
             ext_law  = np.append(ext_jm[jindjm], ext_law[jindmkm])
-
+        
         elif law == 'mathis90_rv3.1':
-            print('Using the Mathis (1990) Rv=3.1 law\n(appropriate for diffuse ISM).')
+            if verbose:
+                print('Using the Mathis (1990) Rv=3.1 law\n(appropriate for diffuse ISM).')
             AjoAks   = 2.5341
             AvoAj    = 3.55                                     # for Rv=3.1
             wave_law = extLaws['mathis_rv3']['wl']
@@ -2933,16 +2947,17 @@ class Red_Obs(TTS_Obs):
                 #Ensure that you are using the Rv = 3.1 Mathis law
                 if law != 'mathis90_rv3.1' and law != 'mkm09_rv3':
                     raise ValueError('UV dereddening mode for use only with the low extinction laws (mathis90_rv3.1 and mkm09_rv3)')
-
+                
+                
                 #Covert wavelength to 1/microns
                 x = self.spectra[specKey]['wl'] ** (-1)
 
                 #Define the valid range (3-8 (micron)^-1)
-                UVrange = np.where((x > 3) & (x < 8))
+                UVrange = np.where((x > 1) & (x < 8))
 
                 # If the range does contain some points in the right wavelength range, calculate the new extinction law there
                 if len(UVrange[0]) != 0:
-
+                    
                     #Because this function only works for diffuse regions, forced to use an Rv of 3.1 (common interstellar value)
                     Rv = 3.1
 
@@ -2985,18 +3000,14 @@ class Red_Obs(TTS_Obs):
 
 
             if 'err' in self.spectra[specKey].keys():
-                spec_unc    = np.float64(spec_flux*np.sqrt(((self.spectra[specKey]['err']/self.spectra[specKey]['lFl'])\
-                                         **2.) + (((0.4*math.log(10)*extInterpolated*Av_unc)/(AvoAj))**2.)) )
-
+                if err_prop:
+                    spec_unc    = np.float64(spec_flux*np.sqrt(((self.spectra[specKey]['err']/self.spectra[specKey]['lFl'])**2.) + (((0.4*math.log(10)*extInterpolated*Av_unc)/(AvoAj))**2.)) )
+                    print('Uncertainties in Av should not be treated as random uncertainties, they are systematic!')
+                else:
+                    spec_unc    = np.float64(self.spectra[specKey]['err']*10.0**(0.4*A_lambda))
+                    
             else:
                 spec_unc    = None
-
-            # Correct units to flux:
-            #Apparently I don't need this anymore?
-#            spec_flux       = spec_flux * self.spectra[specKey]['wl'] * 1e-4
-
-#            if spec_unc != None:
-#                spec_unc    = spec_unc  * self.spectra[specKey]['wl'] * 1e-4
 
             deredObs.add_spectra(specKey, self.spectra[specKey]['wl'], spec_flux, errors=spec_unc)
 
@@ -3019,6 +3030,7 @@ class Red_Obs(TTS_Obs):
                 x = self.photometry[photKey]['wl'] ** (-1)
 
                 #Define the valid range (3-8 (micron)^-1)
+                
                 UVrange = np.where((x > 3) & (x < 8))
 
                 # If the range does contain some points in the right wavelength range, calculate the new extinction law there
@@ -3072,6 +3084,7 @@ class Red_Obs(TTS_Obs):
                 else:
                     errcorr = self.photometry[photKey]['err']
                 if err_prop:
+                    print('Uncertainties in Av should not be treated as random uncertainties, they are systematic!!!')
                     phot_err= np.float64(photcorr * np.sqrt(((errcorr/photcorr)**2.) + \
                                          (((0.4*math.log(10.)*extInterpolated*Av_unc)/AvoAj)**2.)) )
                 else:
@@ -3091,7 +3104,10 @@ class Red_Obs(TTS_Obs):
             deredObs.add_photometry(photKey, self.photometry[photKey]['wl'], phot_dered, errors=phot_err, ulim=ulimVal, verbose = 0)
 
         # Now that the new TTS_Obs object has been created and filled in, we must save it:
-        deredObs.saveObs(datapath = datapath, clob = clob, Av = Av, extlaw = law)
+        
+        if save:
+            deredObs.saveObs(datapath = datapath, clob = clob, Av = Av, extlaw = law)
+        
         return deredObs
 
 
@@ -3226,7 +3242,7 @@ class Red_Obs(TTS_Obs):
         priHDU = fits.PrimaryHDU(header=prihdr)
 
         HDU = fits.HDUList([priHDU, photHDU, specHDU])
-        HDU.writeto(datapath+self.name+'_obs.fits', clobber = clob)
+        HDU.writeto(datapath+self.name+'_red.fits', clobber = clob)
 
     def SPPickle(self, picklepath, clob = False, fill = 3):
         """
