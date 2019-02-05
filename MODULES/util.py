@@ -11,6 +11,57 @@ utilpath = os.path.dirname(os.path.realpath(__file__))+'/'
 commonpath = utilpath+'../COMMON/'
 
 #-------------------------------------------------------------
+def reddccm89(wl,r):
+    """
+    Calculates reddening correction using Crdelli, Clayton, & Mathis 1989, ApJ, 345, 245
+
+    INPUTS
+        av: visual extinction
+        r: extinction factor
+
+    OUTPUT
+        alambda_cc8: reddening correction
+
+    """
+
+    x=1/wl
+
+    if x<0.3:
+        alambda_cc8=0.
+        return alambda_cc8
+
+    if x>10:
+        print('outside CCM89 range')
+        stop
+
+    if x>0.3 and x<1.1:
+        a=0.574*x**1.61
+        b=-0.527*x**1.61
+
+    else:
+        if x>1.1 and x<3.3:
+            y=x-1.82
+            a=1.+y*(0.176999+y*(-0.50447+y*(-0.02427+y*(0.72085 \
+            + y*(0.01979+y*(-0.77530+y*0.32999))))))
+            b=y*(1.41338+y*(2.28305+y*(1.07233+y*(-5.38434 \
+            + y*(-0.62251+y*(5.30260-y*2.09002))))))
+        if x>3.3 and x<8:
+            if x>5.9 and x<8:
+                fa=-0.0447*(x-5.9)**2-0.009779*(x-5.9)**3
+                fb=0.2130*(x-5.9)**2+0.1207*(x-5.9)**3
+            else:
+                fa=0.
+                fb=0.
+            a=1.752-0.316*x-0.104/((x-4.67)**2+0.341)+fa
+            b=-3.090+1.825*x+1.206/((x-4.62)**2+0.263)+fb
+
+        if x>8 and x<10:
+            a=-1.073+(x-8.)*(-0.628+(x-8.)*(0.137-(x-8.)*0.070))
+            b=13.670+(x-8.)*(4.257+(x-8.)*(-0.420+(x-8.)*0.374))
+
+    alambda_cc8=a+b/r
+
+    return alambda_cc8
 
 def deci_to_time(ra=None, dec=None):
     """

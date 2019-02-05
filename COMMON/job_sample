@@ -804,8 +804,9 @@ set nophot="abs($IPHOT - 1)"
 set nowall="abs($IWALLDUST - 1)"
 set noangle="abs($ISEDT - 1)"
 set noscatt="abs($ISEDS - 1)"
+set notemp="abs($IPROP - 1)"
 
-python -c "from collate import collate; collate('./','./',file_outputs='$fileoutput',nophot=$nophot,nowall=$nowall,noangle=$noangle,noscatt=$noscatt,struc=False)"
+python -c "from collate import collate; collate('./','./',file_outputs='$fileoutput',nophot=$nophot,nowall=$nowall,noangle=$noangle,noscatt=$noscatt,notemp=$notemp,struc=False)"
 
 endif
 #end collate

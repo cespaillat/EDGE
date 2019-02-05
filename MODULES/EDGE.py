@@ -987,7 +987,7 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
                     max_lambdaS = max(obj.spectra[specKey]['wl'])
                     min_lambdaS = min(obj.spectra[specKey]['wl'])
                     obj.spec_dens[specKey] = len(obj.spectra[specKey]['wl']) / (np.log10(max_lambdaS) - np.log10(min_lambdaS))
-                ws = np.sqrt(obj.phot_dens / obj.spec_dens[specKey])
+                ws = np.sqrt(obj.spec_dens[specKey] / obj.phot_dens)
             else: # If weights are provided, we will use them
                 ws = 1.0
             # We save the wavelengths and fluxes in a list (to be converted to an array)
@@ -2820,7 +2820,7 @@ class Red_Obs(TTS_Obs):
 
     """
 
-    def dered(self, Av, Av_unc, law, datapath, flux=1, lpath=commonpath, err_prop=1, UV = 0, clob = False, \
+    def dered(self, Av, Av_unc, law, datapath, rv=None, flux=1, lpath=commonpath, err_prop=1, UV = 0, clob = False, \
         Mstar = None, Mref = None, Rstar = None, Rref = None, Tstar = None, Tref = None, dist = None):
         """
         Deredden the spectra/photometry present in the object, and then convert to TTS_Obs structure.
@@ -2831,7 +2831,7 @@ class Red_Obs(TTS_Obs):
         Av: The Av extinction value.
         Av_unc: The uncertainty in the Av value provided.
         law: The extinction law to be used -- these extinction laws are found in the ext_laws.pkl file.
-             The options you have are 'mkm09_rv5', 'mkm09_rv3', and 'mathis90_rv3.1'
+             The options you have are 'mkm09_rv5', 'mkm09_rv3', and 'mathis90_rv3.1', 'CCM'
         datapath: Where your dereddened observations fits will be saved.
         flux: BOOLEAN -- if True (1), the function will treat your photometry as flux units (erg s-1 cm-2).
               if False (0), the function will treat your photometry as being Flambda (erg s-1 cm-2 cm-1).
@@ -2905,6 +2905,9 @@ class Red_Obs(TTS_Obs):
             AvoAj    = 3.55                                     # for Rv=3.1
             wave_law = extLaws['mathis_rv3']['wl']
             ext_law  = extLaws['mathis_rv3']['ext']
+        elif law == 'CCM':
+            print('Using the CCM law.')
+            AvoAj = 1.0
         else:
             raise ValueError('DERED: Specified extinction law string is not recognized.')
 
@@ -2919,7 +2922,10 @@ class Red_Obs(TTS_Obs):
         # SSC/SMART's "spectral uncertainty" and the "nod-differenced uncertainty".
 
         for specKey in self.spectra.keys():
-            extInterpolated = np.interp(self.spectra[specKey]['wl'], wave_law, ext_law) # Interpolated ext.
+            if law == 'CCM':
+                extInterpolated = util.reddccm89(self.spectra[specKey]['wl'], rv)
+            else:
+                extInterpolated = np.interp(self.spectra[specKey]['wl'], wave_law, ext_law) # Interpolated ext.
 
             #If the UV flag is on, replace the extinction law between 0.125 - .33 microns with a different law
             if UV == True:
@@ -2997,7 +3003,10 @@ class Red_Obs(TTS_Obs):
 
         # Spectra are done, onwards to photometry:
         for photKey in self.photometry.keys():
-            extInterpolated = np.interp(self.photometry[photKey]['wl'], wave_law, ext_law)
+            if law == 'CCM':
+                extInterpolated = util.reddccm89(self.photometry[photKey]['wl'], rv)
+            else:
+                extInterpolated = np.interp(self.photometry[photKey]['wl'], wave_law, ext_law)
 
             #If the UV flag is on, replace the extinction law between 0.125 - .33 microns with a different law
             if UV == True:
