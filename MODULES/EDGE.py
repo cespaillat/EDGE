@@ -2831,7 +2831,7 @@ class Red_Obs(TTS_Obs):
 
     """
 
-    def dered(self, Av, law, datapath, Av_unc = 0, flux=1, lpath=commonpath, err_prop=0, UV = 0, clob = False, \
+    def dered(self, Av, law, datapath, Av_unc = 0, flux=1, lpath=commonpath, rv = None, err_prop=0, UV = 0, clob = False, \
         Mstar = None, Mref = None, Rstar = None, Rref = None, Tstar = None, Tref = None, dist = None, save = True, verbose = True):
         """
         Deredden the spectra/photometry present in the object, and then convert to TTS_Obs structure.
