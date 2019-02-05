@@ -16,17 +16,22 @@ commonpath = starparampath+'../COMMON/'
 #-------------------------------------------------------------
 def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath, extrapolate = False):
     """
-    Calculates age and mass using Siess & Forestini 1996 tracks or
-    Baraffe et al. 2015, or Baraffe et al. 1998 tracks.
+    Calculates age and mass using Siess & Forestini 1996 tracks,
+    Baraffe et al. 2015 tracks, or Baraffe et al. 1998 tracks.
 
     INPUTS
         tstar: stellar temperature
         lui:  stellar luminosity
         isomodel: Isochrones to be used, either 'siess' or 'baraffe' or 'baraffe98'
+    
+    OPTIONAL INPUTS:
+        extrapolate:[boolean] If true, will use a different interpolation scheme which can 
+                              extrapolate outside of bounds. Use with caution, as results not be stable. 
+    
     OUTPUT
         mass: stellar mass
         age: stellar age
-
+    
     """
     lstar = np.log10(lui)
     tlstar = np.log10(tstar)
@@ -189,28 +194,10 @@ def parameters_isochrone(tstar, lui, isomodel='siess', commonpath=commonpath, ex
         mass = massfnc(tlstar,lstar)
         age = agefnc(tlstar,lstar)
         
-        #Temporary plotting
-        # plt.scatter(tlstar, lstar, color = 'r')
-        # plt.scatter(points[:,0], points[:,1], c = values_mass)
-        # plt.colorbar()
-        # plt.show()
-        
-        #plt.scatter(points[:,1], values_mass, c = 10**points[:,0])
-        #plt.scatter(lstar, mass, color = 'r')
-        
-        #plt.scatter(points[:,1], values_mass[:])
-        # plt.colorbar()
-        # plt.show()
-        
-        #pdb.set_trace()
-        
-        
     else:
         # Interpolation in mass and age
         mass = sinterp.griddata(points, values_mass, (np.array([tlstar,lstar])), method='linear')
         age = sinterp.griddata(points, values_age, (np.array([tlstar,lstar])), method='linear')
-    
-    
     
     if np.isnan(mass) or np.isnan(age):
         print('WARNING: Problem with interpolation. Values are probably '+
