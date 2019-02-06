@@ -2286,7 +2286,7 @@ class PTD_Model(TTS_Model):
         self.itemp       = HDUwall[0].header['TEMP']
         self.ijobn       = HDUwall[0].header['JOBNUM']
         self.insilcomp   = HDUwall[0].header['NSILCOMP']
-        self.isiltotab   = HDUwall[0].header['SILTOTAB']
+        #self.isiltotab   = HDUwall[0].header['SILTOTAB']
         self.iamorf_ol   = HDUwall[0].header['AMORF_OL']
         self.iamorf_py   = HDUwall[0].header['AMORF_PY']
         self.iforsteri   = HDUwall[0].header['FORSTERI']
