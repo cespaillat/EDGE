@@ -38,10 +38,14 @@ set lamax='amax0p25'
 #set lamax='amax1mm'
 
 #directories----------------------
+#Path to the main diad code (for wavelength info)
+set MAIN=/project/bu-disks/shared/DIAD
+set MAINCODE=$MAIN/CODEf77_081109
+
 set dirOPTTHIN=/project/bu-disks/shared/OPTTHIN
 set dirTODO=/project/bu-disks/shared/TODOf77_081109
 
-set WLFILE=$dirTODO/CODEf77_081109/COMUN/longitudes_4testruns_shorter.ent
+set WLFILE=$MAINCODE/COMUN/wlfile_standard.ent
 set PROPIO=$dirOPTTHIN/code_041312/optthin_041312
 
 set FILEOUT=rin$RIN.rout$ROUT.tmin$TAUMIN.$lamax.$labelend
