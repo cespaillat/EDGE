@@ -771,19 +771,19 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         f.close()
 
         #Choose the variables you want to extract
-        sparam = np.array(['DISTANCE', 'MASS', 'RADIO', 'TSTAR', 'BIGF', 'FILLING', 'WTTS','SFACTOR'])
+        sparam = np.array(['DISTANCE', 'MASS', 'RADIO', 'TSTAR', 'BIGF', 'FILLING', 'SFACTOR'])
         dparam = []
 
         #Begin extracting parameters
         for i, param in enumerate(sparam):
 
             #Handle the special cases of WTTS
-            if param == 'WTTS':
-                wtts = jobf.split("filewtts="+name+'_')[1].split("_")[0]
-                dparam.append(wtts)
+#            if param == 'WTTS':
+#                wtts = jobf.split("filewtts="+name+'_')[1].split("_")[0]
+#                dparam.append(wtts)
 
             #Handle the special cases of BIGF
-            elif param == 'BIGF':
+            if param == 'BIGF':
                 dparam.append(jobf.split(param+"='")[1].split("'")[0])
 
             #Handle everything else
