@@ -39,10 +39,10 @@ NOTES:
         '1.5', '1.75', '2.0', '2.25', '2.5', '3.0', '4.0', '5.0', '10.0',
         '100.0']
 
-        lamaxb: ['500', '600', '700', '800',' 900', '1mm', '2mm', '3mm', '4mm',
-        '5mm', '6mm', '7mm', '8mm', '9mm', '1cm', '1p1cm', '1p2cm', '1p3cm',
-        '1p4cm', '1p5cm', '1p6cm', '1p7cm', '1p8cm', '1p9cm', '2cm', '2p1cm',
-        '2p2cm', '2p3cm', '2p4cm', '2p5cm']
+        lamaxb: ['100','200','300','400',500', '600', '700', '800',' 900',
+        '1mm', '2mm', '3mm', '4mm', '5mm', '6mm', '7mm', '8mm', '9mm', '1cm',
+        '1p1cm', '1p2cm', '1p3cm', '1p4cm', '1p5cm', '1p6cm', '1p7cm', '1p8cm',
+        '1p9cm', '2cm', '2p1cm', '2p2cm', '2p3cm', '2p4cm', '2p5cm']
 
 MODIFICATION HISTORY
     Jun 16th, 2017 - Updated for mdotstar + amaxw by Connor Robinson

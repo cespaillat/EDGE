@@ -373,11 +373,11 @@ def loadObs(name, datapath = datapath, red = False):
     #Read in the object
     if red == False:
         HDU = fits.open(datapath+name+'_obs.fits')
-    
+
     else:
         HDU = fits.open(datapath+name+'_red.fits')
     #Create the empty TTS_Obs object
-    
+
     if red:
         obj = Red_Obs(name)
     else:
@@ -497,7 +497,8 @@ imod=False, sample_path = None, image = False, **kwargs):
 
         #Fix the special case of lamaxb
         if param == 'LAMAXB':
-            amaxdict={'500':'500', '600':'600', '700':'700', '800':'800',\
+            amaxdict={'100':'100','200':'200','300':'300','400':'400',\
+            '500':'500', '600':'600', '700':'700', '800':'800',\
             '900':'900', '1mm':'1000', '2mm':'2000', '3mm':'3000', '4mm':'4000',\
             '5mm':'5000', '6mm':'6000', '7mm':'7000', '8mm':'8000', '9mm':'9000',\
             '1cm':'10000', '1p1cm':'11000', '1p2cm':'12000', '1p3cm':'13000',\
@@ -2865,7 +2866,7 @@ class Red_Obs(TTS_Obs):
         extPickle = open(lpath + 'ext_laws.pkl', 'rb')
         extLaws   = cPickle.load(extPickle, encoding = 'latin1')
         extPickle.close()
-        
+
         # Figure out which law we will be using based on the user input and Av:
         if law == 'mkm09_rv5':
             if verbose:
@@ -2911,7 +2912,7 @@ class Red_Obs(TTS_Obs):
             jindjm   = np.where(wave_jm < 1.25)[0]
             wave_law = np.append(wave_jm[jindjm], wave_law[jindmkm])
             ext_law  = np.append(ext_jm[jindjm], ext_law[jindmkm])
-        
+
         elif law == 'mathis90_rv3.1':
             if verbose:
                 print('Using the Mathis (1990) Rv=3.1 law\n(appropriate for diffuse ISM).')
@@ -2947,8 +2948,8 @@ class Red_Obs(TTS_Obs):
                 #Ensure that you are using the Rv = 3.1 Mathis law
                 if law != 'mathis90_rv3.1' and law != 'mkm09_rv3':
                     raise ValueError('UV dereddening mode for use only with the low extinction laws (mathis90_rv3.1 and mkm09_rv3)')
-                
-                
+
+
                 #Covert wavelength to 1/microns
                 x = self.spectra[specKey]['wl'] ** (-1)
 
@@ -2957,7 +2958,7 @@ class Red_Obs(TTS_Obs):
 
                 # If the range does contain some points in the right wavelength range, calculate the new extinction law there
                 if len(UVrange[0]) != 0:
-                    
+
                     #Because this function only works for diffuse regions, forced to use an Rv of 3.1 (common interstellar value)
                     Rv = 3.1
 
@@ -3005,7 +3006,7 @@ class Red_Obs(TTS_Obs):
                     print('Uncertainties in Av should not be treated as random uncertainties, they are systematic!')
                 else:
                     spec_unc    = np.float64(self.spectra[specKey]['err']*10.0**(0.4*A_lambda))
-                    
+
             else:
                 spec_unc    = None
 
@@ -3030,7 +3031,7 @@ class Red_Obs(TTS_Obs):
                 x = self.photometry[photKey]['wl'] ** (-1)
 
                 #Define the valid range (3-8 (micron)^-1)
-                
+
                 UVrange = np.where((x > 3) & (x < 8))
 
                 # If the range does contain some points in the right wavelength range, calculate the new extinction law there
@@ -3104,10 +3105,10 @@ class Red_Obs(TTS_Obs):
             deredObs.add_photometry(photKey, self.photometry[photKey]['wl'], phot_dered, errors=phot_err, ulim=ulimVal, verbose = 0)
 
         # Now that the new TTS_Obs object has been created and filled in, we must save it:
-        
+
         if save:
             deredObs.saveObs(datapath = datapath, clob = clob, Av = Av, extlaw = law)
-        
+
         return deredObs
 
 
