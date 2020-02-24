@@ -156,6 +156,10 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
 
     # Select way of reading names of DIAD outputs.
     if file_outputs:
+        # Read name and jobnum
+        name = '_'.join(file_outputs.split('_')[:-2])
+        jobnum = file_outputs.split('_')[-2]
+
         # If file_outputs is given, read list_files from it
         try:
             f = open(path+file_outputs, 'r')
@@ -166,10 +170,6 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         # Names of output files saved in list_files
         list_files = np.array(f.read().splitlines())
         f.close()
-
-        # Read name and jobnum
-        name = '_'.join(file_outputs.split('_')[:-2])
-        jobnum = file_outputs.split('_')[-2]
 
     else:
         # If file_names is not provided, then jobnum and name should be used
@@ -414,14 +414,14 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             except:
                 raise IOError('COLLATE: ERROR WITH Phot file.')
             try:
-                size = os.path.getsize(photfile)
+                size = os.path.getsize(path+photfile)
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING PHOTOSPHERE FILE, ADDED 'FAILED' TAG TO HEADER. NOPHOT SET TO 1")
                 nophot = 1
                 failed = True
                 miss = 1
             if miss != 1 and size != 0:
-                phot  = ascii.read(photfile)
+                phot  = ascii.read(path+photfile)
                 axis['PHOTAXIS'] = axis_count
                 dataarr = np.concatenate((dataarr, phot['col1']))
                 dataarr = np.concatenate((dataarr, phot['col2']))
@@ -443,7 +443,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             except:
                 raise IOError('COLLATE: ERROR WITH fort17 file.')
             try:
-                size = os.path.getsize(wallfile)
+                size = os.path.getsize(path+wallfile)
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING FORT17 (WALL) FILE, ADDED 'FAILED' TAG TO HEADER. NOWALL SET TO 1")
                 nowall = 1
@@ -452,11 +452,11 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
 
             if miss != 1 and size != 0:
                 # Lok for the height of the wall
-                f = open(wallfile)
+                f = open(path+wallfile)
                 zwall = float(f.readlines()[7])
                 f.close()
                 # Read SED of wall
-                wall  =  ascii.read(wallfile, data_start = 9)
+                wall  =  ascii.read(path+wallfile, data_start = 9)
                 axis['WALLAXIS'] = axis_count
                 #If the photosphere was not run, then grab wavelength information from wall file
                 if nophot != 0:
@@ -482,7 +482,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             except:
                 raise IOError('COLLATE: ERROR WITH angle file.')
             try:
-                size = os.path.getsize(anglefile)
+                size = os.path.getsize(path+anglefile)
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING ANGLE (DISK) FILE, ADDED 'FAILED' TAG TO HEADER. NOANGLE SET TO 1")
                 noangle = 1
@@ -491,7 +491,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
 
             if miss != 1 and size != 0:
                 try:
-                    angle = ascii.read(anglefile, data_start = 1)
+                    angle = ascii.read(path+anglefile, data_start = 1)
                     axis['ANGAXIS'] = axis_count
 
                     #If the photosphere was not run, and the wall was not run then grab wavelength information from angle file
@@ -523,7 +523,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             except:
                 raise IOError('COLLATE: ERROR WITH scatt file.')
             try:
-                size = os.path.getsize(scattfile)
+                size = os.path.getsize(path+scattfile)
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING SCATT FILE, ADDED 'FAILED' TAG TO HEADER. NOSCATT SET TO 1")
                 noscatt = 1
@@ -531,7 +531,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                 miss = 1
 
             if miss != 1 and size > 100:
-                scatt = ascii.read(scattfile, data_start = 1)
+                scatt = ascii.read(path+scattfile, data_start = 1)
                 axis['SCATAXIS'] = axis_count
                     #If the photosphere, wall and disk were not run, then grab wavelength information from scatt file
                 if nophot != 0 and nowall != 0 and noangle != 0:
@@ -599,7 +599,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         if nowall != 1:
             try:
                 hdu.header.set('ZWALL', zwall, comment='Height of the wall (au)')
-                hdu.header.set('RIN', float(np.loadtxt(list_files[['rin.t' in
+                hdu.header.set('RIN', float(np.loadtxt(path+list_files[['rin.t' in
                 element for element in list_files]][0])), comment='Inner radius (au)')
             except:
                 raise IOError('COLLATE: ERROR WITH rin file.')
@@ -608,10 +608,10 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         if noangle != 1:
             try:
                 try:
-                    massfile = np.genfromtxt(list_files[['fort15' in element for element in list_files]][0], skip_header = 3,skip_footer = 0)
+                    massfile = np.genfromtxt(path+list_files[['fort15' in element for element in list_files]][0], skip_header = 3,skip_footer = 0)
                 except:
                     # Sometimes the last radius in fort15 has a value that is wrong
-                    massfile = np.genfromtxt(list_files[['fort15' in element for element in list_files]][0], skip_header = 3,skip_footer = 1)
+                    massfile = np.genfromtxt(path+list_files[['fort15' in element for element in list_files]][0], skip_header = 3,skip_footer = 1)
                 diskmassrad = massfile[:,0]
                 diskmassvals = massfile[:,10]
                 massfit = interpolate.interp1d(diskmassrad, diskmassvals)
@@ -644,7 +644,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             except:
                 raise IOError('COLLATE: ERROR WITH prop file.')
             try:
-                size = os.path.getsize(propfile)
+                size = os.path.getsize(path+propfile)
                 miss = 0
             except IndexError:
                 print("COLLATE: WARNING IN JOB "+jobnum+": MISSING PROP (PROPERTIES) FILE, ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
@@ -654,7 +654,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
 
             if miss != 1 and size != 0:
                 try:
-                    propdatatable = ascii.read(propfile, data_start = 1)
+                    propdatatable = ascii.read(path+propfile, data_start = 1)
                     propdata = np.zeros([len(propdatatable[0]),len(propdatatable)])
                     #Replace 'D' in the table with 'e' and convert into a numpy array the terrible brute force way
                     for i, column in enumerate(propdatatable):
@@ -702,7 +702,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                 raise IOError('COLLATE: ERROR WITH fort14.irr files.')
 
             try:
-                radii, z, p, t, rho, epsbig, eps = readstruc(strucfile) # arrays as [nrad,nz]
+                radii, z, p, t, rho, epsbig, eps = readstruc(path+strucfile) # arrays as [nrad,nz]
                 # We save them in different fits extensions as [nz,nrad]
                 radii_hdu = fits.ImageHDU(np.meshgrid(radii,z[0,:])[0])
                 radii_hdu.header.set('COMMENT','Radii (au)')
