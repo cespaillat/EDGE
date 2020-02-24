@@ -607,7 +607,11 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         #Get the disk mass
         if noangle != 1:
             try:
-                massfile = np.genfromtxt(list_files[['fort15' in element for element in list_files]][0], skip_header = 3,skip_footer = 1)
+                try:
+                    massfile = np.genfromtxt(list_files[['fort15' in element for element in list_files]][0], skip_header = 3,skip_footer = 0)
+                except:
+                    # Sometimes the last radius in fort15 has a value that is wrong
+                    massfile = np.genfromtxt(list_files[['fort15' in element for element in list_files]][0], skip_header = 3,skip_footer = 1)
                 diskmassrad = massfile[:,0]
                 diskmassvals = massfile[:,10]
                 massfit = interpolate.interp1d(diskmassrad, diskmassvals)

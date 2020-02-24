@@ -2093,7 +2093,7 @@ class TTS_Model(object):
             if eps_levels == None:
                 eps_levels = [np.max(self.eps_struc)]
             levels['eps'] = eps_levels
-            eps_vmin = np.max(self.eps_struc)/10.
+            eps_vmin = np.max([np.min(self.eps_struc),1e-4])
             eps_vmax = np.max(self.eps_struc)
             vmins['eps'] = np.log10(eps_vmin)
             vmaxs['eps'] = np.log10(eps_vmax)
@@ -2104,7 +2104,7 @@ class TTS_Model(object):
             if epsbig_levels == None:
                 epsbig_levels = [np.max(self.epsbig_struc)]
             levels['epsbig'] = epsbig_levels
-            epsbig_vmin = np.max(self.epsbig_struc)/10.
+            epsbig_vmin = np.max([np.min(self.epsbig_struc),1e-4])
             epsbig_vmax = np.max(self.epsbig_struc)
             vmins['epsbig'] = np.log10(epsbig_vmin)
             vmaxs['epsbig'] = np.log10(epsbig_vmax)
