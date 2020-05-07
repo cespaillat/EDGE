@@ -55,7 +55,7 @@ def readstruc(infile):
 #########################
 
 def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin=0, clob=0, fill=3, \
-    noextinct = 1, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, notemp = 0, struc = 1, shock = 0):
+    noextinct = 0, noangle = 0, nowall = 0, nophot = 0, noscatt = 1, notemp = 0, struc = 1, shock = 0):
     """
      collate.py
 
@@ -311,7 +311,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
 
         #Define what variables to record
         sparam = ['MSTAR', 'TSTAR', 'RSTAR', 'DISTANCIA', 'MDOT', 'MDOTSTAR',
-        'ALPHA', 'MUI', 'RDISK', 'AMAXS', 'EPS', 'ZTRAN', 'WLCUT_ANGLE',
+        'ALPHA', 'MUI', 'RDISK', 'AMAXS', 'EPS', 'ZTRAN', 'ALPHASET', 'WLCUT_ANGLE',
         'WLCUT_SCATT', 'NSILCOMPOUNDS', 'AMORPFRAC_OLIVINE', 'AMORPFRAC_PYROXENE',
         'FORSTERITE_FRAC', 'ENSTATITE_FRAC', 'TEMP', 'ALTINH', 'TSHOCK',
         'AMAXW', 'AMAXB', 'D2G', 'RC', 'GAMMA', 'SILAB', 'GRAFAB', 'ICEAB']
@@ -321,8 +321,9 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         'Mass accretion rate onto the star (Msun/yr)', 'Viscosity coefficient',
         'Cosine of inclination', 'Disk radius (au)',
         'Maximum grain size of dust in atmosphere (microns)',
-        'Epsilon, degree of settling',
-        'Transition height between dust populations (in H)',
+        'Epsilon, degree of settling (deprecated)',
+        'Transition height between dust populations (in H, deprecated)',
+        'Turbulence alpha used for settling',
         'Cut in wavelengths for thermal SED (microns)',
         'Cut in wavelengths for scattering (microns)',
         'Number of silicate compounds',
@@ -366,6 +367,17 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                     print('COLLATE: Warning, MDOTSTAR not found in jobfile. You\
                      might be using an old jobfile. Assuming it is MDOT. \n')
                     dparam[ind] = dparam[sparam.index('MDOT')]
+            elif param == 'ALPHASET':
+                #ALPHASET is often set to $ALPHA, but could also be set to a number
+                #If it is the same as ALPHA/not there, grab the value of ALPHA
+                if "\nset ALPHASET=$ALPHA" in jobf:
+                    dparam[ind] = dparam[sparam.index('ALPHA')]
+                elif "\nset ALPHASET='" in jobf:
+                    dparam[ind] = float(jobf.split("\nset ALPHASET='")[1].split("'")[0])
+                else:
+                    print('COLLATE: Warning, ALPHASET not found in jobfile. You\
+                     might be using an old jobfile. Assuming it is ALPHA. \n')
+                    dparam[ind] = dparam[sparam.index('ALPHA')]
             elif param == 'SILAB' or param == 'GRAFAB' or param == 'ICEAB':
                 param = param.lower()
                 dparam[ind] = float(jobf.split('\nset '+param+"=")[1].split("\n")[0])
@@ -659,7 +671,9 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
                     #Replace 'D' in the table with 'e' and convert into a numpy array the terrible brute force way
                     for i, column in enumerate(propdatatable):
                         for j, value in enumerate(column):
-                            propdata[j,i] = np.float(str.replace(value, 'D', 'e'))
+                            if type(value) is str:
+                                if 'D' in value:
+                                    propdata[j,i] = np.float(str.replace(value, 'D', 'e'))
 
                     #Start making a new array that contains structural data
                     sdata = 10**(np.vstack([propdata[0,:], propdata[1,:], propdata[2,:], propdata[4,:], propdata[5,:], propdata[11,:], propdata[12,:]]))

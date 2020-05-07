@@ -169,10 +169,10 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
         if params:
             if odustonly == False:
                 plt.figtext(0.60,0.88,'d2g = '+ str(model.d2g), color='#010000', size='9')
-                plt.figtext(0.60,0.85,'Eps = '+ str(model.eps), color='#010000', size='9')
+                plt.figtext(0.60,0.85,r'$\alpha_{settling}$ = '+ str(model.alphaset), color='#010000', size='9')
                 plt.figtext(0.60,0.82,'Rin = '+ str(model.rin), color='#010000', size='9')
                 plt.figtext(0.60,0.79,'Altinh = '+ str(model.wallH), color='#010000', size='9')
-                plt.figtext(0.80,0.88,'Alpha = '+ str(model.alpha), color='#010000', size='9')
+                plt.figtext(0.80,0.88,r'$\alpha$ = '+ str(model.alpha), color='#010000', size='9')
                 plt.figtext(0.80,0.85,'Rout = '+ str(model.rdisk), color='#010000', size='9')
                 plt.figtext(0.80,0.82,'Mdot = '+ str(model.mdot), color='#010000', size='9')
                 plt.figtext(0.40,0.85,'Amax = '+ str(model.amax), color='#010000', size='9')
@@ -419,8 +419,9 @@ imod=False, sample_path = None, image = False, **kwargs):
     **kwargs: The keywords arguments used to make changes to the sample file. Available
               kwargs include:
         amaxs - maximum grain size in disk
-        eps - settling parameter
-        ztran - height of transition between big and small grains
+        eps - settling parameter (deprecated)
+        ztran - height of transition between big and small grains (deprecated)
+        alphaset - alpha turbulence to set the settling
         mstar - mass of protostar
         tstar - effective temperature of protostar
         rstar - radius of protostar
@@ -570,6 +571,15 @@ imod=False, sample_path = None, image = False, **kwargs):
                 start = text.find('set '+param+'=') + len('set '+param+'=')
                 end = start + len(text[start:].split("#")[0])
                 text = text[:start]+"'"+paramstr+"'"+' '+text[end:]
+        #Fix the special case of ALPHASET (Sometimes it is $ALPHA)
+        #Also, this parameter does not work with the image code yet
+        elif param == 'ALPHASET':
+                if image:
+                    print("WARNING: parameter 'ALPHASET' is not yet supported by image code.")
+                else:
+                    start = text.find('set '+param+'=') + len('set '+param+'=')
+                    end = start + len(text[start:].split("#")[0])
+                    text = text[:start]+"'"+paramstr+"'"+' '+text[end:]
         #Special case of wavelength (only used if creating jobfile for image)
         elif param == 'WAVELENGTH':
             if image:
@@ -1393,8 +1403,9 @@ class TTS_Model(object):
     d2g: dust to gas mass ratio of the disk.
     amax: Maximum grain size in the disk atmoshpere (microns).
     amaxw: Maximum grain size in the wall (microns).
-    eps: The epsilon parameter, i.e., the amount of dust settling in the disk.
-    ztran: height of transition between big and small grains (in hydrostatic scale heights).
+    eps: The epsilon parameter, i.e., the amount of dust settling in the disk. (deprecated)
+    ztran: height of transition between big and small grains (in hydrostatic scale heights). (deprecated)
+    alphaset - alpha turbulence to set the settling
     tshock: The temperature of the shock at the stellar photosphere (K).
     temp: The temperature at the inner wall (K).
     altinh: Height of the wall (in hydrostatic scale heights).
@@ -1483,6 +1494,7 @@ class TTS_Model(object):
         self.amax       = header['AMAXS']
         self.amaxb      = header['AMAXB']
         self.eps        = header['EPS']
+        self.alphaset   = header['ALPHASET']
         self.tshock     = header['TSHOCK']
         self.temp       = header['TEMP']
         self.altinh     = header['ALTINH']
@@ -2185,8 +2197,9 @@ class PTD_Model(TTS_Model):
     d2g: dust to gas mass ratio of the disk.
     amax: Maximum grain size in the disk atmoshpere (microns).
     amaxw: Maximum grain size in the wall (microns).
-    eps: The epsilon parameter, i.e., the amount of dust settling in the disk.
-    ztran: height of transition between big and small grains (in hydrostatic scale heights).
+    eps: The epsilon parameter, i.e., the amount of dust settling in the disk. (deprecated)
+    ztran: height of transition between big and small grains (in hydrostatic scale heights). (deprecated)
+    alphaset - alpha turbulence to set the settling
     tshock: The temperature of the shock at the stellar photosphere (K).
     temp: The temperature at the inner wall (K).
     itemp: The temperature of the inner wall component of the model.
@@ -2324,6 +2337,7 @@ class PTD_Model(TTS_Model):
             self.ialpha      = HDUwall[0].header['ALPHA']
             self.irdisk      = HDUwall[0].header['RDISK']
             self.ieps        = HDUwall[0].header['EPS']
+            self.ialphaset   = HDUwall[0].header['ALPHASET']
             self.iamax       = HDUwall[0].header['AMAXS']
             self.iamaxb      = HDUwall[0].header['AMAXB']
 
