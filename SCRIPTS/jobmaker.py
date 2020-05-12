@@ -76,9 +76,10 @@ dist    = [140] #Distance to the star in pc
 mdot    = [3.3e-9] #Mass accretion rate in the disk in solar masses per year
 
 amaxs   = [0.25] #Maximum grain size in the upper layers of the disk NOTE: Only acceptss certain values, see the docstring above
-epsilon = [0.1] #Settling parameter
-ztran   = [0.1] #height of transition between big and small grains, in hydrostatic scale heights
+epsilon = [1.0] #Settling parameter (deprecated)
+ztran   = [0.1] #height of transition between big and small grains, in hydrostatic scale heights (deprecated)
 alpha   = [1e-2] # Viscosity in the disk
+alphaset= [1e-2] # Turblent viscosity for settling
 rdisk   = [200] #Outer radius of the disk
 
 rc      = [2000.] #Critial radius of tapered edge. If 2000, it will not have any effect.
@@ -126,13 +127,13 @@ iwall = False #Set this to True if you want ONLY walls. (i.e., turns off the dis
 #Open up a file and print the parameter names
 f = open(gridpath+paramfiletag+'job_params.txt', 'w')
 f.writelines('Job Number, amaxs, amaxw, epsilon, ztran, mstar, tstar, rstar, \
-dist, mdot, mdotstar, tshock, alpha, mui, rdisk, rc, gamma, temp, altinh, \
+dist, mdot, mdotstar, tshock, alpha, alphaset, mui, rdisk, rc, gamma, temp, altinh, \
 fracolive, fracpyrox, fracforst, fracent, lamaxb, d2g, inter_r, rho_deltas, \
 temp_deltas, epsbig_deltas, eps_deltas \n')
 
 #Write each iteration as a row in the table
 for ind, values in enumerate(itertools.product(amaxs, amaxw, epsilon, ztran,
-mstar, tstar, rstar, dist, mdot, mdotstar, tshock, alpha, mui, rdisk, rc,
+mstar, tstar, rstar, dist, mdot, mdotstar, tshock, alpha, alphaset, mui, rdisk, rc,
 gamma, temp, altinh, fracolive, fracpyrox, fracforst, fracent, lamaxb, d2g,
 inter_r, rho_deltas, temp_deltas, epsbig_deltas, eps_deltas)):
 
@@ -191,6 +192,7 @@ for i in range(len(table)):
     mdotstar  = table['mdotstar'][i], \
     tshock    = table['tshock'][i], \
     alpha     = table['alpha'][i], \
+    alphaset  = table['alphaset'][i], \
     mui       = table['mui'][i], \
     rdisk     = table['rdisk'][i], \
     rc        = table['rc'][i], \
