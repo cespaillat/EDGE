@@ -1,0 +1,25 @@
+#!/bin/csh
+
+##next line: job name
+#$ -N joball
+##next line: carries over environment variables
+#$ -V
+
+##send email to; for abort, begin, end; merge output and error
+#$ -j y
+
+set py_runner=/project/bu-disks/shared/DIAD/CODEf77_081109/Python_wrapper/jobrunner.py
+set gridfile=gridX_params.inp
+
+##change to run directory
+cd /projectnb/bu-disks/connorr/charlie/imlup/grid5
+module load anaconda3
+
+##and run job.
+set my_job = `printf "$py_runner $gridfile %03d" $SGE_TASK_ID`
+csh $my_job
+
+#run with
+#qsub -t 1-108 runall.csh
+
+wait

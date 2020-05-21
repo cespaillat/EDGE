@@ -169,7 +169,13 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
         if params:
             if odustonly == False:
                 plt.figtext(0.60,0.88,'d2g = '+ str(model.d2g), color='#010000', size='9')
-                plt.figtext(0.60,0.85,r'$\alpha_{settling}$ = '+ str(model.alphaset), color='#010000', size='9')
+                if model.alphaset != None:
+                    plt.figtext(0.60,0.85,r'$\alpha_{settling}$ = '+ str(model.alphaset), color='#010000', size='9')
+                else:
+                    try:
+                        plt.figtext(0.60,0.85,r'$\epsilon$ = '+ str(model.eps), color='#010000', size='9')
+                    except AttributeError:
+                        print('WARNING: Neither alphaset nor epsilon found in model.')
                 plt.figtext(0.60,0.82,'Rin = '+ str(model.rin), color='#010000', size='9')
                 plt.figtext(0.60,0.79,'Altinh = '+ str(model.wallH), color='#010000', size='9')
                 plt.figtext(0.80,0.88,r'$\alpha$ = '+ str(model.alpha), color='#010000', size='9')
@@ -221,6 +227,7 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
             else:
                 plt.savefig(savepath + obs.name.upper() + '_' + jobstr + '.pdf', dpi=300)
         plt.clf()
+        plt.close()
     else:
         plt.show()
 
@@ -824,6 +831,77 @@ def create_runall(jobstart, jobend, clusterpath, optthin = False, image = False,
         start = text.find('job%0')
         end = start+len('job%0')
         text = text[:start]+'job_image%0'+text[end:]
+
+    #Turn the text back into something that can be written out
+    outtext = [s + '\n' for s in text.split('\n')]
+
+    #Write out the runall file
+    newrunall = open(outpath+'runall.csh', 'w')
+    newrunall.writelines(outtext)
+    newrunall.close()
+
+def create_runall_py(jobstart, jobend, gridfile, clusterpath, pyrunner_path = None,
+image = False, outpath = '', commonpath = commonpath, fill = 3):
+    '''
+    Create runall to be used with python wrapper.
+
+    INPUTS:
+        jobstart: [int] First job file in grid
+        jobsend: [int] Last job file in grid
+        gridfile: [string] name of file with grid parameters
+        clusterpath: [string] path where models will be run in the cluster
+
+    OPTIONAL INPUTS:
+        pyrunner_path: [string] Path (in the cluster) to where the jobrunner script is.
+        If not set, it will use the default one.
+        image: [boolean] Set to True for images (If optthin is also True, this will not have any effect).
+        outpath: [string] Location of where the runall script should be sent. Default is current directory.
+        edgepath: [string] Path to where the runall_template file is located. Default is the edge director
+    '''
+    #Now write the runall script
+    runallfile = open(commonpath+'runall_template_py', 'r')
+    fulltext = runallfile.readlines()     # All text in a list of strings
+    runallfile.close()
+
+    #Turn it into one large string
+    text = ''.join(fulltext)
+
+    # Replace py_runner
+    if pyrunner_path != None:
+        start = text.find('set py_runner=')+len('set py_runner=')
+        end = start + len(text[start:].split('\n')[0])
+        text = text[:start] + pyrunner_path + text[end:]
+
+    # Replace gridfile
+    start = text.find('set gridfile=')+len('set gridfile=')
+    end = start + len(text[start:].split('\n')[0])
+    text = text[:start] + gridfile + text[end:]
+
+    #Replace the path
+    start = text.find('cd ')+len('cd ')
+    end = start +len(text[start:].split('\n')[0])
+    text = text[:start] + clusterpath + text[end:]
+
+    #Replace fill
+    start = text.find(' %0')+len(' %0')
+    end = start +len(text[start:].split('d" $SGE_TASK_ID')[0])
+    text = text[:start] + str(int(fill)) + text[end:]
+
+    #Replace the jobstart
+    start = text.find('#qsub -t ')+len('#qsub -t ')
+    end = start +len(text[start:].split('-')[0])
+    text = text[:start] + str(int(jobstart)) + text[end:]
+
+    #Replace the job end
+    start = text.find('#qsub -t '+str(int(jobstart))+'-')+len('#qsub -t '+str(int(jobstart))+'-')
+    end = start +len(text[start:].split(' runall.csh')[0])
+    text = text[:start] + str(int(jobend)) + text[end:]
+
+    # #If the job is an image, replace job
+    # if image:
+    #     start = text.find('job%0')
+    #     end = start+len('job%0')
+    #     text = text[:start]+'job_image%0'+text[end:]
 
     #Turn the text back into something that can be written out
     outtext = [s + '\n' for s in text.split('\n')]
@@ -1493,8 +1571,6 @@ class TTS_Model(object):
         self.rdisk      = header['RDISK']
         self.amax       = header['AMAXS']
         self.amaxb      = header['AMAXB']
-        self.eps        = header['EPS']
-        self.alphaset   = header['ALPHASET']
         self.tshock     = header['TSHOCK']
         self.temp       = header['TEMP']
         self.altinh     = header['ALTINH']
@@ -1514,6 +1590,16 @@ class TTS_Model(object):
         self.filters    = {}
         self.synthFlux= {}
         # Try retrieving newer parameters, for backwards compatibility
+        if 'EPS' in header: # EPS should only be in older models
+            self.eps    = header['EPS']
+        if 'ZTRAN' in header: # ZTRAN should only be in older models
+            self.ztran = header['ZTRAN']
+        if 'ALPHASET' in header: # ALPHASET might not be in the header for older models
+            self.alphaset   = header['ALPHASET']
+        else:
+            print('WARNING: ALPHASET not found. This is probably an old '+
+            'collated model. Setting it to None')
+            self.alphaset = None
         try:
             self.mdotstar = header['MDOTSTAR']
         except KeyError:
@@ -1524,11 +1610,6 @@ class TTS_Model(object):
             print('WARNING: AMAXW not found. This is probably an old collated '+
             'model. Setting it to AMAXS')
             self.amaxw = header['AMAXS']
-        try:
-            self.ztran = header['ZTRAN']
-        except:
-            print('WARNING: ZTRAN not found. This is probably an old collated '+
-            'model.')
         try:
             self.zwall = header['ZWALL']
         except:
@@ -2336,8 +2417,14 @@ class PTD_Model(TTS_Model):
             #Add information about the disk
             self.ialpha      = HDUwall[0].header['ALPHA']
             self.irdisk      = HDUwall[0].header['RDISK']
-            self.ieps        = HDUwall[0].header['EPS']
-            self.ialphaset   = HDUwall[0].header['ALPHASET']
+            if 'EPS' in HDUwall[0].header: # EPS should only be in for older models
+                self.ieps   = HDUwall[0].header['EPS']
+            if 'ALPHASET' in HDUwall[0].header: # ALPHASET might not be in the header for older models
+                self.ialphaset   = HDUwall[0].header['ALPHASET']
+            else:
+                print('WARNING: ALPHASET not found for inner disk. This is '+
+                'probably an old collated model.')
+                self.ialphaset = None
             self.iamax       = HDUwall[0].header['AMAXS']
             self.iamaxb      = HDUwall[0].header['AMAXB']
 

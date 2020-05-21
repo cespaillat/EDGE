@@ -6,6 +6,7 @@ import pdb
 import os
 from glob import glob
 from scipy import interpolate
+import pandas
 
 #########################
 ## Read struc function ##
@@ -864,6 +865,510 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
 
     return
 
+def collate_py(jobnum=None, name=None, file_outputs=None, path ='./', destination='./',
+overwrite=False, fill=3, extinct = True, SEDT = True, wall = True, phot = True,
+scatt = False, rad_temp = True , struc = True):
+    """
+     collate.py
+
+     PURPOSE:
+            Organizes and stores flux and parameters from the D'Alessio
+            disk/optically thin dust models and jobfiles in a fits
+            file with a header.
+
+     CALLING SEQUENCE:
+            collate(path, destination, jobnum, name, file_names, [optthin=1], [clob=1], [high = 1], [noextinc = 1], [noangle = 1], [nowall = 1], [nophot = 1], [noscatt = 0])
+
+     INPUTS:
+            gridfile: String with name of file with grid parameters.
+
+            jobnum: String or integer associated with a job number label end.
+            name: String of the name of the object
+            OR
+            file_outputs: String of the name of the file with names of DIAD outputs.
+            If this parameter is used, jobnum and name are not required.
+
+
+     OPTIONAL KEYWORDS
+            path: String of with path to location of gridfile and model result
+                files. Both MUST be in the same location!
+            destination: String with where you want the fits file to be
+                sent after it's made
+            overwrite: Set this value to True to overwrite a currently existing
+                fits file from a previous run.
+            fill: Set this value to the number of digits in your job file.
+                NOTE: Not needed if run using file_outputs.
+                DEFAULT: 3
+            wall: [bool] Set this value to True if you want to include a wall file.
+                DEFAULT: True
+            SEDT: [bool] Set this value to True if you want to to include a disk file
+                DEFAULT: True
+            phot: [bool] Set this value to True if you want to include a photosphere file
+                DEFAULT: True
+            extinct: [bool] Set this value to True if you want to apply self-extinction
+                to the inner wall and photosphere.
+                DEFAULT: True
+            scatt: [bool] !!!!! NOTE: THIS IS SET TO False BY DEFAULT !!!!!
+                Set this value to True if you want to include the scattered
+                light file.
+            rad_temp: [bool] Set this to True if you want to include the radial
+                distribution of temperatures.
+            struc: [bool] Set this to True if you want to include the 2D structure of
+                the disk.
+
+     EXAMPLES:
+            To collate a single model run for in the grid 'gridX_params.inp'
+            under the job number '001', use the following commands:
+
+            from collate import collate
+            path = 'Some/path/where/your/model/file/is/located/'
+            gridfile = 'gridX_params.inp'
+            dest = 'where/I/want/my/collated/file/to/go/'
+            modelnum = 1
+            collate(gridfile, jobnum = modelnum, path=path, destination=dest)
+
+            Note that:
+            modelnum = '001' will also work.
+
+            collate.py cannot handle multiple models at once, and currently
+            needs to be run in a loop. An example run with 100 models would
+            look something like this:
+
+            from collate import collate
+            path = 'Some/path/where/your/model/files/are/located/'
+            gridfile = 'gridX_params.inp'
+            dest = 'where/I/want/my/collated/files/to/go/'
+            for i in range(100):
+                collate(gridfile, jobnum = i+1, path=path, destination=dest)
+
+
+     NOTES:
+
+            For the most current version of collate and EDGE, please visit the
+            Github respository:
+            https://github.com/cespaillat/EDGE
+
+            Collate corrects the flux from the star and the inner wall for
+            extinction from the outer disk.
+
+            Label ends for model results should of form objectname_001,
+
+            The file_outputs file is created by the python wrapper, and it
+            contains the names of the DIAD output files. Its name convention
+            is objectname_001_outputs.
+    """
+
+    # Select way of reading names of DIAD outputs.
+    if file_outputs:
+        # Read name and jobnum
+        name = '_'.join(file_outputs.split('_')[:-2])
+        jobnum = file_outputs.split('_')[-2]
+    else:
+        # If file_names is not provided, then jobnum and name should be used
+        if (jobnum is None) or (name is None):
+            raise IOError('COLLATE: file_outputs WAS NOT USED BUT jobnum AND/OR name ARE EMPTY.')
+        # Convert jobnum into a string:
+        jobnum = str(jobnum).zfill(fill)
+        # Use glob to get the list of output files
+        file_outputs = name+'_'+jobnum+'_outputs'
+
+    # Check file_outputs exists
+    try:
+        f = open(path+file_outputs, 'r')
+    except IOError:
+        print('COLLATE: MISSING file_outputs FILE FOR JOB NUMBER '+jobnum+', RETURNING...')
+        return
+
+    # Names of output files saved in list_files
+    list_files = np.array(f.read().splitlines())[:-2]
+    f.close()
+    # Parameters of model
+    params = pandas.read_csv(file_outputs, skiprows=8)
+
+    #Check to see if the name + jobnum matches up with the labelend, if it doens't, return
+    labelend = params['labelend'][0]
+
+    if labelend != name+'_'+jobnum:
+        print('COLLATE: NAME IS NOT THE SAME AS THE NAME IN JOB '+jobnum+' LABELEND: '+labelend+', RETURNING...')
+        return
+
+    #Define what variables to record
+    sparam = ['MSTAR', 'TSTAR', 'RSTAR', 'DISTANCE', 'MDOT', 'MDOTSTAR',
+    'ALPHA', 'MUI', 'RDISK', 'AMAXS', 'ALPHASET', 'WLCUT_ANGLE',
+    'WLCUT_SCATT', 'NSILCOMPOUNDS', 'AMORPFRAC_OLIVINE', 'AMORPFRAC_PYROXENE',
+    'FORSTERITE_FRAC', 'ENSTATITE_FRAC', 'TEMP', 'ALTINH', 'TSHOCK',
+    'AMAXW', 'AMAXB', 'D2G', 'RC', 'GAMMA', 'SILAB', 'GRAFAB', 'ICEAB']
+
+    comments = ['Stellar mass (Msun)', 'Stellar temperature (K)', 'Stellar radius (Rsun)',
+    'Distance (pc)', 'Mass accretion rate in the disk (Msun/yr)',
+    'Mass accretion rate onto the star (Msun/yr)', 'Viscosity coefficient',
+    'Cosine of inclination', 'Disk radius (au)',
+    'Maximum grain size of dust in atmosphere (microns)',
+    'Turbulence alpha used for settling',
+    'Cut in wavelengths for thermal SED (microns)',
+    'Cut in wavelengths for scattering (microns)',
+    'Number of silicate compounds',
+    'Fractional abundance of olivine in silicates',
+    'Fractional abundance of pyroxene in silicates',
+    'Fractional abundance of forsterite in silicates',
+    'Fractional abundance of enstatite in silicates', 'Wall temperature (K)',
+    'Height of wall (in H)', 'Temperature of accretion shock (K)',
+    'Maximum grain size of dust in wall (microns)',
+    'Maximum grain size of dust in midplane (microns)', 'Dust to gas mass ratio',
+    'Critial radius for tapered edge (au)', 'Index of tapered edge',
+    'Abundance of silicates', 'Abundance of graphite', 'Abundance of water ice']
+    dparam = np.zeros(len(sparam), dtype = float)
+
+    for ind, param in enumerate(sparam):
+        if param not in params.keys():
+            raise IOError('COLLATE: parameter '+param+' not found.')
+        dparam[ind] = float(params[param])
+
+    # We fix SILAB, GRAFAB and ICEAB in case they do not amount the total D2G
+    totalabun = (float(params['SILAB']) + float(params['GRAFAB']) +
+    float(params['ICEAB']))
+    dparam[sparam.index('SILAB')] *= (float(params['D2G']) / totalabun)
+    dparam[sparam.index('GRAFAB')] *= (float(params['D2G']) / totalabun)
+    dparam[sparam.index('ICEAB')] *= (float(params['D2G']) / totalabun)
+
+    #Rename header labels that are too long
+    sparam[sparam.index('AMORPFRAC_OLIVINE')]  = 'AMORF_OL'
+    sparam[sparam.index('AMORPFRAC_PYROXENE')] = 'AMORF_PY'
+    sparam[sparam.index('WLCUT_ANGLE')] = 'WLCUT_AN'
+    sparam[sparam.index('WLCUT_SCATT')] = 'WLCUT_SC'
+    sparam[sparam.index('NSILCOMPOUNDS')] = 'NSILCOMP'
+    sparam[sparam.index('FORSTERITE_FRAC')] = 'FORSTERI'
+    sparam[sparam.index('ENSTATITE_FRAC')] = 'ENSTATIT'
+
+    #set up empty array to accept data, column names and axis number
+    dataarr = np.array([])
+    axis = {'WLAXIS':0}
+    axis_count = 1 #Starts at 1, axis 0 reserved for wavelength information
+
+    #Read in arrays and manage axis information
+    #Also handles errors for missing/empty files
+
+    failed = False;
+    size = 0
+    miss = 0
+    if phot:
+        try:
+            photfile = list_files[['Phot' in element for element in list_files]][0]
+        except:
+            raise IOError('COLLATE: ERROR WITH Phot file.')
+        try:
+            size = os.path.getsize(path+photfile)
+        except IndexError:
+            print("COLLATE: WARNING IN JOB "+jobnum+": MISSING PHOTOSPHERE FILE, ADDED 'FAILED' TAG TO HEADER. PHOT SET TO False")
+            phot = False
+            failed = True
+            miss = 1
+        if miss != 1 and size != 0:
+            phot_data  = ascii.read(path+photfile)
+            axis['PHOTAXIS'] = axis_count
+            dataarr = np.concatenate((dataarr, phot_data['col1']))
+            dataarr = np.concatenate((dataarr, phot_data['col2']))
+            axis_count += 1
+        elif miss != 1 and size == 0:
+            print("COLLATE: WARNING IN JOB "+jobnum+": PHOT FILE EMPTY, ADDED 'FAILED' TAG TO HEADER. PHOT SET TO False")
+            phot = False
+            failed = True
+
+    size = 0
+    miss = 0
+    if wall:
+        try:
+            wallfile = list_files[['fort17' in element for element in list_files]][0]
+        except:
+            raise IOError('COLLATE: ERROR WITH fort17 file.')
+        try:
+            size = os.path.getsize(path+wallfile)
+        except IndexError:
+            print("COLLATE: WARNING IN JOB "+jobnum+": MISSING FORT17 (WALL) FILE, ADDED 'FAILED' TAG TO HEADER. WALL SET TO False")
+            wall = False
+            failed = True
+            miss = 1
+        if miss != 1 and size != 0:
+            # Lok for the height of the wall
+            f = open(path+wallfile)
+            zwall = float(f.readlines()[7])
+            f.close()
+            # Read SED of wall
+            wall_data  =  ascii.read(path+wallfile, data_start = 9)
+            axis['WALLAXIS'] = axis_count
+            #If the photosphere was not run, then grab wavelength information from wall file
+            if phot == False:
+                dataarr = np.concatenate((dataarr, wall_data['col1']))
+            dataarr = np.concatenate((dataarr, wall_data['col2']))
+            axis_count += 1
+        elif miss != 1 and size == 0:
+            print("COLLATE: WARNING IN JOB "+jobnum+": FORT17 (WALL) FILE EMPTY, ADDED 'FAILED' TAG TO HEADER. WALL SET TO False")
+            failed = True
+            wall = False
+
+    miss = 0
+    size = 0
+    if SEDT:
+        try:
+            anglefile = list_files[['angle' in element for element in list_files]][0]
+        except:
+            raise IOError('COLLATE: ERROR WITH angle file.')
+        try:
+            size = os.path.getsize(path+anglefile)
+        except IndexError:
+            print("COLLATE: WARNING IN JOB "+jobnum+": MISSING ANGLE (DISK) FILE, ADDED 'FAILED' TAG TO HEADER. SEDT SET TO False")
+            SEDT = False
+            failed = True
+            miss = 1
+        if miss != 1 and size != 0:
+            try:
+                angle = ascii.read(path+anglefile, data_start = 1)
+                axis['ANGAXIS'] = axis_count
+                #If the photosphere was not run, and the wall was not run then grab wavelength information from angle file
+                if phot == False and wall == False:
+                    dataarr = np.concatenate((dataarr, angle['col1']))
+                dataarr = np.concatenate((dataarr, angle['col4']))
+                axis_count += 1
+            except KeyError:
+                print("COLLATE: WARNING IN JOB "+jobnum+": ANGLE FILE VALUES EMPTY, ADDED 'FAILED' TAG TO HEADER. SEDT SET TO False")
+                failed = True
+                SEDT = False
+        elif miss != 1 and size == 0:
+            print("COLLATE: WARNING IN JOB "+jobnum+": ANGLE (DISK) FILE EMPTY, ADDED 'FAILED' TAG TO HEADER. SEDT SET TO False")
+            failed = True
+            SEDT = False
+
+    miss = 0
+    size = 0
+    if scatt:
+        try:
+            scattfile = list_files[['scatt' in element for element in list_files]][0]
+        except:
+            raise IOError('COLLATE: ERROR WITH scatt file.')
+        try:
+            size = os.path.getsize(path+scattfile)
+        except IndexError:
+            print("COLLATE: WARNING IN JOB "+jobnum+": MISSING SCATT FILE, ADDED 'FAILED' TAG TO HEADER. SCATT SET TO False")
+            scatt = False
+            failed = True
+            miss = 1
+        if miss != 1 and size > 100:
+            scatt_data = ascii.read(path+scattfile, data_start = 1)
+            axis['SCATAXIS'] = axis_count
+                #If the photosphere, wall and disk were not run, then grab wavelength information from scatt file
+            if phot == False and wall == False and SEDT == False:
+                dataarr = np.concatenate((dataarr, scatt_data['col1']))
+            dataarr = np.concatenate((dataarr, scatt_data['col4']))
+            axis_count += 1
+        elif miss != 1 and size == 0 or miss != 1 and size < 100:
+            print("COLLATE: WARNING IN JOB "+jobnum+": SCATT FILE EMPTY, ADDED 'FAILED' TAG TO HEADER. SCATT SET TO False")
+            failed = True
+            scatt = False
+
+    if extinct:
+        if SEDT == False:
+            print("COLLATE: WARNING IN JOB "+jobnum+": ANGLE (DISK) FILE "+jobnum+" REQUIRED FOR EXTINCTION FROM DISK. ADDED 'FAILED' TAG TO HEADER, EXTINCT SET TO False")
+            failed = True
+            extinct = False
+        else:
+            dataarr = np.concatenate((dataarr, angle['col6']))
+            axis['EXTAXIS'] = axis_count
+            axis_count += 1
+
+    #if data has values that overflow/underflow float type, replace them with NaN dataarr = tempdata
+    floaterr = 0
+    tempdata = np.zeros(len(dataarr))
+    for i, value in enumerate(dataarr):
+        try:
+            tempdata[i] = float(dataarr[i]) #dataarr[i].astype(float)
+        except ValueError:
+            floaterr = 1
+            tempdata[i] = float('nan')
+    if floaterr == 1:
+        print('COLLATE: WARNING IN JOB '+jobnum+': FILES CONTAIN FLOAT OVERFLOW/UNDERFLOW ERRORS, THESE VALUES HAVE BEEN SET TO NAN')
+
+    #Put data array into the standard form for EDGE
+    dataarr = tempdata
+    dataarr = np.reshape(dataarr, (axis_count, int(len(dataarr)/axis_count)))
+
+    #Self extinct the photosphere and wall
+    if extinct:
+        if phot:
+            dataarr[axis['PHOTAXIS'],:] *=np.exp((-1)*dataarr[axis['EXTAXIS'],:])
+        if wall:
+            dataarr[axis['WALLAXIS'],:] *=np.exp((-1)*dataarr[axis['EXTAXIS'],:])
+
+    #Create the header and add parameters
+    hdu = fits.PrimaryHDU(dataarr)
+
+    #Add a few misc tags to the header
+    hdu.header.set('OBJNAME', name)
+    hdu.header.set('JOBNUM', jobnum)
+
+    for i, param in enumerate(sparam):
+        hdu.header.set(param, dparam[i],comment=comments[i])
+
+    if wall:
+        try:
+            hdu.header.set('ZWALL', zwall, comment='Height of the wall (au)')
+            hdu.header.set('RIN', float(np.loadtxt(path+list_files[['rin.t' in
+            element for element in list_files]][0])), comment='Inner radius (au)')
+        except:
+            raise IOError('COLLATE: ERROR WITH rin file.')
+
+    #Get the disk mass
+    if SEDT:
+        try:
+            try:
+                massfile = np.genfromtxt(path+list_files[['fort15' in element for element in list_files]][0], skip_header = 3,skip_footer = 0)
+            except:
+                # Sometimes the last radius in fort15 has a value that is wrong
+                massfile = np.genfromtxt(path+list_files[['fort15' in element for element in list_files]][0], skip_header = 3,skip_footer = 1)
+            diskmassrad = massfile[:,0]
+            diskmassvals = massfile[:,10]
+            massfit = interpolate.interp1d(diskmassrad, diskmassvals)
+            if wall:
+                hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK']))
+                -float(massfit(hdu.header['RIN'])), comment='Disk mass (Msun)')
+            else:
+                print("COLLATE:WARNING IN JOB "+jobnum+": wall = False, SO THE DISK MASS WILL ALSO HAVE THE MASS INSIDE THE CAVITY.")
+                hdu.header.set('DISKMASS', float(massfit(hdu.header['RDISK'])),
+                comment='Disk mass (Msun)')
+        except:
+            print("COLLATE:WARNING IN JOB "+jobnum+": DISK MASS CALCULATION FAILED.")
+            hdu.header.set('DISKMASS', 'FAILED', comment='Disk mass (Msun)')
+    else:
+        hdu.header.set('DISKMASS', 'FAILED', comment='Disk mass (Msun)')
+
+    #Create tags in the header that match up each column to the data enclosed]
+    for naxis in axis:
+        hdu.header.set(naxis, axis[naxis])
+
+    #Add a tag to the header if the noextinct flag is on
+    if extinct == False:
+        hdu.header.set('NOEXT', 1)
+
+    #Get the Temperature structure data from the prop file
+    if rad_temp:
+        try:
+            propfile = list_files[['prop' in element for element in list_files]][0]
+        except:
+            raise IOError('COLLATE: ERROR WITH prop file.')
+        try:
+            size = os.path.getsize(path+propfile)
+            miss = 0
+        except IndexError:
+            print("COLLATE: WARNING IN JOB "+jobnum+": MISSING PROP (PROPERTIES) FILE, ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
+            failed = True
+            miss = 1
+            hdu.header.set('NOTEMP', 1)
+
+        if miss != 1 and size != 0:
+            try:
+                propdatatable = ascii.read(path+propfile, data_start = 1)
+                propdata = np.zeros([len(propdatatable[0]),len(propdatatable)])
+                #Replace 'D' in the table with 'e' and convert into a numpy array the terrible brute force way
+                for i, column in enumerate(propdatatable):
+                    for j, value in enumerate(column):
+                        if type(value) is str:
+                            if 'D' in value:
+                                propdata[j,i] = np.float(str.replace(value, 'D', 'e'))
+                #Start making a new array that contains structural data
+                sdata = 10**(np.vstack([propdata[0,:], propdata[1,:], propdata[2,:], propdata[4,:], propdata[5,:], propdata[11,:], propdata[12,:]]))
+                saxisnames = ['RADIUS', 'TEFF', 'TIRR', 'TZEQ0', 'TZEQZMAX', 'TZEQZS', 'TZTAUS']
+                #Add a separate fits extension to contain structural data
+                saxiscounter = 0
+                shdu = fits.ImageHDU(sdata)
+                for saxis in saxisnames:
+                    shdu.header.set(saxis, saxiscounter)
+                    saxiscounter +=1
+            except IndexError:
+                print("COLLATE: WARNING IN JOB "+jobnum+": PROP FILE FOUND, BUT APPEARS TO HAVE FAILED. ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
+                failed = True
+                rad_temp = False
+                hdu.header.set('NOTEMP', 1)
+        elif miss !=1 and size ==0:
+            print("WARNING IN JOB "+jobnum+": PROP (PROPERTIES) FILE EMPTY, ADDED 'FAILED' TAG TO HEADER. NOTEMP SET TO 1")
+            failed = True
+            rad_temp = False
+            hdu.header.set('NOTEMP', 1)
+    else:
+        hdu.header.set('NOTEMP', 1)
+
+    #Add FAILED tag to header if any of the model elements were not found
+    if failed == 1:
+        hdu.header.set('FAILED', 1)
+
+    ##### Structure of disk #####
+    if struc:
+        try:
+            # In order to avoid opening the fort14.vis..., we do this in two steps
+            strucfiles = list_files[['fort14' in element for element in list_files]]
+            strucfile = strucfiles[['.irr.' in element for element in strucfiles]][0]
+        except:
+            raise IOError('COLLATE: ERROR WITH fort14.irr files.')
+
+        try:
+            radii, z, p, t, rho, epsbig, eps = readstruc(path+strucfile) # arrays as [nrad,nz]
+            # We save them in different fits extensions as [nz,nrad]
+            radii_hdu = fits.ImageHDU(np.meshgrid(radii,z[0,:])[0])
+            radii_hdu.header.set('COMMENT','Radii (au)')
+            z_hdu = fits.ImageHDU(z.T)
+            z_hdu.header.set('COMMENT','Z (au)')
+            p_hdu = fits.ImageHDU(p.T)
+            p_hdu.header.set('COMMENT','Pressure (cgs)')
+            t_hdu = fits.ImageHDU(t.T)
+            t_hdu.header.set('COMMENT','Temperature (K)')
+            rho_hdu = fits.ImageHDU(rho.T)
+            rho_hdu.header.set('COMMENT','Density (g cm-2)')
+            epsbig_hdu = fits.ImageHDU(epsbig.T)
+            epsbig_hdu.header.set('COMMENT','Epsbig')
+            eps_hdu = fits.ImageHDU(eps.T)
+            eps_hdu.header.set('COMMENT','Eps')
+        except:
+            print('COLLATE: Error reading the structure. Model probably failed')
+            struc = False
+
+    #We add the different fits extensions
+    if struc:
+        if rad_temp:
+            hdu.header.set('EXTS',9)
+            hdu.header.set('SED',1)
+            hdu.header.set('RADSTRUC',2)
+            hdu.header.set('RAD_EXT',3)
+            hdu.header.set('Z_EXT',4)
+            hdu.header.set('P_EXT',5)
+            hdu.header.set('T_EXT',6)
+            hdu.header.set('RHO_EXT',7)
+            hdu.header.set('EPSB_EXT',8)
+            hdu.header.set('EPS_EXT',9)
+            hdu_list = fits.HDUList([hdu,shdu,radii_hdu,z_hdu,p_hdu,t_hdu,rho_hdu,epsbig_hdu,eps_hdu])
+        else:
+            hdu.header.set('EXTS',8)
+            hdu.header.set('SED',1)
+            hdu.header.set('RAD_EXT',2)
+            hdu.header.set('Z_EXT',3)
+            hdu.header.set('P_EXT',4)
+            hdu.header.set('T_EXT',5)
+            hdu.header.set('RHO_EXT',6)
+            hdu.header.set('EPSB_EXT',7)
+            hdu.header.set('EPS_EXT',8)
+            hdu_list = fits.HDUList([hdu,radii_hdu,z_hdu,p_hdu,t_hdu,rho_hdu,epsbig_hdu,eps_hdu])
+    else:
+        if rad_temp:
+            hdu.header.set('EXTS',2)
+            hdu.header.set('SED',1)
+            hdu.header.set('RADSTRUC',2)
+            hdu_list = fits.HDUList([hdu,shdu])
+        else:
+            hdu.header.set('EXTS',1)
+            hdu.header.set('SED',1)
+            hdu_list = hdu
+
+    #Write fits file
+    hdu_list.writeto(destination+name+'_'+jobnum+'.fits', overwrite = overwrite)
+
+    return
 
 def collate_gas(path, name, clob = True):
     '''
