@@ -2215,15 +2215,15 @@ class TTS_Model(object):
             fmt = {}
             for l,s in zip(CS1.levels,map(str,levels[param])):
                 fmt[l] = s
-            plt.clabel(CS1,inline=1,inline_spacing=15, fmt=fmt, fontsize=11,linewidths=2)
+            plt.clabel(CS1,inline=1,inline_spacing=15, fmt=fmt, fontsize=11)
             # Plot snowlines if we are interested
             if (param == 'temp') & snowlines: # Plot important snowlines
                 CSH2O = ax1.contour(grid_x, grid_y, grid_z1, np.log10([150.]),linestyles='dashed',colors=('red'))
-                plt.clabel(CSH2O,inline=1,inline_spacing=15, fmt=r'H$_2$O (180 K)', colors=('red'), fontsize=11,linewidths=2)
+                plt.clabel(CSH2O,inline=1,inline_spacing=15, fmt=r'H$_2$O (180 K)', colors=('red'), fontsize=11)
                 CSCO = ax1.contour(grid_x, grid_y, grid_z1, np.log10([26.]),linestyles='dashed',colors=('yellow'))
-                plt.clabel(CSCO,inline=1,inline_spacing=15, fmt=r'CO (26 K)', colors=('yellow'), fontsize=11,linewidths=2)
+                plt.clabel(CSCO,inline=1,inline_spacing=15, fmt=r'CO (26 K)', colors=('yellow'), fontsize=11)
                 CSN2 = ax1.contour(grid_x, grid_y, grid_z1, np.log10([22.]),linestyles='dashed',colors=('green'))
-                plt.clabel(CSN2,inline=1,inline_spacing=15, fmt=r'N$_2$ (22 K)', colors=('green'), fontsize=11,linewidths=2)
+                plt.clabel(CSN2,inline=1,inline_spacing=15, fmt=r'N$_2$ (22 K)', colors=('green'), fontsize=11)
             plt.tick_params(axis='y', labelsize=11)
             plt.tick_params(axis='x', labelsize=11)
             ax1.set_xlabel('R (au)',fontsize=11)
