@@ -16,6 +16,7 @@ from glob import glob
 from scipy.interpolate import griddata
 import matplotlib.ticker as ticker
 import util
+import ast
 #----------------------------------------------PLOTTING PARAMETERS-----------------------------------------------
 # Regularizes the plotting parameters like tick sizes, legends, etc.
 plt.rc('xtick', labelsize='medium')
@@ -181,7 +182,10 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
                 plt.figtext(0.80,0.88,r'$\alpha$ = '+ str(model.alpha), color='#010000', size='9')
                 plt.figtext(0.80,0.85,'Rout = '+ str(model.rdisk), color='#010000', size='9')
                 plt.figtext(0.80,0.82,'Mdot = '+ str(model.mdot), color='#010000', size='9')
-                plt.figtext(0.40,0.85,'Amax = '+ str(model.amax), color='#010000', size='9')
+                try:
+                    plt.figtext(0.40,0.85,'Amax = '+ str(model.amax), color='#010000', size='9')
+                except AttributeError:
+                    plt.figtext(0.40,0.85,'Ndust = '+ str(model.ndust), color='#010000', size='9')
                 plt.figtext(0.40,0.82,'Amaxb = '+ str(model.amaxb), color='#010000', size='9')
                 try:
                     plt.figtext(0.40,0.88,r'M$_{disk}$ = '+ str(round(model.diskmass,5)), color='#010000', size='9')
@@ -1569,8 +1573,8 @@ class TTS_Model(object):
         self.alpha      = header['ALPHA']
         self.mui        = header['MUI']
         self.rdisk      = header['RDISK']
-        self.amax       = header['AMAXS']
-        self.amaxb      = header['AMAXB']
+        # self.amax       = header['AMAXS']
+        # self.amaxb      = header['AMAXB']
         self.tshock     = header['TSHOCK']
         self.temp       = header['TEMP']
         self.altinh     = header['ALTINH']
@@ -1600,6 +1604,12 @@ class TTS_Model(object):
             print('WARNING: ALPHASET not found. This is probably an old '+
             'collated model. Setting it to None')
             self.alphaset = None
+        if 'NDUST' in header:
+            self.ndust = header['NDUST']
+        if 'AMAXB' in header:
+            self.amaxb = header['AMAXB']
+        elif 'NDUST' in header:
+            self.amaxb = float(header['AMAX'+str(int(self.ndust))])
         try:
             self.mdotstar = header['MDOTSTAR']
         except KeyError:
@@ -1609,7 +1619,10 @@ class TTS_Model(object):
         except:
             print('WARNING: AMAXW not found. This is probably an old collated '+
             'model. Setting it to AMAXS')
-            self.amaxw = header['AMAXS']
+            try:
+                self.amaxw = header['AMAXS']
+            except:
+                raise IOError('Neither AMAXW nor AMAXS is in the header.')
         try:
             self.zwall = header['ZWALL']
         except:
@@ -2409,8 +2422,8 @@ class PTD_Model(TTS_Model):
 
         #If there is an inner disk, add that as well.
         if 'ANGAXIS' in HDUwall[0].header.keys():
-            if 'EXTAXIS' in HDUwall[0].header.keys():
-                idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]*np.exp(-1*HDUdata[0].data[header['EXTAXIS'],:])
+            if self.extcorr != None:
+                idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]*np.exp(-1*self.extcorr)
             else:
                 idiskFcorr= HDUwall[0].data[HDUwall[0].header['ANGAXIS'],:]
             self.data['idisk'] = idiskFcorr
@@ -2563,7 +2576,7 @@ class PTD_Model(TTS_Model):
                 headerStr += 'Photosphere, '
                 outputTable[:, colNum] = self.data['phot']
                 colNum += 1
-            if wall:
+            if iwall:
                 headerStr += 'Inner Wall, '
                 outputTable[:, colNum] = self.data['iwall']
                 colNum += 1
@@ -2571,9 +2584,9 @@ class PTD_Model(TTS_Model):
                 headerStr += 'Outer Wall, '
                 outputTable[:, colNum] = self.data['owall']
                 colNum += 1
-            if disk:
+            if odisk:
                 headerStr += 'Outer Disk, '
-                outputTable[:, colNum] = self.data['disk']
+                outputTable[:, colNum] = self.data['odisk']
                 colNum += 1
             if dust != 0:
                 headerStr += 'Opt. Thin Dust, '
@@ -2923,7 +2936,7 @@ class TTS_Obs(object):
             priHDU = fits.PrimaryHDU(header=prihdr)
 
             HDU = fits.HDUList([priHDU, photHDU, specHDU])
-            HDU.writeto(datapath+self.name+'_obs.fits', clobber = clob)
+            HDU.writeto(datapath+self.name+'_obs.fits', overwrite = clob)
         else:
             f = open(datapath+self.name+'_obs.csv', 'w')
             f.write('wavelength(microns),nuFnu(erg/s/cm2),error,instrument,upperlimit\n')
@@ -3369,7 +3382,7 @@ class Red_Obs(TTS_Obs):
             priHDU = fits.PrimaryHDU(header=prihdr)
 
             HDU = fits.HDUList([priHDU, photHDU, specHDU])
-            HDU.writeto(datapath+self.name+'_red.fits', clobber = clob)
+            HDU.writeto(datapath+self.name+'_red.fits', overwrite = clob)
         else:
             f = open(datapath+self.name+'_red.csv', 'w')
             f.write('wavelength(microns),nuFnu(erg/s/cm2),error,instrument,upperlimit\n')
