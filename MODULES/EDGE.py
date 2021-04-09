@@ -1701,8 +1701,16 @@ class TTS_Model(object):
                 self.T_struc = HDUlist[header['T_EXT']-1].data
                 self.p_struc = HDUlist[header['P_EXT']-1].data
                 self.rho_struc = HDUlist[header['RHO_EXT']-1].data
-                self.epsbig_struc = HDUlist[header['EPSB_EXT']-1].data
-                self.eps_struc = HDUlist[header['EPS_EXT']-1].data
+                if 'EPSB_EXT' in header.keys():
+                    self.epsbig_struc = HDUlist[header['EPSB_EXT']-1].data
+                    self.eps_struc = HDUlist[header['EPS_EXT']-1].data
+                else:
+                    self.eps_struc = {}
+                    i = 0
+                    for key in header.keys():
+                        if ('EPS' in key) and ('_EXT' in key):
+                            self.eps_struc['AMAX'+str(i+1)] = HDUlist[header[key]-1].data
+                            i += 1
         except:
             print('WARNING: Structure not found, this is probably an old model.')
         HDUlist.close()
@@ -2110,10 +2118,9 @@ class TTS_Model(object):
         # Create the grid of points
         if logscale:
             radii_grid = np.log10(self.radii_struc.reshape(npoints,1))
-            z_grid = np.log10(self.z_struc.reshape(npoints,1)+1e-20)
         else:
             radii_grid = self.radii_struc.reshape(npoints,1)
-            z_grid = self.z_struc.reshape(npoints,1)
+        z_grid = self.z_struc.reshape(npoints,1)/self.radii_struc.reshape(npoints,1)
         points = np.concatenate((radii_grid,z_grid),axis = 1)
 
         # Limits of the plots
@@ -2128,15 +2135,12 @@ class TTS_Model(object):
             zmin = ylim[0]
             zmax = ylim[1]
         else:
-            zmin = np.min(self.z_struc)
-            zmax = np.max(self.z_struc)
+            zmin = 0.0
+            zmax = np.max(z_grid)
 
         if logscale:
-            zmin = 0.01
             rmin = np.log10(rmin)
             rmax = np.log10(rmax)
-            zmin = np.log10(zmin)
-            zmax = np.log10(zmax)
 
         aspectratio = (rmax - rmin) / (zmax-zmin)
 
@@ -2193,25 +2197,46 @@ class TTS_Model(object):
             vmins['pres'] = np.log10(pres_vmin)
             vmaxs['pres'] = np.log10(pres_vmax)
         if eps:
-            params['eps'] = self.eps_struc + 1e-8 # To avoid 0 and infs
-            labels['eps'] = '_eps'
-            titles['eps'] = 'Epsilon (small grains)'
+            if type(self.eps_struc) is not dict:
+                params['eps'] = self.eps_struc + 1e-8 # To avoid 0 and infs
+            else:
+                params['eps'] = np.zeros_like(self.eps_struc['AMAX1'])
+                for amax in self.eps_struc.keys():
+                    params['eps'] += self.eps_struc[amax]
+                ztrans = []
+                for i in range(int(self.ndust)-1):
+                    eps_diff = (self.eps_struc['AMAX'+str(i+1)] -
+                    self.eps_struc['AMAX'+str(i+2)])
+                    ztrans_temp = []
+                    for j in range(len(self.eps_struc['AMAX'+str(i+2)][0,:])):
+                        z1 = self.z_struc[:,j][np.argmin(1./(eps_diff[:,j]
+                        +1.e-10))]/self.radii_struc[0,j]
+                        z2 = self.z_struc[:,j][np.argmin(1./(eps_diff[:,j]
+                        +1.e-10))-1]/self.radii_struc[0,j]
+                        ztrans_temp.append((z1+z2)/2.)
+                    ztrans.append(ztrans_temp)
+                ztrans = np.array(ztrans)
             if eps_levels == None:
-                eps_levels = [np.max(self.eps_struc)]
+                eps_levels = [np.max(params['eps'])]
             levels['eps'] = eps_levels
-            eps_vmin = np.max([np.min(self.eps_struc),1e-4])
-            eps_vmax = np.max(self.eps_struc)
+            labels['eps'] = '_eps'
+            titles['eps'] = 'Epsilon'
+            eps_vmin = np.max([np.min(params['eps']),1e-5])
+            eps_vmax = np.max(params['eps'])
             vmins['eps'] = np.log10(eps_vmin)
             vmaxs['eps'] = np.log10(eps_vmax)
         if epsbig:
-            params['epsbig'] = self.epsbig_struc + 1e-8 # To avoid 0 and infs
+            try:
+                params['epsbig'] = self.epsbig_struc + 1e-8 # To avoid 0 and infs
+            except:
+                params['epsbig'] = self.eps_struc['AMAX'+str(int(self.ndust))] + 1e-8 # To avoid 0 and infs
             labels['epsbig'] = '_epsbig'
             titles['epsbig'] = 'Epsilon (large grains)'
             if epsbig_levels == None:
-                epsbig_levels = [np.max(self.epsbig_struc)]
+                epsbig_levels = [np.max(params['epsbig'])]
             levels['epsbig'] = epsbig_levels
-            epsbig_vmin = np.max([np.min(self.epsbig_struc),1e-4])
-            epsbig_vmax = np.max(self.epsbig_struc)
+            epsbig_vmin = np.max([np.min(params['epsbig']),1e-5])
+            epsbig_vmax = np.max(params['epsbig'])
             vmins['epsbig'] = np.log10(epsbig_vmin)
             vmaxs['epsbig'] = np.log10(epsbig_vmax)
 
@@ -2237,26 +2262,35 @@ class TTS_Model(object):
                 plt.clabel(CSCO,inline=1,inline_spacing=15, fmt=r'CO (26 K)', colors=('yellow'), fontsize=11)
                 CSN2 = ax1.contour(grid_x, grid_y, grid_z1, np.log10([22.]),linestyles='dashed',colors=('green'))
                 plt.clabel(CSN2,inline=1,inline_spacing=15, fmt=r'N$_2$ (22 K)', colors=('green'), fontsize=11)
+            # Plot ztrans of different dust populations
+            if (param == 'eps') & (type(self.eps_struc) is dict):
+                for i in range(int(self.ndust)-1):
+                    if logscale:
+                        ax1.plot(np.log10(self.radii_struc[0,:]), ztrans[i,:],
+                        linestyle='-', color='white')
+                    else:
+                        ax1.plot(self.radii_struc[0,:], ztrans[i,:],
+                        linestyle='-', color='white')
             plt.tick_params(axis='y', labelsize=11)
             plt.tick_params(axis='x', labelsize=11)
             ax1.set_xlabel('R (au)',fontsize=11)
-            ax1.set_ylabel('z (au)',fontsize=11)
+            ax1.set_ylabel('z/R',fontsize=11)
             ax1.set_title(titles[param],fontsize=11)
             # Tick marks
             if logscale:
-                thickplaces=[np.log10(i*j) for i in [0.01,0.1,1.0,10.0,100.0] for j in [1,2,3,4,5,6,7,8,9] ]
-                thickmarks=[]
-                for i in thickplaces:
-                    if (math.fabs(math.fmod(i,1.0))==0.0):
-                        thickmarks.append(str(10**i))
-                    else:
-                        thickmarks.append('')
-                plt.xticks(thickplaces,thickmarks)
-                plt.yticks(thickplaces,thickmarks)
+                # thickplaces=[np.log10(i*j) for i in [0.01,0.1,1.0,10.0,100.0] for j in [1,2,3,4,5,6,7,8,9] ]
+                # thickmarks=[]
+                # for i in thickplaces:
+                #     if (math.fabs(math.fmod(i,1.0))==0.0):
+                #         thickmarks.append(str(10**i))
+                #     else:
+                #         thickmarks.append('')
+                # plt.xticks(thickplaces,thickmarks)
+                # plt.yticks(thickplaces,thickmarks)
                 name = name +'_log'
-            else:
-                ax1.xaxis.set_minor_locator(ticker.MultipleLocator(10))
-                ax1.yaxis.set_minor_locator(ticker.MultipleLocator(1))
+            # else:
+            #     ax1.xaxis.set_minor_locator(ticker.MultipleLocator(10))
+            #     ax1.yaxis.set_minor_locator(ticker.MultipleLocator(1))
             # Image
             im1 = ax1.imshow(grid_z1.T, extent=(rmin,rmax,zmin,zmax), aspect=aspectratio,origin='lower',vmin=vmins[param],vmax=vmaxs[param],cmap=cmap)
             fig.subplots_adjust(left=0.2)
@@ -2265,8 +2299,7 @@ class TTS_Model(object):
 
             plt.savefig('struc_'+name+'.pdf', dpi=300, facecolor='w', edgecolor='w',
                           orientation='landscape', papertype=None, format=None,
-                          transparent=False, bbox_inches='tight', pad_inches=0.01,
-                          frameon=None)
+                          transparent=False, bbox_inches='tight', pad_inches=0.01)
             plt.close(fig)
 
         return
