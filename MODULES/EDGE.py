@@ -2736,92 +2736,116 @@ class TTS_Obs(object):
         photkeys = list(self.photometry.keys())
         speckeys = list(self.spectra.keys())
 
-        #Break the photometry down into something easier to write
-        photometry = []
-        for pkey in photkeys:
-            for i in np.arange(len(self.photometry[pkey]['wl'])):
-                if 'err' in self.photometry[pkey].keys():
-                    if pkey in self.ulim:
-                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1])
+        if make_csv == False:
+            #Break the photometry down into something easier to write
+            photometry = []
+            for pkey in photkeys:
+                for i in np.arange(len(self.photometry[pkey]['wl'])):
+                    if 'err' in self.photometry[pkey].keys():
+                        if pkey in self.ulim:
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1])
+                        else:
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0])
                     else:
-                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0])
-                else:
-                    if pkey in self.ulim:
-                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1])
+                        if pkey in self.ulim:
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1])
+                        else:
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0])
+
+            #Do the same for the spectra
+            spectra = []
+            for skey in speckeys:
+                for i in np.arange(len(self.spectra[skey]['wl'])):
+                    if 'err' in self.spectra[skey].keys():
+                        spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], self.spectra[skey]['err'][i], skey])
                     else:
-                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0])
+                        spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey])
 
-        #Do the same for the spectra
-        spectra = []
-        for skey in speckeys:
-            for i in np.arange(len(self.spectra[skey]['wl'])):
-                if 'err' in self.spectra[skey].keys():
-                    spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], self.spectra[skey]['err'][i], skey])
-                else:
-                    spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey])
+            photometry = np.array(photometry)
+            spectra = np.array(spectra)
 
-        photometry = np.array(photometry)
-        spectra = np.array(spectra)
+            #Now create the fits extensions using binary fits files
+            if len(photkeys) != 0:
+                photHDU = fits.BinTableHDU.from_columns(\
+                    [fits.Column(name='wl', format='E', array=photometry[:,0]),\
+                    fits.Column(name='lFl', format='E', array=photometry[:,1]),\
+                    fits.Column(name='err', format='E', array=photometry[:,2]),\
+                    fits.Column(name='instrument', format='A20', array=photometry[:,3]),\
+                    fits.Column(name='ulim', format='E', array=photometry[:,4])])
+            else:
+                photHDU = fits.BinTableHDU.from_columns(
+                    [fits.Column(name='wl', format='E'),\
+                    fits.Column(name='lFl', format='E'),\
+                    fits.Column(name='err', format='E'),\
+                    fits.Column(name='instrument', format='A20'),\
+                    fits.Column(name='ulim', format='E') ])
 
-        #Now create the fits extensions using binary fits files
-        if len(photkeys) != 0:
-            photHDU = fits.BinTableHDU.from_columns(\
-                [fits.Column(name='wl', format='E', array=photometry[:,0]),\
-                fits.Column(name='lFl', format='E', array=photometry[:,1]),\
-                fits.Column(name='err', format='E', array=photometry[:,2]),\
-                fits.Column(name='instrument', format='A20', array=photometry[:,3]),\
-                fits.Column(name='ulim', format='E', array=photometry[:,4])])
+            if len(speckeys) != 0:
+                specHDU = fits.BinTableHDU.from_columns(\
+                    [fits.Column(name='wl', format='E', array=spectra[:,0]),\
+                    fits.Column(name='lFl', format='E', array=spectra[:,1]),\
+                    fits.Column(name='err', format='E', array=spectra[:,2]),\
+                    fits.Column(name='instrument', format='A20', array=spectra[:,3])])
+            else:
+                specHDU = fits.BinTableHDU.from_columns(\
+                    [fits.Column(name='wl', format='E'),\
+                    fits.Column(name='lFl', format='E'),\
+                    fits.Column(name='err', format='E'),\
+                    fits.Column(name='instrument', format='A20')])
+
+            #Denote which extension is which
+            photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
+            specHDU.header.set('FITS_EXT', 'SPECTRA')
+
+            #Build the primary header
+            prihdr = fits.Header()
+            prihdr['DERED'] = dered
+
+            if Av:
+                prihdr['AV'] = Av
+            if extlaw:
+                prihdr['EXTLAW'] = extlaw
+
+            prihdr['COMMENT'] = 'This file contains photometry in extension 1'
+            prihdr['COMMENT'] = 'and contains spectra in extension 2 in the'
+            prihdr['COMMENT'] = 'form of binary fits tables. See '
+            prihdr['COMMENT'] = 'http://docs.astropy.org/en/stable/io/fits/ for'
+            prihdr['COMMENT'] = 'more information about binary fits tables.'
+            prihdr['COMMENT'] = 'Extension 0 does not contain a table as primary'
+            prihdr['COMMENT'] = 'FITS extensions cannot hold binary tables,'
+            prihdr['COMMENT'] = 'but it does hold some information about the object'
+            prihdr['COMMENT'] = 'in the header.'
+            prihdr['COMMENT'] = '**********************************************'
+            prihdr['COMMENT'] = 'This file was created with EDGE, which is'
+            prihdr['COMMENT'] = 'here: https://github.com/cespaillat/EDGE .'
+
+            priHDU = fits.PrimaryHDU(header=prihdr)
+
+            HDU = fits.HDUList([priHDU, photHDU, specHDU])
+            HDU.writeto(datapath+self.name+'_obs.fits', clobber = clob)
         else:
-            photHDU = fits.BinTableHDU.from_columns(
-                [fits.Column(name='wl', format='E'),\
-                fits.Column(name='lFl', format='E'),\
-                fits.Column(name='err', format='E'),\
-                fits.Column(name='instrument', format='A20'),\
-                fits.Column(name='ulim', format='E') ])
-
-        if len(speckeys) != 0:
-            specHDU = fits.BinTableHDU.from_columns(\
-                [fits.Column(name='wl', format='E', array=spectra[:,0]),\
-                fits.Column(name='lFl', format='E', array=spectra[:,1]),\
-                fits.Column(name='err', format='E', array=spectra[:,2]),\
-                fits.Column(name='instrument', format='A20', array=spectra[:,3])])
-        else:
-            specHDU = fits.BinTableHDU.from_columns(\
-                [fits.Column(name='wl', format='E'),\
-                fits.Column(name='lFl', format='E'),\
-                fits.Column(name='err', format='E'),\
-                fits.Column(name='instrument', format='A20')])
-
-        #Denote which extension is which
-        photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
-        specHDU.header.set('FITS_EXT', 'SPECTRA')
-
-        #Build the primary header
-        prihdr = fits.Header()
-        prihdr['DERED'] = dered
-
-        if Av:
-            prihdr['AV'] = Av
-        if extlaw:
-            prihdr['EXTLAW'] = extlaw
-
-        prihdr['COMMENT'] = 'This file contains photometry in extension 1'
-        prihdr['COMMENT'] = 'and contains spectra in extension 2 in the'
-        prihdr['COMMENT'] = 'form of binary fits tables. See '
-        prihdr['COMMENT'] = 'http://docs.astropy.org/en/stable/io/fits/ for'
-        prihdr['COMMENT'] = 'more information about binary fits tables.'
-        prihdr['COMMENT'] = 'Extension 0 does not contain a table as primary'
-        prihdr['COMMENT'] = 'FITS extensions cannot hold binary tables,'
-        prihdr['COMMENT'] = 'but it does hold some information about the object'
-        prihdr['COMMENT'] = 'in the header.'
-        prihdr['COMMENT'] = '**********************************************'
-        prihdr['COMMENT'] = 'This file was created with EDGE, which is'
-        prihdr['COMMENT'] = 'here: https://github.com/cespaillat/EDGE .'
-
-        priHDU = fits.PrimaryHDU(header=prihdr)
-
-        HDU = fits.HDUList([priHDU, photHDU, specHDU])
-        HDU.writeto(datapath+self.name+'_obs.fits', clobber = clob)
+            f = open(datapath+self.name+'_obs.csv', 'w')
+            f.write('wavelength(microns),nuFnu(erg/s/cm2),error,instrument,upperlimit\n')
+            for pkey in photkeys:
+                for i in range(len(self.photometry[pkey]['wl'])):
+                    if 'err' in self.photometry[pkey].keys():
+                        if pkey in self.ulim:
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1))
+                        else:
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0))
+                    else:
+                        if pkey in self.ulim:
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1))
+                        else:
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0))
+            for skey in speckeys:
+                f = open(datapath+self.name+'_obs_spec'+skey+'.csv', 'w')
+                f.write('wavelength(microns),nuFnu(erg/s/cm2),error,instrument\n')
+                for i in np.arange(len(self.spectra[skey]['wl'])):
+                    if 'err' in self.spectra[skey].keys():
+                        f.write("{},{},{},{}\n".format(self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], self.spectra[skey]['err'][i], skey))
+                    else:
+                        f.write("{},{},{},{}\n".format(self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey))
 
 
 class Red_Obs(TTS_Obs):
@@ -3158,92 +3182,117 @@ class Red_Obs(TTS_Obs):
         photkeys = list(self.photometry.keys())
         speckeys = list(self.spectra.keys())
 
-        #Break the photometry down into something easier to write
-        photometry = []
-        for pkey in photkeys:
-            for i in np.arange(len(self.photometry[pkey]['wl'])):
-                if 'err' in self.photometry[pkey].keys():
-                    if pkey in self.ulim:
-                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1])
+        if make_csv == False:
+            #Break the photometry down into something easier to write
+            photometry = []
+            for pkey in photkeys:
+                for i in np.arange(len(self.photometry[pkey]['wl'])):
+                    if 'err' in self.photometry[pkey].keys():
+                        if pkey in self.ulim:
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1])
+                        else:
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0])
                     else:
-                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0])
-                else:
-                    if pkey in self.ulim:
-                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1])
+                        if pkey in self.ulim:
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1])
+                        else:
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0])
+
+            #Do the same for the spectra
+            spectra = []
+            for skey in speckeys:
+                for i in np.arange(len(self.spectra[skey]['wl'])):
+                    if 'err' in self.spectra[skey].keys():
+                        spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], self.spectra[skey]['err'][i], skey])
                     else:
-                        photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0])
+                        spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey])
 
-        #Do the same for the spectra
-        spectra = []
-        for skey in speckeys:
-            for i in np.arange(len(self.spectra[skey]['wl'])):
-                if 'err' in self.spectra[skey].keys():
-                    spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], self.spectra[skey]['err'][i], skey])
-                else:
-                    spectra.append([self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey])
+            photometry = np.array(photometry)
+            spectra = np.array(spectra)
 
-        photometry = np.array(photometry)
-        spectra = np.array(spectra)
+            #Now create the fits extensions using binary fits files
+            if len(photkeys) != 0:
+                photHDU = fits.BinTableHDU.from_columns(\
+                    [fits.Column(name='wl', format='E', array=photometry[:,0]),\
+                    fits.Column(name='lFl', format='E', array=photometry[:,1]),\
+                    fits.Column(name='err', format='E', array=photometry[:,2]),\
+                    fits.Column(name='instrument', format='A20', array=photometry[:,3]),\
+                    fits.Column(name='ulim', format='E', array=photometry[:,4])])
+            else:
+                photHDU = fits.BinTableHDU.from_columns(
+                    [fits.Column(name='wl', format='E'),\
+                    fits.Column(name='lFl', format='E'),\
+                    fits.Column(name='err', format='E'),\
+                    fits.Column(name='instrument', format='A20'),\
+                    fits.Column(name='ulim', format='E') ])
 
-        #Now create the fits extensions using binary fits files
-        if len(photkeys) != 0:
-            photHDU = fits.BinTableHDU.from_columns(\
-                [fits.Column(name='wl', format='E', array=photometry[:,0]),\
-                fits.Column(name='lFl', format='E', array=photometry[:,1]),\
-                fits.Column(name='err', format='E', array=photometry[:,2]),\
-                fits.Column(name='instrument', format='A20', array=photometry[:,3]),\
-                fits.Column(name='ulim', format='E', array=photometry[:,4])])
+            if len(speckeys) != 0:
+                specHDU = fits.BinTableHDU.from_columns(\
+                    [fits.Column(name='wl', format='E', array=spectra[:,0]),\
+                    fits.Column(name='lFl', format='E', array=spectra[:,1]),\
+                    fits.Column(name='err', format='E', array=spectra[:,2]),\
+                    fits.Column(name='instrument', format='A20', array=spectra[:,3])])
+            else:
+                specHDU = fits.BinTableHDU.from_columns(\
+                    [fits.Column(name='wl', format='E'),\
+                    fits.Column(name='lFl', format='E'),\
+                    fits.Column(name='err', format='E'),\
+                    fits.Column(name='instrument', format='A20')])
+
+            #Denote which extension is which
+            photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
+            specHDU.header.set('FITS_EXT', 'SPECTRA')
+
+            #Build the primary header
+            prihdr = fits.Header()
+            prihdr['DERED'] = dered
+
+            if Av:
+                prihdr['AV'] = Av
+            if extlaw:
+                prihdr['EXTLAW'] = extlaw
+
+            prihdr['COMMENT'] = 'This file contains photometry in extension 1'
+            prihdr['COMMENT'] = 'and contains spectra in extension 2 in the'
+            prihdr['COMMENT'] = 'form of binary fits tables. See '
+            prihdr['COMMENT'] = 'http://docs.astropy.org/en/stable/io/fits/ for'
+            prihdr['COMMENT'] = 'more information about binary fits tables.'
+            prihdr['COMMENT'] = 'Extension 0 does not contain a table as primary'
+            prihdr['COMMENT'] = 'FITS extensions cannot hold binary tables,'
+            prihdr['COMMENT'] = 'but it does hold some information about the object'
+            prihdr['COMMENT'] = 'in the header.'
+            prihdr['COMMENT'] = '**********************************************'
+            prihdr['COMMENT'] = 'This file was created with EDGE, which is'
+            prihdr['COMMENT'] = 'here: https://github.com/cespaillat/EDGE .'
+
+            priHDU = fits.PrimaryHDU(header=prihdr)
+
+            HDU = fits.HDUList([priHDU, photHDU, specHDU])
+            HDU.writeto(datapath+self.name+'_red.fits', clobber = clob)
         else:
-            photHDU = fits.BinTableHDU.from_columns(
-                [fits.Column(name='wl', format='E'),\
-                fits.Column(name='lFl', format='E'),\
-                fits.Column(name='err', format='E'),\
-                fits.Column(name='instrument', format='A20'),\
-                fits.Column(name='ulim', format='E') ])
+            f = open(datapath+self.name+'_red.csv', 'w')
+            f.write('wavelength(microns),nuFnu(erg/s/cm2),error,instrument,upperlimit\n')
+            for pkey in photkeys:
+                for i in range(len(self.photometry[pkey]['wl'])):
+                    if 'err' in self.photometry[pkey].keys():
+                        if pkey in self.ulim:
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1))
+                        else:
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0))
+                    else:
+                        if pkey in self.ulim:
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1))
+                        else:
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0))
+            for skey in speckeys:
+                f = open(datapath+self.name+'_red_spec'+skey+'.csv', 'w')
+                f.write('wavelength(microns),nuFnu(erg/s/cm2),error,instrument\n')
+                for i in np.arange(len(self.spectra[skey]['wl'])):
+                    if 'err' in self.spectra[skey].keys():
+                        f.write("{},{},{},{}\n".format(self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], self.spectra[skey]['err'][i], skey))
+                    else:
+                        f.write("{},{},{},{}\n".format(self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey))
 
-        if len(speckeys) != 0:
-            specHDU = fits.BinTableHDU.from_columns(\
-                [fits.Column(name='wl', format='E', array=spectra[:,0]),\
-                fits.Column(name='lFl', format='E', array=spectra[:,1]),\
-                fits.Column(name='err', format='E', array=spectra[:,2]),\
-                fits.Column(name='instrument', format='A20', array=spectra[:,3])])
-        else:
-            specHDU = fits.BinTableHDU.from_columns(\
-                [fits.Column(name='wl', format='E'),\
-                fits.Column(name='lFl', format='E'),\
-                fits.Column(name='err', format='E'),\
-                fits.Column(name='instrument', format='A20')])
-
-        #Denote which extension is which
-        photHDU.header.set('FITS_EXT', 'PHOTOMETRY')
-        specHDU.header.set('FITS_EXT', 'SPECTRA')
-
-        #Build the primary header
-        prihdr = fits.Header()
-        prihdr['DERED'] = dered
-
-        if Av:
-            prihdr['AV'] = Av
-        if extlaw:
-            prihdr['EXTLAW'] = extlaw
-
-        prihdr['COMMENT'] = 'This file contains photometry in extension 1'
-        prihdr['COMMENT'] = 'and contains spectra in extension 2 in the'
-        prihdr['COMMENT'] = 'form of binary fits tables. See '
-        prihdr['COMMENT'] = 'http://docs.astropy.org/en/stable/io/fits/ for'
-        prihdr['COMMENT'] = 'more information about binary fits tables.'
-        prihdr['COMMENT'] = 'Extension 0 does not contain a table as primary'
-        prihdr['COMMENT'] = 'FITS extensions cannot hold binary tables,'
-        prihdr['COMMENT'] = 'but it does hold some information about the object'
-        prihdr['COMMENT'] = 'in the header.'
-        prihdr['COMMENT'] = '**********************************************'
-        prihdr['COMMENT'] = 'This file was created with EDGE, which is'
-        prihdr['COMMENT'] = 'here: https://github.com/cespaillat/EDGE .'
-
-        priHDU = fits.PrimaryHDU(header=prihdr)
-
-        HDU = fits.HDUList([priHDU, photHDU, specHDU])
-        HDU.writeto(datapath+self.name+'_red.fits', clobber = clob)
 
     def SPPickle(self, picklepath, clob = False, fill = 3):
         """
