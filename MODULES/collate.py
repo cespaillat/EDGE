@@ -775,7 +775,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         f.close()
 
         #Choose the variables you want to extract
-        sparam = np.array(['DISTANCE', 'MASS', 'RADIO', 'TSTAR', 'BIGF', 'RIN', 'FILLING', 'SFACTOR'])
+        sparam = np.array(['DISTANCE', 'MASS', 'RADIO', 'TSTAR', 'BIGF', 'RIN', 'FILLING'])
         dparam = []
 
         #Begin extracting parameters
