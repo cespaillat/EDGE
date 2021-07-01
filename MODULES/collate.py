@@ -790,7 +790,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         f.close()
 
         #Choose the variables you want to extract
-        sparam = np.array(['DISTANCE', 'MASS', 'RADIO', 'TSTAR', 'BIGF', 'FILLING', 'SFACTOR'])
+        sparam = np.array(['DISTANCE', 'MASS', 'RADIO', 'TSTAR', 'BIGF', 'RIN', 'FILLING'])
         dparam = []
 
         #Begin extracting parameters
@@ -824,7 +824,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         try:
             data = np.genfromtxt(path+'fort30.'+name+jobnum, skip_header = datastart, usecols = [1,2,3,4], skip_footer = footer)
         except StopIteration:
-            print('COLLTE: MODEL '+jobnum+' FAILED, RETURNING...')
+            print('COLLATE: MODEL '+jobnum+' FAILED, RETURNING...')
             return
 
         #Convert data into erg cm^-1 s^-1
