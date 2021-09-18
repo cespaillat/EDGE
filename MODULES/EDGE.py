@@ -29,9 +29,9 @@ plt.rc('figure', autolayout=True)
 # Folders where model output data and observational data can be found:
 edgepath        = os.path.dirname(os.path.realpath(__file__))+'/'
 commonpath      = edgepath+'/../COMMON/'
-datapath        = '/Users/Connor/Desktop/Research/iceline/data/'
-figurepath      = '/Users/danfeldman/Orion_Research/Orion_Research/CVSO_4Objs/Models/Full_CVSO_Grid/CVSO58_sil/'
-shockpath       = '/Users/danfeldman/Orion_Research/Orion_Research/CVSO_4Objs/ob1bspectra/'
+datapath        = None #Define this in EDGE.py or use the optional input
+figurepath      = None #Define this in EDGE.py or use the optional input
+shockpath       = None #Define this in EDGE.py or use the optional input
 
 #---------------------------------------------INDEPENDENT FUNCTIONS----------------------------------------------
 # A function is considered independent if it does not reference any other function or class in this module.
@@ -51,10 +51,9 @@ def keyErrHandle(func):
             return 1
     return handler
 
-
 #----------------------------------------------DEPENDENT FUNCTIONS-----------------------------------------------
 # A function is considered dependent if it utilizes either the above independent functions, or the classes below.
-def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, diskcomb=0, msize=7.0, xlim=[2e-1, 2e3], ylim=[1e-15, 1e-9], params=1, leg=1, odustonly = 0):
+def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, diskcomb=0, msize=7.0, xlim=[2e-1, 1e4], ylim=None, params=1, leg=1, odustonly = 0, format = '.pdf'):
     """
     Creates a plot of a model and the observations for a given target.
 
@@ -63,7 +62,7 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
     obs: The object containing the target's observations. Should be an instance of the TTS_Obs class.
     jobn: The job number you want to use when you save the plot, if different than the one listed in the model.
     save: BOOLEAN -- If 1 (True), will save the plot in a pdf file. If 0 (False), will output to screen.
-    savepath: The path that a saved PDF file will be written to. This is defaulted to the hard-coded figurepath at top of this file.
+    savepath: The path that a saved figure(.pdf by default) will be written to. This is defaulted to the hard-coded figurepath at top of this file.
     colkeys: An optional input array of color strings. This can be used to overwrite the normal color order convention. Options include:
              p == purple, r == red, m == magenta, b == blue, c == cyan, l == lime, t == teal, g == green, y == yellow, o == orange,
              k == black, w == brown, v == violet, d == gold, n == pumpkin, e == grape, j == jeans, s == salmon
@@ -72,9 +71,10 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
              to the code, and then update this header.
     diskcomb: BOOLEAN -- If 1 (True), will combine outer wall and disk components into one for plotting. If 0 (False), will separate.
     xlim: A list containing the lower and upper x-axis limits, respectively. Has default values.
-    ylim: A list containing the lower and upper y-axis limits, respectively. Has default values.
+    ylim: A list containing the lower and upper y-axis limits, respectively. By default it lets matplotlib automatically choose the lower and uppper y-axis limits.
     params: BOOLEAN -- If 1 (True), the parameters for the model will be printed on the plot.
     leg: BOOLEAN -- If 1 (True), the legend will be printed on the plot.
+    format: The file format for the saved figure. This is defaulted to pdf.
 
     OUTPUT
     A plot. Can be saved or plotted to the screen based on the "save" input parameter.
@@ -93,36 +93,50 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
         plt.clf()
     plt.figure(1)
 
+    handles = [] # since some points are potentially plotted individually, this saves the handles for legend to avoid duplicates
+
     # Plot the spectra first:
     for sind, skey in enumerate(speckeys):
         if 'err' not in obs.spectra[skey].keys():
-            plt.plot(obs.spectra[skey]['wl'], obs.spectra[skey]['lFl'], 'o', mew=1.0, markersize=3, \
+            handle, = plt.plot(obs.spectra[skey]['wl'], obs.spectra[skey]['lFl'], 'o', mew=1, markersize=3, \
                      mfc=colors[colkeys[sind]], mec= colors[colkeys[sind]], label=skey)
         else:
-            plt.errorbar(obs.spectra[skey]['wl'], obs.spectra[skey]['lFl'], yerr=obs.spectra[skey]['err'], \
-                         mec=colors[colkeys[sind]], fmt='o', mfc=colors[colkeys[sind]], mew=1.0, markersize=2, \
-                         ecolor=colors[colkeys[sind]], elinewidth=0.5, capsize=1.0, label=skey)
+            handle = plt.errorbar(obs.spectra[skey]['wl'], obs.spectra[skey]['lFl'], yerr=obs.spectra[skey]['err'], \
+                         mec=colors[colkeys[sind]], fmt='o', mfc=colors[colkeys[sind]], ecolor='silver', ms=1, label=skey)
+        handles.append(handle)
 
     # Next is the photometry:
     for pind, pkey in enumerate(photkeys):
-        # If an upper limit only:
-        if pkey in obs.ulim:
-            plt.plot(obs.photometry[pkey]['wl'], obs.photometry[pkey]['lFl'], 'v', \
-                     color=colors[colkeys[pind+len(speckeys)]], markersize=msize, label=pkey, zorder=pind+10)
-        # If not an upper limit, plot as normal:
+        wl = obs.photometry[pkey]['wl']
+        lFl = obs.photometry[pkey]['lFl']
+
+        # reads upper limits from obs file. if none present, generate an empty one for plotting
+        if 'ulim' in obs.photometry[pkey].keys():
+            ul = obs.photometry[pkey]['ulim']
         else:
-            if 'err' not in obs.photometry[pkey].keys():
-                plt.plot(obs.photometry[pkey]['wl'], obs.photometry[pkey]['lFl'], 'o', mfc='w', mec=colors[colkeys[pind+len(speckeys)]], mew=1.0,\
-                         markersize=msize, label=pkey, zorder=pind+10)
-            else:
-                plt.errorbar(obs.photometry[pkey]['wl'], obs.photometry[pkey]['lFl'], yerr=obs.photometry[pkey]['err'], \
-                             mec=colors[colkeys[pind+len(speckeys)]], fmt='o', mfc='w', mew=1.0, markersize=msize, \
-                             ecolor=colors[colkeys[pind+len(speckeys)]], elinewidth=2.0, capsize=3.0, label=pkey, zorder=pind+10)
+            ul = np.zeros(wl.shape)
+
+        # plots upper limits
+        handle, = plt.plot(wl[ul==1], lFl[ul==1], 'v', mec=colors[colkeys[pind]], \
+            ms=msize, mfc='w', label = pkey, zorder=pind+10)
+        
+        # plots errorbars or regular points depending if err is present in obs
+        if 'err' in obs.photometry[pkey].keys():
+            err = obs.photometry[pkey]['err']
+            handle = plt.errorbar(wl[ul==0], lFl[ul==0], yerr=err[ul==0], \
+                mec=colors[colkeys[pind]], fmt='o', mfc='w', mew=1, ms=msize, \
+                ecolor=colors[colkeys[pind]], elinewidth=2, capsize=3, label = pkey, zorder=pind+10)
+        else:
+            handle, = plt.plot(wl[ul==0], lFl[ul==0], 'o', mfc='w', mec=colors[colkeys[pind]], \
+                mew=1, ms=msize, label = pkey, zorder=pind+10)
+
+        handles.append(handle)
+
 
     # Now, the model (if a model supplied):
     if model != None:
         if model.components['phot']: # stellar photosphere
-            plt.plot(model.data['wl'], model.data['phot'], ls='--', c='b', linewidth=2.0, label='Photosphere')
+            plt.plot(model.data['wl'], model.data['phot'], ls='--', c='b', linewidth=2.0, label='Photosphere') 
 
         if model.components['dust']: # optically thin dust
             plt.plot(model.data['wl'], model.data['dust'], ls='--', c='#F80303', linewidth=2.0, label='Opt. Thin Dust')
@@ -197,12 +211,13 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
     plt.xscale('log')
     plt.yscale('log')
     plt.xlim(xlim[0], xlim[1])
-    plt.ylim(ylim[0], ylim[1])
+    if(ylim != None):
+        plt.ylim(ylim[0], ylim[1])
     plt.ylabel(r'${\rm \lambda F_{\lambda}\; (erg\; s^{-1}\; cm^{-2})}$')
     plt.xlabel(r'${\rm {\bf \lambda}\; (\mu m)}$')
     plt.title(obs.name.upper())
     if leg:
-        plt.legend(loc=3, numpoints = 1,fontsize=9)
+        plt.legend(handles=handles, loc=3, numpoints = 1,fontsize=9)
 
     # Should we save or should we plot?
     if save:
@@ -210,16 +225,16 @@ def look(obs, model=None, jobn=None, save=0, savepath=figurepath, colkeys=None, 
             try:
                 jobstr      = str(model.jobn).zfill(model.fill)
             except AttributeError:
-                plt.savefig(savepath + obs.name.upper() + '_obsdata' + '.pdf', dpi=300)
+                plt.savefig(savepath + obs.name.upper() + '_obsdata' + format, dpi=300)
             else:
-                plt.savefig(savepath + obs.name.upper() + '_' + jobstr + '.pdf', dpi=300)
+                plt.savefig(savepath + obs.name.upper() + '_' + jobstr + format, dpi=300)
         else:
             try:
                 jobstr      = str(jobn).zfill(model.fill)
             except AttributeError:
-                plt.savefig(savepath + obs.name.upper() + '_obsdata' + '.pdf', dpi=300)
+                plt.savefig(savepath + obs.name.upper() + '_obsdata' + format, dpi=300)
             else:
-                plt.savefig(savepath + obs.name.upper() + '_' + jobstr + '.pdf', dpi=300)
+                plt.savefig(savepath + obs.name.upper() + '_' + jobstr + format, dpi=300)
         plt.clf()
     else:
         plt.show()
@@ -387,15 +402,10 @@ def loadObs(name, datapath = datapath, red = False):
     photkeys = list(np.unique(HDU[1].data['instrument']))
     speckeys = list(np.unique(HDU[2].data['instrument']))
 
-    #Extract if keys are upper limits
-    ulim = HDU[1].data['ulim']
-
     #Add photometry
     for pkey in photkeys:
-        #If there are upper limits, then save the photometry as upper limits. Note that as it stands, if one point is upper limit then all
-        #points are assumed to be upper limits. Not ideal, but this is already assumed in other parts of the code.
         obj.add_photometry(pkey, HDU[1].data['wl'][HDU[1].data['instrument'] == pkey], HDU[1].data['lFl'][HDU[1].data['instrument'] == pkey], \
-            HDU[1].data['err'][HDU[1].data['instrument'] == pkey], ulim = (np.sum(ulim[HDU[1].data['instrument'] == pkey]) > 1))
+            HDU[1].data['err'][HDU[1].data['instrument'] == pkey], ulim = HDU[1].data['ulim'][HDU[1].data['instrument'] == pkey])
 
     #Add spectra
     for skey in speckeys:
@@ -847,6 +857,8 @@ def model_rchi2(obj, model, obsNeglect=[], wp=0.0, non_reduce=1, verbose = 1):
 
     New instruments can be added with time. If any instrument is added,
     the instrKeylist should be updated in calc_filters and in add_photometry.
+
+    TODO: Needs to be updated to accept ulim as a list
     """
 
     #Make observation files backwards compatible
@@ -1077,6 +1089,8 @@ def BIC_Calc(obs, minChi, degFree=6, weight=None, ignoreKeys=[]):
 
     OUTPUT
     bic: The Bayesian Information Criteria (BIC) calculated given the inputs.
+
+    TODO: Needs to be updated to accept ulim as a list
     """
     # Need to calculate the number of data points being used:
     if weight == 'TwicePhot':
@@ -2522,11 +2536,10 @@ class TTS_Obs(object):
         self.name       = name
         self.spectra    = {}
         self.photometry = {}
-        self.ulim       = []
         self.spec_dens = {}
         self.phot_dens = 0.0
 
-    def add_spectra(self, scope, wlarr, fluxarr, errors=None, py2 = False, clob = 1):
+    def add_spectra(self, scope, wlarr, fluxarr, errors=None, py2 = False, overwrite = 1):
         """
         Adds an entry to the spectra attribute.
 
@@ -2538,7 +2551,7 @@ class TTS_Obs(object):
         """
 
         # Check if the telescope data already exists in the data file:
-        if scope in self.spectra.keys() and clob == False:
+        if scope in self.spectra.keys() and overwrite == False:
             print('ADD_SPECTRA: Warning! This will overwrite current entry!')
             tries               = 1
             while tries <= 5:                                           # Give user 5 chances to choose if overwrite data or not
@@ -2567,16 +2580,16 @@ class TTS_Obs(object):
                 self.spectra[scope] = {'wl': wlarr, 'lFl': fluxarr, 'err': errors}
         return
 
-    def add_photometry(self, scope, wlarr, fluxarr, errors=None, ulim=0, verbose = 1, py2 = False):
+    def add_photometry(self, scope, wlarr, fluxarr, errors=None, ulim=None, verbose = 1, py2 = False):
         """
         Adds an entry to the photometry attribute.
 
         INPUTS
         scope: The telescope or instrument that the photometry was taken with.
         wlarr: The wavelength array of the data. Can also just be one value if an individual point. Should be in microns. Note: this is not checked.
-        fluxarr: The flux array corresponding to the data. Should be in erg s-1 cm-2. Note: this is not checked.
+        fluxarr: The flux array corresponding to the data. Can also just be one value if an individual point. Should be in erg s-1 cm-2. Note: this is not checked.
         errors: (optional) The array of flux errors. Should be in erg s-1 cm-2. If None (default), will not add.
-        ulim: BOOLEAN -- whether or not this photometric data is or is not an upper limit.
+        ulim: The upper limit array of the data. Can also just be one value if an individual point.
 
         NOTE:
         If synthetic fluxes want to be used when computing the chi square, these keywords
@@ -2613,6 +2626,10 @@ class TTS_Obs(object):
             wlarr = np.array(wlarr)
         if type(fluxarr) == list:
             fluxarr = np.array(fluxarr)
+        if type(ulim) == list:
+            ulim = np.array(ulim)
+        if type(errors) == list:
+            errors = np.array(errors)
         if type(wlarr) == str or type(fluxarr) == str: # Check if they are strings
             raise IOError('ADD_PHOTOMETRY: The flux and wavelength should NOT be strings')
         if len(wlarr) != len(fluxarr): # Check if they have the same length
@@ -2629,12 +2646,13 @@ class TTS_Obs(object):
                     proceed             = input('Proceed? (Y/N): ')
                 if proceed.upper() == 'Y' or proceed.upper() == 'YES':      # If Y or Yes, overwrite file, then break out of loop
                     print('ADD_PHOTOMETRY: Replacing entry.')
-                    if errors == None:
-                        self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr}
+                    if np.all(ulim == None):
+                        if errors == None:
+                            self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr}
+                        else:
+                            self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr, 'err': errors}
                     else:
-                        self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr, 'err': errors}
-                    if ulim == 1:
-                        self.ulim.append(scope)                             # If upper limit, append metadata to ulim attribute list.
+                        self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr, 'ulim': ulim, 'err': errors}   #Add ulim if it is given
                     break
                 elif proceed.upper() == 'N' or proceed.upper() == 'NO':     # If N or No, do not overwrite data and return
                     print('ADD_PHOTOMETRY: Will not replace entry. Returning now.')
@@ -2644,18 +2662,19 @@ class TTS_Obs(object):
             else:
                 raise IOError('You did not enter the correct Y/N response. Returning without replacing.')   # If you enter bad response too many times, raise error.
         else:
-            if np.all(errors == None):
-                self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr}     # If not an overwrite, writes data to the object's photometry attribute dictionary.
+            if np.all(ulim == None):
+                if np.all(errors == None):
+                    self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr}     # If not an overwrite, writes data to the object's photometry attribute dictionary.
+                else:
+                    self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr, 'err': errors}
             else:
-                self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr, 'err': errors}
-            if ulim == 1:
-                self.ulim.append(scope)                                     # If upper limit, append metadata to ulim attribute list.
+                self.photometry[scope]  = {'wl': wlarr, 'lFl': fluxarr, 'ulim': ulim, 'err': errors}   # Add ulim if it is given
         # We reset the attribute phot_dens, since with new photometry it should be recalculated
         self.phot_dens = 0.0
 
         return
 
-    def SPPickle(self, picklepath, clob = False, fill = 3):
+    def SPPickle(self, picklepath, overwrite = False, fill = 3):
         """
         Saves the object as a pickle. Damn it Jim, I'm a doctor not a pickle farmer!
 
@@ -2664,7 +2683,7 @@ class TTS_Obs(object):
 
         INPUTS
         picklepath: The path where you will save the pickle. I recommend datapath for simplicity.
-        clob: boolean, if set to True, will clobber the old pickle
+        overwrite: boolean, if set to True, will overwrite the old pickle
         fill: How many numbers used in the model files (4 = name_XXXX.fits).
 
         OUTPUT:
@@ -2677,7 +2696,7 @@ class TTS_Obs(object):
         outname         = self.name + '_obs.pkl'
         count           = 1
         while 1:
-            if outname in pathlist and clob == False:
+            if outname in pathlist and overwrite == False:
                 if count == 1:
                     print('SPPICKLE: Pickle already exists in directory. For safety, will change name.')
                 countstr= str(count).zfill(fill)
@@ -2691,7 +2710,7 @@ class TTS_Obs(object):
         f.close()
         return
 
-    def saveObs(self, datapath=datapath, clob = 1, make_csv = False, dered = True,\
+    def saveObs(self, datapath=datapath, overwrite = 1, make_csv = False, dered = True,\
         Av = None, extlaw = None, Mstar = None, Mref = None, Rstar = None, \
         Rref = None, Tstar = None, Tref = None, dist = None, dref = None):
         """
@@ -2702,7 +2721,7 @@ class TTS_Obs(object):
 
         OPTIONAL INPUTS:
             datapath:[string] Path where the data will be saved. Default is datapath
-            clob:[boolean] Overwrites existing files if true
+            overwrite:[boolean] Overwrites existing files if true
             Av: [float] Extinction (Av)
             extlaw: [string] Law used to de-redden data
             make_csv: [boolean] Makes two .csv files containing photometry and spectra if true
@@ -2742,15 +2761,15 @@ class TTS_Obs(object):
             for pkey in photkeys:
                 for i in np.arange(len(self.photometry[pkey]['wl'])):
                     if 'err' in self.photometry[pkey].keys():
-                        if pkey in self.ulim:
-                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1])
+                        if 'ulim' in self.photometry[pkey].keys():
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, self.photometry[pkey]['ulim'][i]])
                         else:
-                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0])
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, None])
                     else:
-                        if pkey in self.ulim:
-                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1])
+                        if 'ulim' in self.photometry[pkey].keys():
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, self.photometry[pkey]['ulim'][i]])
                         else:
-                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0])
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, None])
 
             #Do the same for the spectra
             spectra = []
@@ -2822,22 +2841,22 @@ class TTS_Obs(object):
             priHDU = fits.PrimaryHDU(header=prihdr)
 
             HDU = fits.HDUList([priHDU, photHDU, specHDU])
-            HDU.writeto(datapath+self.name+'_obs.fits', clobber = clob)
+            HDU.writeto(datapath+self.name+'_obs.fits', overwrite = overwrite)
         else:
             f = open(datapath+self.name+'_obs.csv', 'w')
             f.write('wavelength(microns),nuFnu(erg/s/cm2),error,instrument,upperlimit\n')
             for pkey in photkeys:
                 for i in range(len(self.photometry[pkey]['wl'])):
                     if 'err' in self.photometry[pkey].keys():
-                        if pkey in self.ulim:
-                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1))
+                        if 'ulim' in self.photometry[pkey].keys():
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, self.photometry[pkey]['ulim'][i]))
                         else:
-                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0))
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, None))
                     else:
-                        if pkey in self.ulim:
-                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1))
+                        if 'ulim' in self.photometry[pkey].keys():
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, self.photometry[pkey]['ulim'][i]))
                         else:
-                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0))
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, None))
             for skey in speckeys:
                 f = open(datapath+self.name+'_obs_spec'+skey+'.csv', 'w')
                 f.write('wavelength(microns),nuFnu(erg/s/cm2),error,instrument\n')
@@ -2847,7 +2866,6 @@ class TTS_Obs(object):
                     else:
                         f.write("{},{},{},{}\n".format(self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey))
 
-
 class Red_Obs(TTS_Obs):
     """
     A similar class to TTS_Obs, except meant to be utilized for observations that have not yet been
@@ -2856,7 +2874,7 @@ class Red_Obs(TTS_Obs):
 
     """
 
-    def dered(self, Av, law, datapath, Av_unc = 0, flux=1, lpath=commonpath, rv = None, err_prop=0, UV = 0, clob = False, \
+    def dered(self, Av, law, datapath=datapath, Av_unc = 0, flux=1, lpath=commonpath, rv = None, err_prop=0, UV = 0, overwrite = False, \
         Mstar = None, Mref = None, Rstar = None, Rref = None, Tstar = None, Tref = None, dist = None, save = True, verbose = True):
         """
         Deredden the spectra/photometry present in the object, and then convert to TTS_Obs structure.
@@ -2877,7 +2895,7 @@ class Red_Obs(TTS_Obs):
         UV: Uses dereddening law from Whittet et al. 2004 based on the extinction towards HD 29647
             for wavelengths between 0.125-9.33 microns.
             NOTE: This is ONLY useful for stars extincted by diffuse media, with RV = 3.1 (MATHIS LAW)
-        clob: boolean, if set to True, will clobber the old fits file
+        overwrite: boolean, if set to True, will overwrite the old fits file
 
         OUTPUT
         Returns the dereddened object.
@@ -2887,9 +2905,16 @@ class Red_Obs(TTS_Obs):
         """
 
         # Read in the dereddening laws pickle. The default is whereever you keep EDGE.py, but you can move it.
-        extPickle = open(lpath + 'ext_laws.pkl', 'rb')
-        extLaws   = cPickle.load(extPickle, encoding = 'latin1')
-        extPickle.close()
+        original = lpath + 'ext_laws.pkl'
+        destination = "data_unix.pkl"
+        content = ''
+        with open(original, 'rb') as infile:
+            content = infile.read()
+        with open(destination, 'wb') as output:
+            for line in content.splitlines():
+                output.write(line + str.encode('\n'))
+        with open(destination, 'rb') as infile:
+            extLaws   = cPickle.load(infile, encoding = 'latin1')
 
         # Figure out which law we will be using based on the user input and Av:
         if law == 'mkm09_rv5':
@@ -3116,10 +3141,10 @@ class Red_Obs(TTS_Obs):
                     phot_err= np.float64(errcorr*10.0**(0.4*A_lambda)) # Without propogating error!
             else:
                 phot_err    = None
-            if photKey in self.ulim:
-                ulimVal     = 1
+            if 'ulim' in self.photometry[photKey].keys():
+                ulimVal     = self.photometry[photKey]['ulim']
             else:
-                ulimVal     = 0
+                ulimVal     = None
             # Now, convert everything to flux units:
             phot_dered      = phot_dered * self.photometry[photKey]['wl'] * 1e-4
             try:
@@ -3131,13 +3156,13 @@ class Red_Obs(TTS_Obs):
         # Now that the new TTS_Obs object has been created and filled in, we must save it:
 
         if save:
-            deredObs.saveObs(datapath = datapath, clob = clob, Av = Av, extlaw = law)
+            deredObs.saveObs(datapath = datapath, overwrite = overwrite, Av = Av, extlaw = law)
 
         return deredObs
 
 
 
-    def saveObs(self, datapath=datapath, clob = 1, make_csv = False, dered = False,\
+    def saveObs(self, datapath=datapath, overwrite = 1, make_csv = False, dered = False,\
         Av = None, extlaw = None, Mstar = None, Mref = None, Rstar = None, \
         Rref = None, Tstar = None, Tref = None, dist = None, dref = None):
         """
@@ -3148,7 +3173,7 @@ class Red_Obs(TTS_Obs):
 
         OPTIONAL INPUTS:
             datapath:[string] Path where the data will be saved. Default is datapath
-            clob:[boolean] Overwrites existing files if true
+            overwrite:[boolean] Overwrites existing files if true
             Av: [float] Extinction (Av)
             extlaw: [string] Law used to de-redden data
             make_csv: [boolean] Makes two .csv files containing photometry and spectra if true
@@ -3188,15 +3213,15 @@ class Red_Obs(TTS_Obs):
             for pkey in photkeys:
                 for i in np.arange(len(self.photometry[pkey]['wl'])):
                     if 'err' in self.photometry[pkey].keys():
-                        if pkey in self.ulim:
-                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1])
+                        if 'ulim' in self.photometry[pkey].keys():
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, self.photometry[pkey]['ulim'][i]])
                         else:
-                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0])
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, None])
                     else:
-                        if pkey in self.ulim:
-                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1])
+                        if 'ulim' in self.photometry[pkey].keys():
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, self.photometry[pkey]['ulim'][i]])
                         else:
-                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0])
+                            photometry.append([self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, None])
 
             #Do the same for the spectra
             spectra = []
@@ -3268,22 +3293,22 @@ class Red_Obs(TTS_Obs):
             priHDU = fits.PrimaryHDU(header=prihdr)
 
             HDU = fits.HDUList([priHDU, photHDU, specHDU])
-            HDU.writeto(datapath+self.name+'_red.fits', clobber = clob)
+            HDU.writeto(datapath+self.name+'_red.fits', overwrite = overwrite)
         else:
             f = open(datapath+self.name+'_red.csv', 'w')
             f.write('wavelength(microns),nuFnu(erg/s/cm2),error,instrument,upperlimit\n')
             for pkey in photkeys:
                 for i in range(len(self.photometry[pkey]['wl'])):
                     if 'err' in self.photometry[pkey].keys():
-                        if pkey in self.ulim:
-                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 1))
+                        if 'ulim' in self.photometry[pkey].keys():
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, self.photometry[pkey]['ulim'][i]))
                         else:
-                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, 0))
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], self.photometry[pkey]['err'][i], pkey, None))
                     else:
-                        if pkey in self.ulim:
-                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 1))
+                        if 'ulim' in self.photometry[pkey].keys():
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, self.photometry[pkey]['ulim'][i]))
                         else:
-                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, 0))
+                            f.write("{},{},{},{},{}\n".format(self.photometry[pkey]['wl'][i], self.photometry[pkey]['lFl'][i], np.nan, pkey, None))
             for skey in speckeys:
                 f = open(datapath+self.name+'_red_spec'+skey+'.csv', 'w')
                 f.write('wavelength(microns),nuFnu(erg/s/cm2),error,instrument\n')
@@ -3293,14 +3318,13 @@ class Red_Obs(TTS_Obs):
                     else:
                         f.write("{},{},{},{}\n".format(self.spectra[skey]['wl'][i], self.spectra[skey]['lFl'][i], np.nan, skey))
 
-
-    def SPPickle(self, picklepath, clob = False, fill = 3):
+    def SPPickle(self, picklepath, overwrite = False, fill = 3):
         """
         The new version of SPPickle, different so you can differentiate between red and dered pickles.
 
         INPUT
         picklepath: The path where the new pickle file will be located.
-        clob: boolean, if set to True, will clobber the old pickle
+        overwrite: boolean, if set to True, will overwrite the old pickle
         fill: How many numbers used in the model files (4 = name_XXXX.fits).
 
         OUTPUT
@@ -3314,7 +3338,7 @@ class Red_Obs(TTS_Obs):
         outname         = self.name + '_red.pkl'
         count           = 1
         while 1:
-            if outname in pathlist and clob == False:
+            if outname in pathlist and overwrite == False:
                 if count == 1:
                     print('SPPICKLE: Pickle already exists in directory. For safety, will change name.')
                 countstr= str(count).zfill(fill)
