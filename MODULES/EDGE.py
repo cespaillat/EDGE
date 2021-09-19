@@ -2589,7 +2589,7 @@ class TTS_Obs(object):
         wlarr: The wavelength array of the data. Can also just be one value if an individual point. Should be in microns. Note: this is not checked.
         fluxarr: The flux array corresponding to the data. Can also just be one value if an individual point. Should be in erg s-1 cm-2. Note: this is not checked.
         errors: (optional) The array of flux errors. Should be in erg s-1 cm-2. If None (default), will not add.
-        ulim: The upper limit array of the data. Can also just be one value if an individual point.
+        ulim: The upper limit array (booleans) of the data, indicating which data points are upper limits. Can also just be one value if an individual point.
 
         NOTE:
         If synthetic fluxes want to be used when computing the chi square, these keywords
