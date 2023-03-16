@@ -793,8 +793,13 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
             #Handle everything else
             else:
                 dparam.append(float(jobf.split(param+"='")[1].split("'")[0]))
-
-
+        
+        # Search for carbon abundance (will not be in all models)
+        if len(jobf.split("C_ABUND='")) != 1:
+            c_abund = float(jobf.split("C_ABUND='")[1].split("'")[0])
+            sparam = np.hstack([sparam, ['C_ABUND']])
+            dparam.append(c_abund)
+        
         #Add in the data for each column
         #set up empty array to accept data, column names and axis number
         dataarr = np.array([])
@@ -822,7 +827,12 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         axis['HEATAXIS'] = 1
         axis['PREAXIS'] = 2
         axis['PHOTAXIS'] = 3
+        
 
+        
+        
+        
+        
         #Get the data in the right shape
         dataarr = np.vstack([wl, Fhp, Fpre, Fphot])
 
