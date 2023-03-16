@@ -797,7 +797,7 @@ def collate(path, destination,jobnum=None, name=None, file_outputs=None, optthin
         # Search for carbon abundance (will not be in all models)
         if len(jobf.split("C_ABUND='")) != 1:
             c_abund = float(jobf.split("C_ABUND='")[1].split("'")[0])
-            sparam = np.hstack([sparam, ['C_ABUND']])
+            sparam = np.hstack([sparam, ['C_ABUNDgit p']])
             dparam.append(c_abund)
         
         #Add in the data for each column
