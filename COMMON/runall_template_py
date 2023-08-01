@@ -13,7 +13,7 @@ set gridfile=gridX_params.inp
 
 ##change to run directory
 cd /projectnb/bu-disks/connorr/charlie/imlup/grid5
-module load anaconda3
+module load miniconda/23.1.0
 
 ##and run job.
 set my_job = `printf "$py_runner $gridfile %03d" $SGE_TASK_ID`
