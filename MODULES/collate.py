@@ -38,9 +38,9 @@ def readstruc(infile):
         for j in range(nz):
             params.append(lines[ind+4+j].split())
         table.append(params) #size of table: [nrad][nz][number of parameters]
-    table = np.array(table).astype(np.float)
+    table = np.array(table).astype(float)
 
-    radii = np.array(radii).astype(np.float) # radii in au
+    radii = np.array(radii).astype(float) # radii in au
     z = table[:,:,0]*rstar # heights (in au)
     p = table[:,:,1]       # pressure (in cgs)
     t = table[:,:,2]       # temperature (in K)
@@ -1234,8 +1234,8 @@ def read_gas_struc(infile):
         for j in range(nzetas):
             params.append(lines[ind+3+j].split())
         tabla.append(params) #size of tabla: [nradios][nzetas][len(strucvars)]
-    tabla = np.array(tabla).astype(np.float)
-    radio = np.array(radio).astype(np.float) # radii in au
+    tabla = np.array(tabla).astype(float)
+    radio = np.array(radio).astype(float) # radii in au
 
     z = tabla[:,:,0]*rstar # heights (in au)
     for i in range(len(radio)):
@@ -1270,6 +1270,6 @@ def read_waout(infile):
         for j in range(nzetas):
             params.append(lines[ind+3+j].split())
         tabla.append(params) #size of tabla: [nradios][nzetas][len(popvars)]
-    tabla = np.array(tabla).astype(np.float)
+    tabla = np.array(tabla).astype(float)
 
     return tabla
